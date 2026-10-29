@@ -128,8 +128,10 @@ export function useSessionLive(sessionId: string): LiveState {
         }
         case "session.state_changed": {
           const p = env.payload as unknown as StateChangedPayload;
+          const known = qc.getQueryData<SessionDetail>(qk.session(sessionId))?.session.state === p.to;
           updateDetail(qc, sessionId, (d) => ({ ...d, session: { ...d.session, state: p.to } }));
-          toastRef.current.push("info", `Briefing is now ${STATE_LABEL[p.to] ?? p.to}`, p.reason ?? undefined);
+          // Skip the toast when this tab caused the change (its own action already confirmed it).
+          if (!known) toastRef.current.push("info", `Briefing is now ${STATE_LABEL[p.to] ?? p.to}`, p.reason ?? undefined);
           // The transition may have changed other fields (sign-off, AI snapshot revision...).
           void qc.invalidateQueries({ queryKey: qk.session(sessionId) });
           void qc.invalidateQueries({ queryKey: qk.sessions });

@@ -59,7 +59,7 @@ export function SessionActions({ detail }: { detail: SessionDetail }) {
           Sign off
         </ActionButton>
       )}
-      {(s.state === "SIGNED" || s.state === "SUBMITTED") && (
+      {s.state === "SIGNED" && (
         <ActionButton perm={perms.submit} primary onClick={() => setDialog("submit")}>
           Submit
         </ActionButton>

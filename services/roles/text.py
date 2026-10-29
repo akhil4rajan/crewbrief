@@ -148,19 +148,30 @@ _POST_NEGATION = re.compile(
     r"(?:issue|problem|worry|concern|present|here|there|around|about|on site|a thing)\b")
 
 
-def is_negated(norm: str, start: int, end: int) -> bool:
-    """Explicit negation of the phrase at ``norm[start:end]`` ("no solar", "traffic isn't an issue")."""
-    before = _PSEUDO_NEGATION.sub(" ", norm[:start])
+def is_negated(norm: str, start: int, end: int, others: list[tuple[int, int]] | None = None) -> bool:
+    """Explicit negation of the phrase at ``norm[start:end]`` ("no solar", "traffic isn't an issue").
+
+    ``others`` are spans of other library phrases in the clause: a cue negates only the first phrase
+    after it ("no solar on the roof" negates solar, not roof work) unless they are listed with "or".
+    """
+    before = _PSEUDO_NEGATION.sub(lambda m: " " * len(m.group(0)), norm[:start])
     if _INSTRUCTION.search(before):
         return False
-    window: list[str] = []
-    for tok in reversed(before.split()):
-        if tok in SCOPE_BREAKERS or len(window) >= NEGATION_WINDOW:
+    pos = len(before)
+    count = 0
+    for m in reversed(list(re.finditer(r"\S+", before))):
+        tok = m.group(0)
+        if tok in SCOPE_BREAKERS or count >= NEGATION_WINDOW:
             break
-        window.append(tok)
-    if any(tok in NEGATION_CUES or tok.endswith("n't") for tok in window):
-        return True
+        count += 1
+        if tok in NEGATION_CUES or tok.endswith("n't"):
+            between = [(s, e) for s, e in (others or []) if m.end() <= s and e <= start]
+            return all(_LIST_JOINER.fullmatch(norm[e:start].strip()) for _, e in between)
+        pos = m.start()
     return bool(_POST_NEGATION.match(norm[end:end + 60].strip()))
+
+
+_LIST_JOINER = re.compile(r"(?:,|or|nor|and no|any|or any)?")
 
 
 # --- Tense (control status) ------------------------------------------------------------------

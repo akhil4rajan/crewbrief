@@ -26,7 +26,7 @@ export default function AppLayout() {
             hitSlop={12}
             style={{ paddingHorizontal: 12, paddingVertical: 8 }}
           >
-            <Text style={{ color: colors.primaryText, fontSize: font.body, fontWeight: "700" }}>{user?.name} · Sign out</Text>
+            <Text style={{ color: colors.primaryText, fontSize: font.body, fontWeight: "700" }}>Sign out</Text>
           </Pressable>
         ),
       }}

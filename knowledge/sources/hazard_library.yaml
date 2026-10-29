@@ -106,7 +106,7 @@ hazards:
     category: height
     severity: critical
     description: Falls from poles, ladders, roofs or EWP baskets while working above 2 m.
-    keywords: [working at heights, working at height, work at height, fall from height, falling from height, at height, up the pole, top of the pole, ladder, up the ladder, on the roof, up on the roof, up high]
+    keywords: [working at heights, working at height, work at height, fall from height, falling from height, at height, up the pole, top of the pole, ladder, up the ladder, up on the roof, working on the roof, up high]
     typical_controls: [CT-SUB-EWP, CT-ENG-ANCHOR, CT-ENG-LADDER-SECURE, CT-PPE-HARNESS, CT-ADM-RESCUE-PLAN]
     references: [DOC-POLE-006, DOC-EWP-002]
 

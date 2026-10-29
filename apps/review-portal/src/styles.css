@@ -1673,6 +1673,7 @@ select.status-unconfirmed {
 }
 .bar-chart {
   width: 100%;
+  max-width: 760px;
   height: auto;
   display: block;
 }
