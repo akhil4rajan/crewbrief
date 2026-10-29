@@ -144,6 +144,7 @@ const styles = StyleSheet.create({
   typeRow: { flexDirection: "row", gap: space.sm, alignItems: "stretch" },
   typeInput: {
     flex: 1,
+    minWidth: 0, // let the field shrink on narrow phones instead of pushing Send off-screen
     minHeight: touch.primary,
     borderWidth: 2,
     borderColor: colors.border,
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.bg,
   },
-  sendButton: { paddingHorizontal: space.lg },
+  sendButton: { paddingHorizontal: space.lg, flexShrink: 0 },
   prompt: { backgroundColor: colors.warningBg, borderColor: colors.warning, borderWidth: 3 },
   promptLabel: { fontSize: font.small, fontWeight: "900", color: colors.warning },
   promptText: { fontSize: font.large, fontWeight: "800", color: colors.text },

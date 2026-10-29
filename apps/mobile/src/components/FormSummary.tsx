@@ -12,8 +12,9 @@ function display(field: FieldValue | null | undefined): string | null {
   return typeof v === "string" ? v : JSON.stringify(v);
 }
 
-function FieldLine({ label, field, testID }: { label: string; field: FieldValue | null | undefined; testID?: string }) {
-  const value = display(field);
+function FieldLine({ label, field, testID, format }: { label: string; field: FieldValue | null | undefined; testID?: string; format?: (v: string) => string }) {
+  const raw = display(field);
+  const value = raw && format ? format(raw) : raw;
   const ai = field?.provenance?.source === "ai";
   return (
     <View style={styles.fieldLine} testID={testID}>
@@ -53,8 +54,8 @@ function HazardRow({ hazard }: { hazard: HazardEntry }) {
   );
 }
 
-/** Read-only summary of the draft form, as it fills in live. */
-export function FormSummary({ draft }: { draft: Draft }) {
+/** Read-only summary of the draft form, as it fills in live. `taskTypeName` maps codes to names. */
+export function FormSummary({ draft, taskTypeName }: { draft: Draft; taskTypeName?: (code: string) => string }) {
   const { form } = draft;
   const hazards = Object.values(form.hazards)
     .filter((h) => h.status !== "not_present")
@@ -73,7 +74,7 @@ export function FormSummary({ draft }: { draft: Draft }) {
 
       <Card title="Job">
         <FieldLine label="Title" field={form.job.title} />
-        <FieldLine label="Task type" field={form.job.task_type} />
+        <FieldLine label="Task type" field={form.job.task_type} format={taskTypeName} />
         <FieldLine label="Location" field={form.job.location} testID="field-location" />
         <FieldLine label="Description" field={form.job.description} />
         {tasks.length > 0 ? (

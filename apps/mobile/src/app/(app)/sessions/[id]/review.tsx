@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/auth/AuthContext";
 import { FormSummary } from "@/components/FormSummary";
 import { GapList } from "@/components/GapList";
 import { useLoad } from "@/hooks/useLoad";
+import { useLibrary } from "@/hooks/useLibrary";
 import { useUsers } from "@/hooks/useUsers";
 import { Banner, BigButton, Body, Card, Loading, Screen, Title } from "@/ui/primitives";
 import { colors, font, space } from "@/ui/theme";
@@ -20,6 +21,7 @@ export default function ReviewScreen() {
   const me = useCurrentUser();
   const { data: detail, error: loadError, reload, setData } = useLoad(() => api.session(id), [id]);
   const { nameOf } = useUsers();
+  const { taskTypeName } = useLibrary();
   const [acking, setAcking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +85,7 @@ export default function ReviewScreen() {
       </Card>
 
       <GapList gaps={gaps} title="Open gaps" />
-      <FormSummary draft={draft} />
+      <FormSummary draft={draft} taskTypeName={taskTypeName} />
     </Screen>
   );
 }

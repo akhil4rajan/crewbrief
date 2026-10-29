@@ -8,6 +8,7 @@ import { FormSummary } from "@/components/FormSummary";
 import { GapList } from "@/components/GapList";
 import { ConnectivityPill, PromptCard, RecordButton, SpeakerPicker, TypeInstead } from "@/components/LiveControls";
 import { TranscriptTail } from "@/components/TranscriptTail";
+import { useLibrary } from "@/hooks/useLibrary";
 import { useUsers } from "@/hooks/useUsers";
 import { useLiveBriefing } from "@/live/useLiveBriefing";
 import { sessionRoute } from "@/navigation";
@@ -18,6 +19,7 @@ export default function LiveBriefingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const me = useCurrentUser();
   const { nameOf } = useUsers("crew");
+  const { taskTypeName } = useLibrary();
   const [speaker, setSpeaker] = useState(me.id);
   const { state, togglePause, sendTyped, dismissPrompt, endBriefing } = useLiveBriefing(id, speaker);
   const { session, draft } = state;
@@ -86,7 +88,7 @@ export default function LiveBriefingScreen() {
 
       <TranscriptTail segments={state.transcript} interim={state.interim} nameOf={nameOf} />
       <GapList gaps={state.gaps} />
-      <FormSummary draft={draft} />
+      <FormSummary draft={draft} taskTypeName={taskTypeName} />
     </Screen>
   );
 }

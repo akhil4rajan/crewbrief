@@ -4,14 +4,14 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { api, errorMessage } from "@/api/client";
 import { useCurrentUser } from "@/auth/AuthContext";
-import { useLoad } from "@/hooks/useLoad";
+import { useLibrary } from "@/hooks/useLibrary";
 import { useUsers } from "@/hooks/useUsers";
 import { Banner, BigButton, Chip, Field, Loading, Row, Screen } from "@/ui/primitives";
 import { colors, font, space } from "@/ui/theme";
 
 export default function NewBriefingScreen() {
   const me = useCurrentUser();
-  const library = useLoad(() => api.library(), []);
+  const library = useLibrary();
   const crewDirectory = useUsers("crew");
 
   const [title, setTitle] = useState("");
@@ -21,7 +21,7 @@ export default function NewBriefingScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const taskTypes = library.data?.task_types ?? [];
+  const taskTypes = library.library?.task_types ?? [];
   const toggleCrew = (id: string) =>
     setCrew((prev) => {
       const next = new Set(prev);
@@ -67,7 +67,7 @@ export default function NewBriefingScreen() {
 
       <View style={styles.group}>
         <Text style={styles.heading}>What&apos;s the job?</Text>
-        {library.loading && !library.data ? <Loading label="Loading task types…" /> : null}
+        {library.loading && !library.library ? <Loading label="Loading task types…" /> : null}
         {library.error ? <Banner kind="warning" message={`Task types unavailable: ${library.error}`} /> : null}
         <Row>
           {taskTypes.map((t) => (
