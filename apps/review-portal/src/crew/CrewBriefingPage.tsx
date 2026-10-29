@@ -180,18 +180,29 @@ function PreBrief({ detail, nameOf }: { detail: SessionDetail; nameOf: (id: stri
         </div>
         <ul className="notice">
           <li>
-            <span className="rec-dot" aria-hidden="true" /> A <strong>recording active</strong> indicator shows whenever
-            CrewBrief is listening.
+            <span className="rec-dot" aria-hidden="true" />
+            <span>
+              A <strong>recording active</strong> indicator shows whenever CrewBrief is listening.
+            </span>
           </li>
           <li>
-            <span aria-hidden="true">❚❚</span> Anyone can ask to <strong>pause</strong> at any time.
+            <span aria-hidden="true">❚❚</span>
+            <span>
+              Anyone can ask to <strong>pause</strong> at any time.
+            </span>
           </li>
           <li>
-            <span aria-hidden="true">🔇</span> <strong>Raw audio is not stored.</strong> Only the text transcript is kept.
+            <span aria-hidden="true">🔇</span>
+            <span>
+              <strong>Raw audio is not stored.</strong> Only the text transcript is kept.
+            </span>
           </li>
           <li>
-            <span aria-hidden="true">🛡</span> Transcripts are <strong>redacted for personal information</strong> such as phone
-            numbers and names of the public.
+            <span aria-hidden="true">🛡</span>
+            <span>
+              Transcripts are <strong>redacted for personal information</strong> such as phone numbers and names of the
+              public.
+            </span>
           </li>
         </ul>
         {consented ? (
