@@ -10,7 +10,6 @@ AUTH_MODE="${VITE_AUTH_MODE:-dev}"
 ENTRA_CLIENT_ID="${VITE_ENTRA_CLIENT_ID:-}"
 ENTRA_AUTHORITY="${VITE_ENTRA_AUTHORITY:-https://login.microsoftonline.com/common}"
 ENTRA_SCOPES="${VITE_ENTRA_SCOPES:-}"
-SIMULATOR="${VITE_SIMULATOR:-auto}"
 # Extra connect-src origins, e.g. the Web PubSub endpoint used in azure mode.
 CONNECT_EXTRA="${CSP_CONNECT_EXTRA:-wss://*.webpubsub.azure.com}"
 
@@ -30,8 +29,7 @@ window.__CREWBRIEF_CONFIG__ = {
   "authMode": "$(esc "$AUTH_MODE")",
   "entraClientId": "$(esc "$ENTRA_CLIENT_ID")",
   "entraAuthority": "$(esc "$ENTRA_AUTHORITY")",
-  "entraScopes": [$scopes_json],
-  "simulator": "$(esc "$SIMULATOR")"
+  "entraScopes": [$scopes_json]
 };
 JS
 

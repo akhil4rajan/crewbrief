@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Run the CrewBrief stack locally with auto-reload.
 #
-#   ./scripts/dev.sh            # 4 Python services + review portal
-#   DEV_MOBILE=1 ./scripts/dev.sh   # also start the Expo web build of the crew app
+#   ./scripts/dev.sh            # 4 Python services + web app (crew + supervisor) on :3000
 #
 # Logs are prefixed with the service name. Ctrl-C (or any process exiting) stops
 # everything. Configuration comes from .env (+ .env.local), read by the services.
@@ -50,10 +49,6 @@ if [[ -f apps/review-portal/package.json ]]; then
   run review-portal npm --prefix apps/review-portal run dev -- --port 3000 --strictPort
 else
   echo "apps/review-portal not found; skipping the portal"
-fi
-
-if [[ "${DEV_MOBILE:-0}" == "1" && -f apps/mobile/package.json ]]; then
-  run mobile npm --prefix apps/mobile run web
 fi
 
 echo "CrewBrief dev stack: gateway :8000  form-api :8001  orchestrator :8002  roles :8003  portal :3000"

@@ -17,9 +17,9 @@ Web PubSub, and optionally blob storage. Each workload has its own managed ident
 1. **Entra app registrations** (not created by Bicep):
    - *CrewBrief API*: expose scope `access_as_user`, app roles `crew`, `supervisor`,
      `safety_admin`. Its client id is `ENTRA_API_CLIENT_ID`.
-   - *CrewBrief review portal*: SPA platform with the portal URL as redirect URI, permission
-     to the API scope. Its client id is `ENTRA_PORTAL_CLIENT_ID`.
-   - *Crew app*: public client (mobile) with the same API permission.
+   - *CrewBrief web app*: SPA platform with the portal URL as redirect URI, permission
+     to the API scope. Its client id is `ENTRA_PORTAL_CLIENT_ID`. Crew and supervisors use the
+     same app; the `roles` claim decides which view they land on.
 2. **Quota**: confirm regional Standard (or PTU) quota in Australia East for the models in
    `main.bicep` (`extractorModel`, `verifierModel`). Override the model and version parameters
    if a model is not offered regionally. Global deployment types are deliberately not allowed.
@@ -78,7 +78,7 @@ curl -fsS "$(azd env get-value AZURE_GATEWAY_URL)/healthz"
 curl -fsS "$(azd env get-value AZURE_FORM_API_URL)/readyz"
 ```
 
-Then open `AZURE_REVIEW_PORTAL_URL`, sign in, and run a text-mode briefing from the crew app.
+Then open `AZURE_REVIEW_PORTAL_URL`, sign in, and run a briefing as a crew user (crew view at `/crew`).
 Check Application Insights → Failures and Live metrics.
 
 ## Rollback

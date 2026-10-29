@@ -35,7 +35,7 @@ export const api = {
   users: (role?: UserRole) => request<User[]>(role ? `/api/users?role=${enc(role)}` : "/api/users"),
   library: () => request<HazardLibrary>("/api/library"),
 
-  sessions: () => request<Session[]>("/api/sessions"),
+  sessions: (opts: { mine?: boolean } = {}) => request<Session[]>(opts.mine ? "/api/sessions?mine=true" : "/api/sessions"),
   createSession: (body: CreateSessionRequest) => request<SessionDetail>("/api/sessions", { method: "POST", body }),
   session: (id: string) => request<SessionDetail>(s(id)),
   transcript: (id: string) => request<TranscriptSegment[]>(`${s(id)}/transcript`),
@@ -51,11 +51,12 @@ export const api = {
   submit: (id: string) => request<Session>(`${s(id)}/submit`, { method: "POST" }),
   abandon: (id: string, body: AbandonRequest) => request<Session>(`${s(id)}/abandon`, { method: "POST", body }),
 
-  // Crew-side calls, used by the briefing simulator with a crew member's token.
-  checkIn: (id: string, token: string | null) =>
-    request<SessionDetail>(`${s(id)}/check-in`, { method: "POST", body: {}, token }),
-  consent: (id: string, token: string | null) => request<Session>(`${s(id)}/consent`, { method: "POST", token }),
-  start: (id: string, token: string | null) => request<Session>(`${s(id)}/start`, { method: "POST", token }),
+  // Crew-side calls (crew view).
+  checkIn: (id: string, userId: string) =>
+    request<SessionDetail>(`${s(id)}/check-in`, { method: "POST", body: { user_id: userId } }),
+  consent: (id: string) => request<Session>(`${s(id)}/consent`, { method: "POST" }),
+  start: (id: string) => request<Session>(`${s(id)}/start`, { method: "POST" }),
+  acknowledge: (id: string) => request<SessionDetail>(`${s(id)}/acknowledge`, { method: "POST" }),
 
   audit: (id: string) => request<AuditEntry[]>(`${s(id)}/audit`),
   diff: (id: string) => request<DraftDiff>(`${s(id)}/diff`),

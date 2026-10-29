@@ -6,7 +6,6 @@
  */
 
 export type AuthMode = "dev" | "entra";
-export type SimulatorMode = "auto" | "on" | "off";
 
 export interface EntraConfig {
   clientId: string;
@@ -19,7 +18,6 @@ export interface AppConfig {
   gatewayUrl: string;
   authMode: AuthMode;
   entra: EntraConfig;
-  simulator: SimulatorMode;
 }
 
 interface RawConfig {
@@ -29,7 +27,6 @@ interface RawConfig {
   entraClientId?: string;
   entraAuthority?: string;
   entraScopes?: string[] | string;
-  simulator?: string;
 }
 
 declare global {
@@ -55,7 +52,6 @@ function load(): AppConfig {
   const rt = window.__CREWBRIEF_CONFIG__ ?? {};
   const env = import.meta.env;
   const authMode = pick(rt.authMode, env.VITE_AUTH_MODE) === "entra" ? "entra" : "dev";
-  const simulator = pick(rt.simulator, env.VITE_SIMULATOR) ?? "auto";
   const runtimeScopes = splitScopes(rt.entraScopes);
   return {
     apiBaseUrl: stripSlash(pick(rt.apiBaseUrl, env.VITE_API_BASE_URL) ?? "http://localhost:8001"),
@@ -67,7 +63,6 @@ function load(): AppConfig {
         pick(rt.entraAuthority, env.VITE_ENTRA_AUTHORITY) ?? "https://login.microsoftonline.com/common",
       scopes: runtimeScopes.length ? runtimeScopes : splitScopes(env.VITE_ENTRA_SCOPES),
     },
-    simulator: simulator === "on" || simulator === "off" ? simulator : "auto",
   };
 }
 

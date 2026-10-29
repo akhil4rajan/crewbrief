@@ -229,6 +229,5 @@ var/
 eval/reports/
 eval/datasets/gold_*/
 node_modules/
-.expo/
 apps/**/dist/
 *.tsbuildinfo

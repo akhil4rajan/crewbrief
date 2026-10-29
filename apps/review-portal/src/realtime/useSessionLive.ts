@@ -36,6 +36,7 @@ export interface LiveState {
 const BACKOFF_BASE_MS = 1000;
 const BACKOFF_MAX_MS = 30_000;
 const MAX_PROMPTS = 50;
+const LIVE_STATES = new Set<string>(["BRIEFING", "DRAFTING", "GAP_CHECK"]);
 
 function backoff(attempt: number): number {
   const exp = Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** attempt);
@@ -131,7 +132,11 @@ export function useSessionLive(sessionId: string): LiveState {
           const known = qc.getQueryData<SessionDetail>(qk.session(sessionId))?.session.state === p.to;
           updateDetail(qc, sessionId, (d) => ({ ...d, session: { ...d.session, state: p.to } }));
           // Skip the toast when this tab caused the change (its own action already confirmed it).
-          if (!known) toastRef.current.push("info", `Briefing is now ${STATE_LABEL[p.to] ?? p.to}`, p.reason ?? undefined);
+          // Also skip the DRAFTING ⇄ GAP_CHECK churn while the briefing is running.
+          const churn = LIVE_STATES.has(p.from) && LIVE_STATES.has(p.to);
+          if (!known && !churn) {
+            toastRef.current.push("info", `Briefing is now ${STATE_LABEL[p.to] ?? p.to}`, p.reason ?? undefined);
+          }
           // The transition may have changed other fields (sign-off, AI snapshot revision...).
           void qc.invalidateQueries({ queryKey: qk.session(sessionId) });
           void qc.invalidateQueries({ queryKey: qk.sessions });

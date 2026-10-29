@@ -10,8 +10,8 @@ are recorded as ADRs in [`docs/adr/`](adr/).
 ```mermaid
 flowchart LR
     subgraph Clients
-        APP[Crew app<br/>apps/mobile]
-        PORTAL[Review portal<br/>apps/review-portal]
+        APP[Crew view /crew<br/>apps/review-portal]
+        PORTAL[Supervisor view /sessions<br/>apps/review-portal]
     end
 
     subgraph Backend["Backend (one image, SERVICE selects the entrypoint)"]
@@ -149,8 +149,7 @@ Every integration sits behind a small Protocol with a local and an Azure impleme
 | form-api | 8001 | external (`/api`); `/internal` requires the internal token |
 | orchestrator | 8002 | internal only |
 | roles | 8003 | internal only |
-| review-portal | 3000 (container listens on 8080) | external |
-| mobile (Expo web) | 8081 | n/a |
+| review-portal (crew + supervisor web app) | 3000 (container listens on 8080) | external |
 
 ## Azure deployment
 

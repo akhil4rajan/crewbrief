@@ -39,7 +39,7 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Override the base URL (the gateway lives on a different origin from the form API). */
   baseUrl?: string;
-  /** Use this token instead of the signed-in user's (the simulator acts as a crew device). */
+  /** Use this token instead of the signed-in user's. */
   token?: string | null;
   anonymous?: boolean;
 }

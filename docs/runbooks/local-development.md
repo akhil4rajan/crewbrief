@@ -15,7 +15,8 @@ make dev          # gateway :8000, form-api :8001, orchestrator :8002, roles :80
 ```
 
 `make dev` runs `scripts/dev.sh`: logs are prefixed per service, and Ctrl-C (or any process
-exiting) stops everything. Add `DEV_MOBILE=1` to also start the Expo web build of the crew app.
+exiting) stops everything. The crew view and the supervisor view are both served by the web app
+on :3000 (start at the landing page).
 
 In another terminal:
 

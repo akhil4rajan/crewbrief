@@ -8,6 +8,7 @@ export const qk = {
   users: ["users"] as const,
   library: ["library"] as const,
   sessions: ["sessions"] as const,
+  mySessions: ["sessions", "mine"] as const,
   session: (id: string) => ["session", id] as const,
   transcript: (id: string) => ["transcript", id] as const,
   gaps: (id: string) => ["gaps", id] as const,

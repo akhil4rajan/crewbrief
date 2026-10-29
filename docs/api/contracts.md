@@ -12,8 +12,7 @@ Errors are RFC 7807 `application/problem+json` everywhere.
 | form-api | 8001 | REST API for both frontends |
 | orchestrator | 8002 | internal only |
 | roles | 8003 | internal only |
-| review-portal | 3000 | supervisor web app |
-| mobile (Expo web) | 8081 | crew app |
+| review-portal | 3000 | web app: crew briefing view (`/crew`) and supervisor review (`/sessions`) |
 
 ## Authentication
 
@@ -102,7 +101,7 @@ The orchestrator publishes `voice.prompt` events (payload `VoicePrompt`) directl
 | Kind | Path | Notes |
 |---|---|---|
 | GET | `/api/sessions/{id}/negotiate` (bearer) | → `{url}`: local `ws://…/ws/live/{id}?access_token=…`; Azure: Web PubSub client URL joined to group `session.{id}` |
-| WS | `/ws/live/{session_id}?access_token=` | server → client `EventEnvelope` JSON messages (read-only subscribers: portal, crew app) |
+| WS | `/ws/live/{session_id}?access_token=` | server → client `EventEnvelope` JSON messages (read-only subscribers: crew and supervisor views) |
 | WS | `/ws/device/{session_id}?access_token=` | crew device audio/text stream (protocol below) |
 | POST | `/internal/events` | `EventEnvelope` → fan out to `/ws/live` + `/ws/device` subscribers of that session |
 

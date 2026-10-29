@@ -1,10 +1,12 @@
-import type { ReactNode } from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useHealth } from "../api/queries";
 import { useAuth } from "../auth/AuthProvider";
+import { ErrorBoundary } from "./ErrorBoundary";
 
-export function Layout({ children }: { children: ReactNode }) {
+/** Supervisor / safety admin shell: top bar with navigation, then the routed page. */
+export function Layout() {
   const { user, logout, hasRole } = useAuth();
+  const location = useLocation();
   const health = useHealth();
   return (
     <div className="app">
@@ -12,12 +14,12 @@ export function Layout({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <header className="topbar">
-        <NavLink to="/sessions" className="brand">
+        <Link to="/" className="brand" title="CrewBrief home">
           <span className="brand-mark" aria-hidden="true">
             ✓
           </span>
           CrewBrief <span className="brand-sub">Review</span>
-        </NavLink>
+        </Link>
         <nav aria-label="Main">
           <NavLink to="/sessions">Briefings</NavLink>
           {hasRole("supervisor", "safety_admin") && <NavLink to="/metrics">Accuracy</NavLink>}
@@ -48,7 +50,9 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main id="main" tabIndex={-1}>
-        {children}
+        <ErrorBoundary resetKey={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );

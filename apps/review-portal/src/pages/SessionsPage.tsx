@@ -34,7 +34,7 @@ export function SessionsPage() {
   const users = useUserDirectory();
   const { taskTypeName } = useLibraryIndex();
 
-  const sessions = useQuery({ queryKey: qk.sessions, queryFn: api.sessions, refetchInterval: REFRESH_MS });
+  const sessions = useQuery({ queryKey: qk.sessions, queryFn: () => api.sessions(), refetchInterval: REFRESH_MS });
   const tab = TABS.find((t) => t.id === tabId) ?? TABS[0];
 
   const visible = useMemo(

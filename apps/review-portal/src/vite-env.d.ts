@@ -7,7 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_ENTRA_CLIENT_ID?: string;
   readonly VITE_ENTRA_AUTHORITY?: string;
   readonly VITE_ENTRA_SCOPES?: string;
-  readonly VITE_SIMULATOR?: string;
 }
 
 interface ImportMeta {

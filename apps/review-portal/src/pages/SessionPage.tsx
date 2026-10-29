@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
-import { qk, useHealth, useLibraryIndex, useUserDirectory } from "../api/queries";
+import { qk, useLibraryIndex, useUserDirectory } from "../api/queries";
 import type { Session } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { isCrew, useSwitchArea } from "../auth/roles";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { EmptyState, InlineError, Skeleton, StateBadge } from "../components/Feedback";
-import { config } from "../config";
 import { formatDateTime, formatTime } from "../format";
 import { useSessionLive, type LiveStatus } from "../realtime/useSessionLive";
 import { SessionActions } from "../session/Actions";
@@ -17,7 +17,6 @@ import { FormPane } from "../session/FormPane";
 import { GapsPane } from "../session/GapsPane";
 import { actionPermissions } from "../session/permissions";
 import { SessionProvider } from "../session/SessionContext";
-import { Simulator } from "../session/Simulator";
 import { TranscriptPane } from "../session/TranscriptPane";
 
 const POLL_WHEN_OFFLINE_MS = 10_000;
@@ -37,7 +36,6 @@ export function SessionPage() {
     queryFn: () => api.transcript(sessionId),
     refetchInterval: polling,
   });
-  const showSimulator = useSimulatorVisible();
 
   if (detail.isPending) {
     return (
@@ -115,11 +113,6 @@ export function SessionPage() {
                 <ErrorBoundary label="The transcript failed to render">
                   <TranscriptPane loading={transcript.isPending} prompts={live.prompts} />
                 </ErrorBoundary>
-                {showSimulator && (
-                  <ErrorBoundary label="The simulator failed">
-                    <Simulator />
-                  </ErrorBoundary>
-                )}
               </div>
               <div className="gaps-col">
                 <ErrorBoundary label="Gaps failed to render">
@@ -136,13 +129,6 @@ export function SessionPage() {
   );
 }
 
-function useSimulatorVisible(): boolean {
-  const health = useHealth();
-  if (config.simulator === "off") return false;
-  if (config.simulator === "on") return true;
-  return import.meta.env.DEV || health.data?.mode === "local";
-}
-
 const LIVE_LABEL: Record<LiveStatus, string> = {
   connecting: "Connecting…",
   open: "Live",
@@ -153,13 +139,27 @@ const LIVE_LABEL: Record<LiveStatus, string> = {
 function SessionHeader({ session, revision, liveStatus }: { session: Session; revision: number; liveStatus: LiveStatus }) {
   const { taskTypeName } = useLibraryIndex();
   const users = useUserDirectory();
+  const { mode, user } = useAuth();
+  const switchArea = useSwitchArea();
   const supervisor = session.supervisor_id ? (users.get(session.supervisor_id)?.name ?? session.supervisor_id) : "Unassigned";
 
   return (
     <header className="session-header">
-      <Link to="/sessions" className="back-link">
-        ← Briefings
-      </Link>
+      <div className="session-header-top">
+        <Link to="/sessions" className="back-link">
+          ← Briefings
+        </Link>
+        {(mode === "dev" || isCrew(user)) && (
+          <button
+            type="button"
+            className="btn btn-ghost btn-small"
+            title="Switch to a crew member on this job and open their view"
+            onClick={() => void switchArea("crew", `/crew/briefings/${session.id}`, session.crew_member_ids)}
+          >
+            Open crew view ↗
+          </button>
+        )}
+      </div>
       <div className="session-title-row">
         <h1>{session.title}</h1>
         <StateBadge state={session.state} />

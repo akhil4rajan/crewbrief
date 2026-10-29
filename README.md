@@ -87,7 +87,7 @@ CREATED → BRIEFING → DRAFTING ⇄ GAP_CHECK → REVIEW → SIGNED → SUBMIT
 
 | Component | Type | Responsibility |
 |---|---|---|
-| **Mobile app** | Client | Crew sign-in, audio capture, on-device noise suppression and VAD, live form view, offline buffering |
+| **Web app** | Client | One React app for both sides. Crew: tap-in, recording notice, audio capture with browser noise suppression and VAD, live form view, voice prompts. Supervisors: review, evidence, sign-off, accuracy metrics. |
 | **Realtime gateway** | Service | Authenticates devices and terminates WebSockets. Routes audio to the Speech service and form patches back to clients. |
 | **Transcription service** | Service | Azure AI Speech `ConversationTranscriber`, phrase lists and Custom Speech for utility terminology, filtering of low-confidence segments |
 | **Session orchestrator** | Deterministic code | Per-session state machine. Schedules roles, enforces rules, holds the session timeline. |
@@ -111,8 +111,7 @@ CREATED → BRIEFING → DRAFTING ⇄ GAP_CHECK → REVIEW → SIGNED → SUBMIT
 ```
 crewbrief/
 ├── apps/
-│   ├── mobile/                 # Crew app (React Native / Expo; also runs in the browser)
-│   └── review-portal/          # Supervisor review web app (React + Vite)
+│   └── review-portal/          # The web app (React + Vite): landing page, crew briefing view (/crew), supervisor review (/sessions)
 ├── services/
 │   ├── gateway/                # WebSockets for devices and live UI (FastAPI) + tools/replay.py
 │   ├── transcription/          # Azure AI Speech integration, confidence filters, PII redaction
@@ -170,7 +169,7 @@ of AI Search, SQLite instead of Cosmos DB, and in-process fan-out instead of Web
 `.env.local` (git-ignored), which overrides `.env`.
 
 ```bash
-make setup        # Python venv + deps, npm install for both apps
+make setup        # Python venv + deps, npm install for the web app
 make ingest       # build the local hazard search index
 make dev          # gateway :8000, form-api :8001, orchestrator :8002, roles :8003, portal :3000
 ```
@@ -181,9 +180,17 @@ or, with Docker:
 docker compose up --build
 ```
 
-Open the review portal at `http://localhost:3000`, sign in as **Alex Morgan (supervisor)**, create a
-session and use the **briefing simulator** on the session page to speak (browser speech recognition)
-or type lines as a crew member. The crew app runs in the browser with `cd apps/mobile && npm run web`.
+Open `http://localhost:3000`. The landing page has two ways in:
+
+* **I'm on the crew**: pick a crew member (e.g. Sam Taylor), start a briefing (or pick a demo
+  scenario), tap in, acknowledge the recording notice and start. Talk into the mic (browser speech
+  recognition in local mode), type lines, or press **Play demo script** to run the scripted
+  briefing. The form fills in live and CrewBrief speaks its questions. End the briefing to send it
+  for review.
+* **I'm a supervisor**: pick Alex Morgan to review, edit and sign off the draft.
+
+The crew view and the supervisor view are part of the same web app; **Supervisor view** and
+**Open crew view** links switch between them during a demo.
 
 `make check-env` shows which integrations are local, dummy or real (it never prints secret values).
 

@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     roles_in_process: bool = Field(default=False, alias="ROLES_IN_PROCESS")
     public_gateway_ws_url: str = Field(default="ws://localhost:8000", alias="PUBLIC_GATEWAY_WS_URL")
     cors_origins: Annotated[list[str], NoDecode] = Field(
-        default=["http://localhost:3000", "http://localhost:8081", "http://localhost:19006"],
+        default=["http://localhost:3000"],
         alias="CORS_ORIGINS",
     )
 

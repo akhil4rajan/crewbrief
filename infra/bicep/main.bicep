@@ -565,7 +565,6 @@ module reviewPortalApp 'modules/container-app.bicep' = {
       { name: 'VITE_ENTRA_CLIENT_ID', value: entraPortalClientId }
       { name: 'VITE_ENTRA_AUTHORITY', value: '${environment().authentication.loginEndpoint}${tenant().tenantId}' }
       { name: 'VITE_ENTRA_SCOPES', value: empty(entraApiClientId) ? '' : 'api://${entraApiClientId}/access_as_user' }
-      { name: 'VITE_SIMULATOR', value: 'off' }
       { name: 'CSP_CONNECT_EXTRA', value: 'wss://${webPubSub.outputs.name}.webpubsub.azure.com' }
     ]
     minReplicas: 1

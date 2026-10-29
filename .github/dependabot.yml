@@ -18,20 +18,6 @@ updates:
       portal-minor:
         update-types: [minor, patch]
 
-  - package-ecosystem: npm
-    directory: /apps/mobile
-    schedule: { interval: weekly, day: monday }
-    open-pull-requests-limit: 5
-    groups:
-      mobile-minor:
-        update-types: [minor, patch]
-    ignore:
-      # Expo SDK upgrades move many packages together; do them deliberately with `npx expo install --fix`.
-      - dependency-name: "expo*"
-        update-types: [version-update:semver-major]
-      - dependency-name: "react-native"
-        update-types: [version-update:semver-major, version-update:semver-minor]
-
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }
