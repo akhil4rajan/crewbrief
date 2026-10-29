@@ -11,6 +11,7 @@ interface Row {
   ai_filled: number;
   edited: number;
   edit_rate: number;
+  added_by_human?: number;
 }
 
 export function MetricsPage() {
@@ -83,6 +84,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function RateSection({ title, caption, keyLabel, rows, mono }: { title: string; caption: string; keyLabel: string; rows: Row[]; mono?: boolean }) {
   const [view, setView] = useState<"chart" | "table">("chart");
   const sorted = [...rows].sort((a, b) => b.edit_rate - a.edit_rate || b.ai_filled - a.ai_filled);
+  const showAdded = rows.some((r) => r.added_by_human !== undefined);
   return (
     <section className="card metric-card" aria-labelledby={`m-${title}`}>
       <header className="pane-head">
@@ -116,6 +118,11 @@ function RateSection({ title, caption, keyLabel, rows, mono }: { title: string; 
                 <th scope="col" className="num">
                   Edit rate
                 </th>
+                {showAdded && (
+                  <th scope="col" className="num" title="Values the AI missed that a person added">
+                    Added by people
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -125,6 +132,7 @@ function RateSection({ title, caption, keyLabel, rows, mono }: { title: string; 
                   <td className="num">{r.ai_filled}</td>
                   <td className="num">{r.edited}</td>
                   <td className="num">{formatPercent(r.edit_rate, 1)}</td>
+                  {showAdded && <td className="num">{r.added_by_human ?? 0}</td>}
                 </tr>
               ))}
             </tbody>

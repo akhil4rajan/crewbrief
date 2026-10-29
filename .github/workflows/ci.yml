@@ -112,7 +112,7 @@ jobs:
       - run: npm run typecheck --if-present
       - run: npm run lint --if-present
       - name: Export web build
-        run: npx expo export --platform web
+        run: npm run export:web
 
   bicep:
     name: Bicep

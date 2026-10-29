@@ -416,6 +416,8 @@ export interface FieldEditRate {
   ai_filled: number;
   edited: number;
   edit_rate: number;
+  /** Values the AI missed and a person added (a recall signal). */
+  added_by_human?: number;
 }
 
 export interface RoleEditRate {

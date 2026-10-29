@@ -54,7 +54,11 @@ export default function ReviewScreen() {
       });
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) void reload();
-      setError(errorMessage(err));
+      setError(
+        err instanceof ApiError && err.status === 403
+          ? "This server doesn't accept crew acknowledgements once the form is with the supervisor. Tell your supervisor you've read it."
+          : errorMessage(err),
+      );
     } finally {
       setAcking(false);
     }

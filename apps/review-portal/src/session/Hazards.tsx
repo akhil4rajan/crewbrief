@@ -35,6 +35,7 @@ const CONTROL_TYPE_RANK: Record<ControlType, number> = {
   ppe: 5,
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function sortHazards(hazards: HazardEntry[]): HazardEntry[] {
   return [...hazards].sort(
     (a, b) =>

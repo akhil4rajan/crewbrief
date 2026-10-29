@@ -94,7 +94,11 @@ export class DeviceSocket {
     if (mode === this.mode) return;
     this.mode = mode;
     if (mode === "text") this.outbox.dropAudio();
-    if (this.isOpen()) this.rawSend(this.startMessage());
+    if (this.isOpen()) {
+      // The gateway treats every `start` as active recording; restate a pause.
+      this.rawSend(this.startMessage());
+      if (this.paused) this.rawSend({ type: "pause" });
+    }
     this.emit();
   }
 

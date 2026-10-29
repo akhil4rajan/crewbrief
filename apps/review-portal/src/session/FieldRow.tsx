@@ -59,7 +59,7 @@ export function FieldRow({ label, path, field, multiline, options, display }: Pr
         <div className="field-value">
           <span className={shown ? "" : "placeholder"}>{shown ?? "Not captured"}</span>
           <span className="field-meta">
-            {field && text !== "" && <ProvenanceMeta provenance={field.provenance} compact />}
+            {field && (text !== "" || field.provenance.source === "human") && <ProvenanceMeta provenance={field.provenance} compact />}
             {edit.allowed && (
               <button
                 type="button"

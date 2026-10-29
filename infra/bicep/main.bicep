@@ -39,6 +39,9 @@ param zoneRedundant bool = false
 @description('Application (client) id of the CrewBrief API app registration in Entra ID; users present tokens for it.')
 param entraApiClientId string = ''
 
+@description('Application (client) id of the review portal SPA registration (MSAL sign-in).')
+param entraPortalClientId string = ''
+
 @secure()
 @description('Shared secret for /internal/* service calls. Stored in Key Vault, never in app settings.')
 param internalServiceToken string
@@ -280,10 +283,9 @@ module language 'modules/cognitive-account.bicep' = {
     privateEndpointSubnetId: network.outputs.privateEndpointSubnetId
     privateDnsZoneIds: [network.outputs.dnsZoneIds.cognitiveServices]
     workspaceId: monitoring.outputs.workspaceId
-    // PII redaction runs before transcript segments are persisted.
+    // PII redaction runs in the gateway, before segments leave it (services/transcription).
     roleAssignments: [
-      { principalId: ids.orchestrator.principalId, roleDefinitionId: roles.cognitiveServicesUser }
-      { principalId: ids['form-api'].principalId, roleDefinitionId: roles.cognitiveServicesUser }
+      { principalId: ids.gateway.principalId, roleDefinitionId: roles.cognitiveServicesUser }
     ]
   }
 }
@@ -551,15 +553,26 @@ module reviewPortalApp 'modules/container-app.bicep' = {
     azdServiceName: 'review-portal'
     identityId: ids['review-portal'].id
     image: reviewPortalImage
-    targetPort: 3000
+    // Unprivileged nginx; the entrypoint writes /config.js from VITE_* at start-up.
+    targetPort: 8080
     external: true
     cpu: '0.25'
     memory: '0.5Gi'
+    env: [
+      { name: 'VITE_API_BASE_URL', value: publicUrls.formApi }
+      { name: 'VITE_GATEWAY_URL', value: publicUrls.gateway }
+      { name: 'VITE_AUTH_MODE', value: 'entra' }
+      { name: 'VITE_ENTRA_CLIENT_ID', value: entraPortalClientId }
+      { name: 'VITE_ENTRA_AUTHORITY', value: '${environment().authentication.loginEndpoint}${tenant().tenantId}' }
+      { name: 'VITE_ENTRA_SCOPES', value: empty(entraApiClientId) ? '' : 'api://${entraApiClientId}/access_as_user' }
+      { name: 'VITE_SIMULATOR', value: 'off' }
+      { name: 'CSP_CONNECT_EXTRA', value: 'wss://${webPubSub.outputs.name}.webpubsub.azure.com' }
+    ]
     minReplicas: 1
     maxReplicas: 5
     concurrentRequests: 100
-    livenessPath: '/'
-    readinessPath: '/'
+    livenessPath: '/healthz'
+    readinessPath: '/healthz'
   }
 }
 

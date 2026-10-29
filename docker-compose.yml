@@ -4,6 +4,7 @@
 # Real keys go in .env.local (optional, never committed); it overrides .env.
 # Service-to-service URLs are rewritten to compose DNS names below. Browser-facing
 # URLs (PUBLIC_GATEWAY_WS_URL, VITE_*) keep pointing at localhost.
+# Review portal: http://localhost:3000
 
 name: crewbrief
 
@@ -102,14 +103,17 @@ services:
   review-portal:
     build:
       context: apps/review-portal
-      args:
-        # Baked into the static bundle; the browser calls these, so they stay on localhost.
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8001}
-        VITE_GATEWAY_URL: ${VITE_GATEWAY_URL:-http://localhost:8000}
     image: crewbrief-review-portal:local
+    # Runtime config: the container writes /config.js from these at start-up. The browser
+    # calls these URLs, so they stay on localhost.
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8001}
+      VITE_GATEWAY_URL: ${VITE_GATEWAY_URL:-http://localhost:8000}
+      VITE_AUTH_MODE: dev
     ports:
-      - "3000:3000"
+      - "3000:8080"
     restart: unless-stopped
+    cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
     deploy:

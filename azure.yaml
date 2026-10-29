@@ -60,8 +60,4 @@ services:
     docker:
       path: ./Dockerfile
       context: .
-      # Vite bakes these into the static bundle at build time (outputs of `azd provision`).
-      buildArgs:
-        - VITE_API_BASE_URL=${AZURE_FORM_API_URL}
-        - VITE_GATEWAY_URL=${AZURE_GATEWAY_URL}
-
+    # No build args: the image reads VITE_* at start-up (set on the container app in Bicep).

@@ -1,0 +1,20 @@
+# gitleaks configuration (CI secret scan + pre-commit hook).
+# Extends the default ruleset. The only allow-listed values are the deliberate dummies in
+# the committed env files: anything containing "dummy" or the all-zero GUID placeholder.
+
+title = "CrewBrief gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Committed dummy values for offline local mode"
+regexTarget = "match"
+regexes = [
+  '''(?i)dummy''',
+  '''00000000-0000-0000-0000-000000000000''',
+]
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)package-lock\.json$''',
+]

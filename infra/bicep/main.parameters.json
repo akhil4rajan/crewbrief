@@ -9,6 +9,7 @@
     "allowPublicNetworkAccess": { "value": "${ALLOW_PUBLIC_NETWORK_ACCESS=false}" },
     "zoneRedundant": { "value": "${ZONE_REDUNDANT=false}" },
     "entraApiClientId": { "value": "${ENTRA_API_CLIENT_ID=}" },
+    "entraPortalClientId": { "value": "${ENTRA_PORTAL_CLIENT_ID=}" },
     "internalServiceToken": { "value": "$(secretOrRandomPassword ${AZURE_KEY_VAULT_NAME} internal-service-token)" },
     "gatewayImage": { "value": "${SERVICE_GATEWAY_IMAGE_NAME=}" },
     "formApiImage": { "value": "${SERVICE_FORM_API_IMAGE_NAME=}" },

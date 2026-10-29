@@ -4,7 +4,7 @@ name: Deploy
 # Authentication is OIDC workload identity federation: no Azure secrets are stored in the
 # repository or in GitHub. Configure these GitHub *variables* per environment (Settings ->
 # Environments): AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_ENV_NAME,
-# and optionally ENTRA_API_CLIENT_ID, ALLOW_PUBLIC_NETWORK_ACCESS, MODEL_DEPLOYMENT_SKU.
+# and optionally ENTRA_API_CLIENT_ID, ENTRA_PORTAL_CLIENT_ID, ALLOW_PUBLIC_NETWORK_ACCESS, MODEL_DEPLOYMENT_SKU.
 # See docs/runbooks/deploy.md.
 
 on:
@@ -44,6 +44,7 @@ jobs:
       AZURE_LOCATION: australiaeast
       AZURE_PRINCIPAL_TYPE: ServicePrincipal
       ENTRA_API_CLIENT_ID: ${{ vars.ENTRA_API_CLIENT_ID }}
+      ENTRA_PORTAL_CLIENT_ID: ${{ vars.ENTRA_PORTAL_CLIENT_ID }}
       ALLOW_PUBLIC_NETWORK_ACCESS: ${{ vars.ALLOW_PUBLIC_NETWORK_ACCESS || 'false' }}
       MODEL_DEPLOYMENT_SKU: ${{ vars.MODEL_DEPLOYMENT_SKU || 'Standard' }}
     steps:

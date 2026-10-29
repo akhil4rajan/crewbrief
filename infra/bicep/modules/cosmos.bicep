@@ -1,4 +1,4 @@
-// Cosmos DB (NoSQL) for sessions, drafts, transcripts, gaps and audit. Entra ID only
+// Cosmos DB (NoSQL) for sessions, drafts, transcript segments, gaps and audit. Entra ID only
 // (local auth disabled), private endpoint, continuous backup, optional customer-managed key.
 // Every container is partitioned by /session_id: all reads/writes on the hot path are per session.
 
@@ -12,7 +12,8 @@ param databaseName string = 'crewbrief'
 param capacityMode string = 'serverless'
 @description('Autoscale max RU/s for the shared database throughput (provisioned mode only).')
 param autoscaleMaxThroughput int = 4000
-param containerNames array = ['sessions', 'drafts', 'transcripts', 'gaps', 'audit']
+@description('Must match services/form_api/store/cosmos.py CONTAINERS: with Entra-only auth the app cannot create containers.')
+param containerNames array = ['sessions', 'drafts', 'draft_revisions', 'segments', 'gaps', 'audit', 'tombstones']
 @description('Transcript segments expire after this many days (data minimisation). 0 = never.')
 param transcriptRetentionDays int = 90
 param zoneRedundant bool = false
@@ -29,7 +30,7 @@ param cmkKeyUri string = ''
 param cmkIdentityId string = ''
 
 var useCmk = !empty(cmkKeyUri)
-var transcriptsContainer = 'transcripts'
+var transcriptsContainer = 'segments'
 
 resource account 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
   name: name
