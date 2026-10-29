@@ -9,7 +9,7 @@ For each scenario (all tested end to end):
 3. **Tap in everyone** → **Acknowledge** the recording notice → **Start briefing**.
 4. Pick a speed (2× reads well on camera) → **Play demo script**. Watch the hazards, emergency plan and transcript fill in live; CrewBrief speaks its question in the prompt card.
 5. **End briefing** → crew review → **I've read the form**.
-6. **Supervisor view ↗** (or Sign out → **Alex Morgan**) → open the briefing → review evidence and gaps → **Sign off** (override blocking gaps with a justification) → **Submit**.
+6. **Supervisor view ↗** (or Sign out → **Alex Morgan**) → open the briefing → review evidence and gaps → resolve "typical for this job" gaps with **Not applicable** or **Confirm present** → **Sign off** → **Submit**.
 
 | Scenario | What it shows |
 |---|---|
