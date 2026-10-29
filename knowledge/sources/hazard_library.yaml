@@ -1,0 +1,34 @@
+# CrewBrief hazard & control library (STARTER — expanded by the knowledge workstream).
+# Codes are stable identifiers used in forms, patches, audit and eval. Never reuse a code.
+version: "2026.10-starter"
+hazards:
+  - code: HZ-ELEC-LV
+    name: Contact with live low-voltage conductors
+    category: electrical
+    severity: critical
+    keywords: [live lv, low voltage, lv mains, live mains, energised, "415", 240 volt]
+    typical_controls: [CT-ISO-LOTO, CT-ENG-TEST-DEAD, CT-ENG-EARTH, CT-PPE-ARC]
+controls:
+  - code: CT-ISO-LOTO
+    name: Isolate, lock out and tag out
+    type: isolation
+    keywords: [isolate, isolation, lock out, tag out, loto]
+  - code: CT-ENG-TEST-DEAD
+    name: Test before touch (prove de-energised)
+    type: engineering
+    keywords: [test before touch, prove dead, test dead]
+  - code: CT-ENG-EARTH
+    name: Apply portable earths
+    type: engineering
+    keywords: [earth, earthing, earths, short circuit]
+  - code: CT-PPE-ARC
+    name: Arc-rated clothing and face shield
+    type: ppe
+    keywords: [arc flash, arc rated, face shield]
+task_types:
+  - code: TT-LV-CONNECT
+    name: LV service connection
+    keywords: [service connection, connect service, new connection]
+    typical_hazards: [HZ-ELEC-LV]
+site_conditions: []
+documents: []

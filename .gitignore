@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -150,7 +150,7 @@ activemq-data/
 *.sage.py
 
 # Environments
-.env
+# .env is committed with dummy values (see bottom of file)
 .envrc
 .venv
 env/
@@ -218,3 +218,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- CrewBrief ---
+# `.env` holds dummy local values and IS committed. Real secrets go in
+# `.env.local` (or `.env.*.local`), which is never committed.
+!.env
+.env.local
+.env.*.local
+var/
+eval/reports/
+eval/datasets/gold_*/
+node_modules/
+.expo/
+apps/**/dist/
+*.tsbuildinfo
