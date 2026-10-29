@@ -14,6 +14,7 @@ import argparse
 import inspect
 import json
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -37,7 +38,7 @@ def export(out_dir: Path = DEFAULT_OUT) -> list[Path]:
     models = public_models()
     written: list[Path] = []
     for name, model in models.items():
-        mode = "validation" if name.endswith("Request") else "serialization"
+        mode: Literal["validation", "serialization"] = "validation" if name.endswith("Request") else "serialization"
         schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": f"{SCHEMA_BASE_URI}{name}.json",
                   **model.model_json_schema(mode=mode)}
         path = out_dir / f"{name}.json"

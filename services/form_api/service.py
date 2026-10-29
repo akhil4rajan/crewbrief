@@ -324,10 +324,10 @@ class FormService:
             session = await self.get_session(session_id)
             self._ensure_participant(user, session)
             if session.consent_acknowledged_at is None:
-                session = session.model_copy(update={"consent_acknowledged_at": utcnow(), "updated_at": utcnow()})
+                now = utcnow()
+                session = session.model_copy(update={"consent_acknowledged_at": now, "updated_at": now})
                 await self.repo.put_session(session)
-                await self._audit(session_id, Actor.of(user), AuditAction.CONSENT_ACKNOWLEDGED,
-                                  after=session.consent_acknowledged_at.isoformat())
+                await self._audit(session_id, Actor.of(user), AuditAction.CONSENT_ACKNOWLEDGED, after=now.isoformat())
                 self._emit_session(session)
         return session
 

@@ -98,11 +98,11 @@ class SqliteRepository:
                 await self.db.rollback()
                 raise
 
-    async def _fetchall(self, sql: str, params: Collection[Any] = ()) -> list[tuple[Any, ...]]:
+    async def _fetchall(self, sql: str, params: Collection[Any] = ()) -> list[Any]:
         async with self.db.execute(sql, tuple(params)) as cur:
             return list(await cur.fetchall())
 
-    async def _fetchone(self, sql: str, params: Collection[Any] = ()) -> tuple[Any, ...] | None:
+    async def _fetchone(self, sql: str, params: Collection[Any] = ()) -> Any:
         async with self.db.execute(sql, tuple(params)) as cur:
             return await cur.fetchone()
 
