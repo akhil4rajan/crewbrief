@@ -1,0 +1,157 @@
+{
+  "briefing_id": "b02_pole_replacement_crane",
+  "job": {
+    "title": [
+      "Pole replacement",
+      "Replace rotten pole with a new concrete pole",
+      "Pole replacement on Ferntree Gully Road"
+    ],
+    "location": [
+      "Ferntree Gully Road, Scoresby, pole SCB 2214",
+      "Ferntree Gully Road, Scoresby"
+    ],
+    "work_order_id": [
+      "5530917",
+      "WO-5530917"
+    ],
+    "task_type": "TT-POLE-REPLACE"
+  },
+  "emergency": {
+    "muster_point": [
+      "Bus stop on the north side of Ferntree Gully Road"
+    ],
+    "nearest_hospital": [
+      "Angliss Hospital, Upper Ferntree Gully",
+      "Angliss Hospital",
+      "the Angliss"
+    ],
+    "first_aider": [
+      "Mei Chen",
+      "u-crew-4",
+      "Mei"
+    ],
+    "communications": [
+      "UHF channel eighteen between the crew and the crane",
+      "UHF channel 18"
+    ]
+  },
+  "hazards_present": [
+    {
+      "code": "HZ-ELEC-HV",
+      "evidence_lines": [
+        "L02",
+        "L03"
+      ],
+      "required_controls": [
+        "CT-ISO-HV-SWITCHING",
+        "CT-ENG-EARTH",
+        "CT-ADM-ACCESS-PERMIT"
+      ],
+      "note": "11 kV isolated and earthed under access permit"
+    },
+    {
+      "code": "HZ-ELEC-LV",
+      "evidence_lines": [
+        "L02",
+        "L03",
+        "L06"
+      ],
+      "required_controls": [
+        "CT-ENG-INSUL-COVERS"
+      ],
+      "note": "LV underbuilt stays live"
+    },
+    {
+      "code": "HZ-PLANT-NEAR-LINES",
+      "evidence_lines": [
+        "L05",
+        "L06"
+      ],
+      "required_controls": [
+        "CT-ADM-SPOTTER",
+        "CT-ENG-INSUL-COVERS"
+      ]
+    },
+    {
+      "code": "HZ-LIFTING",
+      "evidence_lines": [
+        "L04",
+        "L10"
+      ],
+      "required_controls": [
+        "CT-ENG-TAGLINES",
+        "CT-ADM-EXCLUSION"
+      ]
+    },
+    {
+      "code": "HZ-HEIGHT-POLE",
+      "evidence_lines": [
+        "L11"
+      ],
+      "required_controls": [
+        "CT-ENG-POLE-SUPPORT"
+      ]
+    },
+    {
+      "code": "HZ-HEIGHT-EWP",
+      "evidence_lines": [
+        "L12"
+      ],
+      "required_controls": [
+        "CT-ENG-OUTRIGGER-PADS"
+      ]
+    },
+    {
+      "code": "HZ-HEIGHT-FALL",
+      "evidence_lines": [
+        "L12"
+      ],
+      "required_controls": [
+        "CT-PPE-HARNESS",
+        "CT-ENG-ANCHOR"
+      ]
+    },
+    {
+      "code": "HZ-TRAFFIC",
+      "evidence_lines": [
+        "L07",
+        "L08"
+      ],
+      "required_controls": [
+        "CT-ADM-TMP",
+        "CT-ENG-TRAFFIC-DEVICES"
+      ],
+      "note": "Busy 60 km/h road, only 'keep an eye on it'"
+    },
+    {
+      "code": "HZ-ELEC-UG",
+      "evidence_lines": [
+        "L13"
+      ],
+      "required_controls": [
+        "CT-ADM-DBYD",
+        "CT-ENG-POTHOLE"
+      ]
+    },
+    {
+      "code": "HZ-STORM",
+      "evidence_lines": [
+        "L16",
+        "L17"
+      ],
+      "required_controls": [
+        "CT-ELIM-STOP-WORK",
+        "CT-ADM-WEATHER-MONITOR"
+      ]
+    }
+  ],
+  "hazards_not_present": [],
+  "hazards_acceptable": [
+    "HZ-ELEC-OH",
+    "HZ-FALLING-OBJ",
+    "HZ-EXCAVATION",
+    "HZ-MANUAL",
+    "HZ-MOBILE-PLANT"
+  ],
+  "notes": "Synthetic. Seeded: busy road with no traffic control."
+}

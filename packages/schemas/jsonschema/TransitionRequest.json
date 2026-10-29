@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/TransitionRequest.json",
+  "$defs": {
+    "SessionState": {
+      "enum": [
+        "CREATED",
+        "BRIEFING",
+        "DRAFTING",
+        "GAP_CHECK",
+        "REVIEW",
+        "SIGNED",
+        "SUBMITTED",
+        "ABANDONED"
+      ],
+      "title": "SessionState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "to": {
+      "$ref": "#/$defs/SessionState"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "to"
+  ],
+  "title": "TransitionRequest",
+  "type": "object"
+}

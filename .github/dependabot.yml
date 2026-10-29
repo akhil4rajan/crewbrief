@@ -1,0 +1,44 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      python-minor:
+        update-types: [minor, patch]
+      azure-sdk:
+        patterns: ["azure-*", "openai"]
+
+  - package-ecosystem: npm
+    directory: /apps/review-portal
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      portal-minor:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /apps/mobile
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 5
+    groups:
+      mobile-minor:
+        update-types: [minor, patch]
+    ignore:
+      # Expo SDK upgrades move many packages together; do them deliberately with `npx expo install --fix`.
+      - dependency-name: "expo*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "react-native"
+        update-types: [version-update:semver-major, version-update:semver-minor]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories: [/, /apps/review-portal]
+    schedule: { interval: weekly, day: monday }

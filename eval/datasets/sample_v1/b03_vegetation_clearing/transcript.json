@@ -1,0 +1,172 @@
+{
+  "briefing_id": "b03_vegetation_clearing",
+  "title": "Vegetation clearing near live LV, Lockyer Valley QLD",
+  "crew": [
+    {
+      "user_id": "u-crew-4",
+      "name": "Mei Chen",
+      "role": "leading_hand"
+    },
+    {
+      "user_id": "u-crew-3",
+      "name": "Jack O'Brien",
+      "role": "crew"
+    },
+    {
+      "user_id": "u-crew-2",
+      "name": "Priya Nair",
+      "role": "crew"
+    }
+  ],
+  "lines": [
+    {
+      "id": "L01",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-4",
+      "text": "Okay team, vegetation clearing on the Grantham LV line along Old Toowoomba Road, spans fourteen to nineteen. Work order VEG 0418.",
+      "start_ms": 1500,
+      "end_ms": 9060
+    },
+    {
+      "id": "L02",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-3",
+      "text": "Mostly gum trees growing into the LV and a couple of camphor laurels. Some of the branches are touching the conductors.",
+      "start_ms": 9647,
+      "end_ms": 17207
+    },
+    {
+      "id": "L03",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-4",
+      "text": "The LV stays live, we're not getting an outage, so it's minimum approach distance for anyone who isn't authorised, and we use the insulated pole saw for anything within reach of the conductors.",
+      "start_ms": 17931,
+      "end_ms": 29811
+    },
+    {
+      "id": "L04",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-2",
+      "text": "There's no HV on this section, it's LV only till span twenty two.",
+      "start_ms": 30672,
+      "end_ms": 35352
+    },
+    {
+      "id": "L05",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-3",
+      "text": "I'll be on the chainsaw on the ground. Chaps, helmet with the visor and earmuffs, and nobody within two tree lengths when I'm felling.",
+      "start_ms": 36350,
+      "end_ms": 44990
+    },
+    {
+      "id": "L06",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-4",
+      "text": "Priya, you're in the EWP for the high stuff. Pre-start's done.",
+      "start_ms": 46125,
+      "end_ms": 50085,
+      "asr_hypothesis": "Priya, you're in the E W P for the high stuff. Pre-start's done."
+    },
+    {
+      "id": "L07",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-2",
+      "text": "Yep, harness on and clipped to the bucket.",
+      "start_ms": 50657,
+      "end_ms": 53537
+    },
+    {
+      "id": "L08",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-3",
+      "text": "It's going to hit thirty six today and it's a high fire danger rating. Knapsack and extinguisher on the truck, and no chainsaw work after one o'clock.",
+      "start_ms": 54246,
+      "end_ms": 63966
+    },
+    {
+      "id": "L09",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-4",
+      "text": "Drink heaps of water and take a break in the shade every hour, heat stress is no joke out here.",
+      "start_ms": 64812,
+      "end_ms": 72012
+    },
+    {
+      "id": "L10",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-2",
+      "text": "Did you see the size of that brown snake on the track last week? Nearly gave me a heart attack.",
+      "start_ms": 72995,
+      "end_ms": 80195
+    },
+    {
+      "id": "L11",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-4",
+      "text": "Good point actually, snakes are about. Wear the gaiters and watch where you step in the long grass.",
+      "start_ms": 81315,
+      "end_ms": 87795
+    },
+    {
+      "id": "L12",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-3",
+      "text": "Traffic's light out here, but we'll put the roadwork signs up at both ends and use the stop slow bats if we're dropping anything near the road.",
+      "start_ms": 88352,
+      "end_ms": 98072
+    },
+    {
+      "id": "L13",
+      "speaker": "Guest-4",
+      "user_id": null,
+      "text": "Delta three, Delta three, what's your ETA to the substation?",
+      "start_ms": 98766,
+      "end_ms": 102366,
+      "noise": true,
+      "confidence": 0.44
+    },
+    {
+      "id": "L14",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-3",
+      "text": "Mate, remind me to grab a sausage roll on the way home, the missus asked.",
+      "start_ms": 103197,
+      "end_ms": 108597,
+      "noise": true
+    },
+    {
+      "id": "L15",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-4",
+      "text": "Drop zone under the cut gets taped off. Manual handling dragging branches to the chipper, and keep your hands clear of the infeed.",
+      "start_ms": 109565,
+      "end_ms": 117845,
+      "hyp_speaker": "Guest-3"
+    },
+    {
+      "id": "L16",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-2",
+      "text": "And the chipper's got the bottom feed bar, we test it before we start.",
+      "start_ms": 118950,
+      "end_ms": 123990
+    },
+    {
+      "id": "L17",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-4",
+      "text": "Comms is UHF channel twelve. First aider is Jack. Hospital is Gatton, about twenty minutes away.",
+      "start_ms": 124532,
+      "end_ms": 130292
+    },
+    {
+      "id": "L18",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-3",
+      "text": "Righto, let's get to it.",
+      "start_ms": 130971,
+      "end_ms": 132771
+    }
+  ]
+}

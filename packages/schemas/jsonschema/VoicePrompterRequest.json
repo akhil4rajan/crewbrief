@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/VoicePrompterRequest.json",
+  "$defs": {
+    "Gap": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/GapKind"
+        },
+        "severity": {
+          "$ref": "#/$defs/GapSeverity"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question"
+        },
+        "status": {
+          "$ref": "#/$defs/GapStatus",
+          "default": "open"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved At"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution"
+        },
+        "asked_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asked At"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "severity",
+        "path",
+        "message"
+      ],
+      "title": "Gap",
+      "type": "object"
+    },
+    "GapKind": {
+      "enum": [
+        "unsupported_field",
+        "high_risk_without_control",
+        "hazard_without_control",
+        "contradiction",
+        "missing_required_field",
+        "unconfirmed_hazard",
+        "low_confidence"
+      ],
+      "title": "GapKind",
+      "type": "string"
+    },
+    "GapSeverity": {
+      "enum": [
+        "blocking",
+        "warning",
+        "info"
+      ],
+      "title": "GapSeverity",
+      "type": "string"
+    },
+    "GapStatus": {
+      "enum": [
+        "open",
+        "resolved",
+        "dismissed"
+      ],
+      "title": "GapStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "gaps": {
+      "items": {
+        "$ref": "#/$defs/Gap"
+      },
+      "title": "Gaps",
+      "type": "array"
+    },
+    "already_asked_gap_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Already Asked Gap Ids",
+      "type": "array"
+    },
+    "max_prompts": {
+      "default": 1,
+      "title": "Max Prompts",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "session_id",
+    "gaps"
+  ],
+  "title": "VoicePrompterRequest",
+  "type": "object"
+}

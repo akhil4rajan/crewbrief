@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/ControlDef.json",
+  "$defs": {
+    "ControlType": {
+      "description": "Hierarchy of controls, most to least effective.",
+      "enum": [
+        "elimination",
+        "substitution",
+        "isolation",
+        "engineering",
+        "administrative",
+        "ppe"
+      ],
+      "title": "ControlType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "title": "Code",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/ControlType"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "keywords": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Keywords",
+      "type": "array"
+    }
+  },
+  "required": [
+    "code",
+    "name",
+    "type"
+  ],
+  "title": "ControlDef",
+  "type": "object"
+}

@@ -32,6 +32,8 @@ class AuditAction(StrEnum):
     GAP_OVERRIDE = "session.gap_override"
     SUBMITTED = "session.submitted"
     ABANDONED = "session.abandoned"
+    CONSENT_ACKNOWLEDGED = "session.consent_acknowledged"
+    SESSION_DELETED = "session.deleted"  # retention deletion; the audit log itself is kept
 
 
 class AuditEntry(Model):

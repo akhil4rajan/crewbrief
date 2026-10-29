@@ -1,0 +1,136 @@
+{
+  "briefing_id": "b06_padmount_school_zone",
+  "job": {
+    "title": [
+      "Padmount substation maintenance",
+      "Routine maintenance on padmount substation PM 4471"
+    ],
+    "location": [
+      "Padmount substation PM 4471, Gardenia Avenue, outside Glenwood Public School",
+      "Gardenia Avenue, Glenwood"
+    ],
+    "work_order_id": [
+      "7781204",
+      "WO-7781204"
+    ],
+    "task_type": "TT-PADMOUNT"
+  },
+  "emergency": {
+    "muster_point": [
+      "Bus bay at the front gate of the school"
+    ],
+    "nearest_hospital": [
+      "Blacktown Hospital",
+      "Blacktown"
+    ],
+    "first_aider": [
+      "Priya Nair",
+      "u-crew-2",
+      "Priya"
+    ],
+    "communications": [
+      "Mobile, and the switching operator on radio channel seven",
+      "Mobile and radio channel 7"
+    ]
+  },
+  "hazards_present": [
+    {
+      "code": "HZ-ELEC-HV",
+      "evidence_lines": [
+        "L04"
+      ],
+      "required_controls": [
+        "CT-ISO-HV-SWITCHING",
+        "CT-ENG-TEST-DEAD",
+        "CT-ENG-EARTH"
+      ]
+    },
+    {
+      "code": "HZ-ELEC-LV",
+      "evidence_lines": [
+        "L05"
+      ],
+      "required_controls": [],
+      "note": "LV board stays live; compartment kept shut and locked"
+    },
+    {
+      "code": "HZ-ELEC-ARC",
+      "evidence_lines": [
+        "L06"
+      ],
+      "required_controls": [
+        "CT-PPE-ARC",
+        "CT-ADM-EXCLUSION"
+      ],
+      "note": "Switching arc flash managed by distance and PPE only"
+    },
+    {
+      "code": "HZ-PUBLIC",
+      "evidence_lines": [
+        "L02",
+        "L03"
+      ],
+      "required_controls": [
+        "CT-ISO-BARRIERS",
+        "CT-ADM-SPOTTER"
+      ]
+    },
+    {
+      "code": "HZ-HAZMAT",
+      "evidence_lines": [
+        "L09"
+      ],
+      "required_controls": [
+        "CT-ENG-SPILL-KIT"
+      ]
+    },
+    {
+      "code": "HZ-MANUAL",
+      "evidence_lines": [
+        "L10"
+      ],
+      "required_controls": [
+        "CT-ADM-TEAM-LIFT"
+      ]
+    },
+    {
+      "code": "HZ-BITES",
+      "evidence_lines": [
+        "L11"
+      ],
+      "required_controls": [
+        "CT-ADM-INSPECT-FIRST",
+        "CT-PPE-GLOVES"
+      ]
+    },
+    {
+      "code": "HZ-HEAT",
+      "evidence_lines": [
+        "L15"
+      ],
+      "required_controls": [
+        "CT-ADM-HYDRATION",
+        "CT-ENG-SHADE"
+      ]
+    }
+  ],
+  "hazards_not_present": [
+    {
+      "code": "HZ-ELEC-UG",
+      "evidence_lines": [
+        "L13"
+      ]
+    },
+    {
+      "code": "HZ-EXCAVATION",
+      "evidence_lines": [
+        "L13"
+      ]
+    }
+  ],
+  "hazards_acceptable": [
+    "HZ-TRAFFIC",
+    "HZ-ELEC-STORED"
+  ],
+  "notes": "Synthetic. Seeded: arc flash during switching with PPE and distance only."
+}

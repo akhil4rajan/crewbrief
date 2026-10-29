@@ -1,0 +1,158 @@
+{
+  "briefing_id": "b03_vegetation_clearing",
+  "job": {
+    "title": [
+      "Vegetation clearing",
+      "Vegetation clearing on the Grantham LV line"
+    ],
+    "location": [
+      "Grantham LV line along Old Toowoomba Road, spans fourteen to nineteen",
+      "Old Toowoomba Road, spans 14 to 19"
+    ],
+    "work_order_id": [
+      "VEG 0418",
+      "VEG-0418"
+    ],
+    "task_type": "TT-VEG-CLEAR"
+  },
+  "emergency": {
+    "nearest_hospital": [
+      "Gatton Hospital",
+      "Gatton"
+    ],
+    "first_aider": [
+      "Jack O'Brien",
+      "u-crew-3",
+      "Jack"
+    ],
+    "communications": [
+      "UHF channel twelve",
+      "UHF channel 12"
+    ]
+  },
+  "hazards_present": [
+    {
+      "code": "HZ-VEG",
+      "evidence_lines": [
+        "L02",
+        "L03",
+        "L05"
+      ],
+      "required_controls": [
+        "CT-ENG-INSUL-TOOLS",
+        "CT-ADM-MAD",
+        "CT-PPE-CHAINSAW"
+      ]
+    },
+    {
+      "code": "HZ-ELEC-LV",
+      "evidence_lines": [
+        "L02",
+        "L03"
+      ],
+      "required_controls": [
+        "CT-ADM-MAD",
+        "CT-ENG-INSUL-TOOLS"
+      ]
+    },
+    {
+      "code": "HZ-HEIGHT-EWP",
+      "evidence_lines": [
+        "L06",
+        "L07"
+      ],
+      "required_controls": [
+        "CT-ADM-EWP-PRESTART"
+      ]
+    },
+    {
+      "code": "HZ-HEIGHT-FALL",
+      "evidence_lines": [
+        "L06",
+        "L07"
+      ],
+      "required_controls": [
+        "CT-PPE-HARNESS"
+      ]
+    },
+    {
+      "code": "HZ-HEAT",
+      "evidence_lines": [
+        "L08",
+        "L09"
+      ],
+      "required_controls": [
+        "CT-ADM-HYDRATION",
+        "CT-ENG-SHADE"
+      ]
+    },
+    {
+      "code": "HZ-BUSHFIRE",
+      "evidence_lines": [
+        "L08"
+      ],
+      "required_controls": [
+        "CT-ENG-FIRE-EXT"
+      ]
+    },
+    {
+      "code": "HZ-BITES",
+      "evidence_lines": [
+        "L10",
+        "L11"
+      ],
+      "required_controls": []
+    },
+    {
+      "code": "HZ-TRAFFIC",
+      "evidence_lines": [
+        "L12"
+      ],
+      "required_controls": [
+        "CT-ENG-TRAFFIC-DEVICES",
+        "CT-ADM-TRAFFIC-CONTROLLERS"
+      ]
+    },
+    {
+      "code": "HZ-FALLING-OBJ",
+      "evidence_lines": [
+        "L05",
+        "L15"
+      ],
+      "required_controls": [
+        "CT-ADM-EXCLUSION"
+      ]
+    },
+    {
+      "code": "HZ-MANUAL",
+      "evidence_lines": [
+        "L15"
+      ],
+      "required_controls": []
+    },
+    {
+      "code": "HZ-NOISE",
+      "evidence_lines": [
+        "L05"
+      ],
+      "required_controls": [
+        "CT-PPE-HEARING"
+      ]
+    }
+  ],
+  "hazards_not_present": [
+    {
+      "code": "HZ-ELEC-HV",
+      "evidence_lines": [
+        "L04"
+      ]
+    }
+  ],
+  "hazards_acceptable": [
+    "HZ-ELEC-OH",
+    "HZ-MOBILE-PLANT",
+    "HZ-PUBLIC",
+    "HZ-SLIP"
+  ],
+  "notes": "Synthetic. Seeded: no muster point."
+}

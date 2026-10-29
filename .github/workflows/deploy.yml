@@ -1,0 +1,97 @@
+name: Deploy
+
+# Provisions infrastructure and deploys all services with azd.
+# Authentication is OIDC workload identity federation: no Azure secrets are stored in the
+# repository or in GitHub. Configure these GitHub *variables* per environment (Settings ->
+# Environments): AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_ENV_NAME,
+# and optionally ENTRA_API_CLIENT_ID, ALLOW_PUBLIC_NETWORK_ACCESS, MODEL_DEPLOYMENT_SKU.
+# See docs/runbooks/deploy.md.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: GitHub environment to deploy to
+        type: choice
+        options: [dev, prod]
+        default: dev
+      run_ingest:
+        description: Reload the hazard library into AI Search after deploying
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: azd provision + deploy (${{ github.event.inputs.environment || 'dev' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+      AZURE_LOCATION: australiaeast
+      AZURE_PRINCIPAL_TYPE: ServicePrincipal
+      ENTRA_API_CLIENT_ID: ${{ vars.ENTRA_API_CLIENT_ID }}
+      ALLOW_PUBLIC_NETWORK_ACCESS: ${{ vars.ALLOW_PUBLIC_NETWORK_ACCESS || 'false' }}
+      MODEL_DEPLOYMENT_SKU: ${{ vars.MODEL_DEPLOYMENT_SKU || 'Standard' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Azure/setup-azd@v2
+
+      - name: Log in with OIDC (azd)
+        run: |
+          azd auth login \
+            --client-id "$AZURE_CLIENT_ID" \
+            --tenant-id "$AZURE_TENANT_ID" \
+            --federated-credential-provider github
+
+      - name: Log in with OIDC (az CLI)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Select azd environment
+        run: |
+          azd env select "$AZURE_ENV_NAME" 2>/dev/null || azd env new "$AZURE_ENV_NAME" --no-prompt
+          azd env set AZURE_SUBSCRIPTION_ID "$AZURE_SUBSCRIPTION_ID"
+          azd env set AZURE_LOCATION "$AZURE_LOCATION"
+
+      - name: Provision infrastructure
+        run: azd provision --no-prompt
+
+      - name: Build and deploy services
+        run: azd deploy --all --no-prompt
+
+      - name: Reload hazard library
+        if: ${{ github.event.inputs.run_ingest == 'true' }}
+        run: |
+          rg=$(azd env get-value AZURE_RESOURCE_GROUP)
+          job=$(azd env get-value AZURE_INGEST_JOB_NAME)
+          image=$(azd env get-value SERVICE_GATEWAY_IMAGE_NAME)
+          az containerapp job update -g "$rg" -n "$job" --image "$image" \
+            --command python -m knowledge.ingest --target azure
+          az containerapp job start -g "$rg" -n "$job"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Deployed \`$AZURE_ENV_NAME\`"
+            echo "- Review portal: $(azd env get-value AZURE_REVIEW_PORTAL_URL)"
+            echo "- Gateway: $(azd env get-value AZURE_GATEWAY_URL)"
+            echo "- Form API: $(azd env get-value AZURE_FORM_API_URL)"
+          } >> "$GITHUB_STEP_SUMMARY"

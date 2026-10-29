@@ -1,0 +1,133 @@
+{
+  "briefing_id": "b04_underground_cable_fault",
+  "job": {
+    "title": [
+      "Underground cable fault repair",
+      "Underground LV cable fault"
+    ],
+    "location": [
+      "Logan Road at the Cavendish Road corner, Coorparoo",
+      "Corner of Logan Road and Cavendish Road, Coorparoo"
+    ],
+    "work_order_id": [
+      "6620148",
+      "WO-6620148"
+    ],
+    "task_type": "TT-UG-FAULT"
+  },
+  "emergency": {
+    "muster_point": [
+      "Bus shelter on Cavendish Road"
+    ],
+    "nearest_hospital": [
+      "Princess Alexandra Hospital",
+      "the PA",
+      "PA Hospital"
+    ],
+    "first_aider": [
+      "Priya Nair",
+      "u-crew-2",
+      "Priya"
+    ],
+    "communications": [
+      "Mobile and the two way on channel four",
+      "Mobile and two-way radio channel 4"
+    ]
+  },
+  "hazards_present": [
+    {
+      "code": "HZ-ELEC-LV",
+      "evidence_lines": [
+        "L03",
+        "L04"
+      ],
+      "required_controls": [
+        "CT-ISO-LOTO",
+        "CT-ENG-TEST-DEAD",
+        "CT-ENG-EARTH"
+      ]
+    },
+    {
+      "code": "HZ-ELEC-UG",
+      "evidence_lines": [
+        "L05",
+        "L06"
+      ],
+      "required_controls": [
+        "CT-ADM-DBYD",
+        "CT-ENG-POTHOLE",
+        "CT-ENG-CABLE-LOCATE"
+      ]
+    },
+    {
+      "code": "HZ-EXCAVATION",
+      "evidence_lines": [
+        "L07",
+        "L08"
+      ],
+      "required_controls": [
+        "CT-ENG-SHORING"
+      ],
+      "note": "1.8 m in sandy soil, no shoring"
+    },
+    {
+      "code": "HZ-PUBLIC",
+      "evidence_lines": [
+        "L09"
+      ],
+      "required_controls": [
+        "CT-ISO-BARRIERS"
+      ]
+    },
+    {
+      "code": "HZ-MOBILE-PLANT",
+      "evidence_lines": [
+        "L12"
+      ],
+      "required_controls": [
+        "CT-ADM-SPOTTER",
+        "CT-ADM-EXCLUSION"
+      ]
+    },
+    {
+      "code": "HZ-MANUAL",
+      "evidence_lines": [
+        "L14"
+      ],
+      "required_controls": [
+        "CT-ENG-MECH-AIDS"
+      ]
+    },
+    {
+      "code": "HZ-HAZMAT",
+      "evidence_lines": [
+        "L15"
+      ],
+      "required_controls": [
+        "CT-ADM-SDS",
+        "CT-PPE-GLOVES"
+      ]
+    }
+  ],
+  "hazards_not_present": [
+    {
+      "code": "HZ-ELEC-OH",
+      "evidence_lines": [
+        "L13"
+      ]
+    },
+    {
+      "code": "HZ-PLANT-NEAR-LINES",
+      "evidence_lines": [
+        "L13"
+      ]
+    }
+  ],
+  "hazards_acceptable": [
+    "HZ-TRAFFIC",
+    "HZ-ELEC-STORED",
+    "HZ-SLIP",
+    "HZ-NOISE"
+  ],
+  "notes": "Synthetic. Seeded: 1.8 m trench in sand with no shoring or benching."
+}

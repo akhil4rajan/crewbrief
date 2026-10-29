@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/TaskTypeDef.json",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "title": "Code",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "keywords": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Keywords",
+      "type": "array"
+    },
+    "typical_hazards": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Typical Hazards",
+      "type": "array"
+    }
+  },
+  "required": [
+    "code",
+    "name"
+  ],
+  "title": "TaskTypeDef",
+  "type": "object"
+}

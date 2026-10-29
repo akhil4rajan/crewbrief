@@ -38,7 +38,8 @@ def hazard_metrics(briefing: Briefing, run: BriefingRun, library: HazardLibrary
 
     form_hazards = run.form.hazards
     predicted = {code: h for code, h in form_hazards.items() if h.status == HazardStatus.PRESENT}
-    surfaced = {code for code, h in form_hazards.items() if h.status in (HazardStatus.PRESENT, HazardStatus.UNCONFIRMED)}
+    surfaced = {code for code, h in form_hazards.items()
+                if h.status in (HazardStatus.PRESENT, HazardStatus.UNCONFIRMED)}
 
     found = [c for c in gold_present if c in predicted]
     missed = [c for c in gold_present if c not in predicted]

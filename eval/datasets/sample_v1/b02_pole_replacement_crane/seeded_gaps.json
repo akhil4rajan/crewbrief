@@ -1,0 +1,14 @@
+[
+  {
+    "id": "SG1",
+    "description": "Busy 60 km/h road acknowledged but no traffic management or devices",
+    "kinds": [
+      "high_risk_without_control"
+    ],
+    "path": "/hazards/HZ-TRAFFIC",
+    "lines": [
+      "L07",
+      "L08"
+    ]
+  }
+]

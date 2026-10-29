@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  python:
+    name: Python (lint, compile, ingest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install
+        run: |
+          uv venv .venv --python ${{ env.PYTHON_VERSION }}
+          uv pip install --python .venv/bin/python -e '.[dev]'
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Committed env files hold dummy values only
+        run: python scripts/check_committed_env.py .env .env.example
+      - name: Ruff
+        run: ruff check --output-format=github .
+      - name: Byte-compile
+        run: python -m compileall -q packages services knowledge eval scripts
+      - name: Configuration report
+        run: python scripts/check_env.py
+      - name: Knowledge ingest (local target)
+        run: python -m knowledge.ingest --target local
+
+  eval:
+    name: Eval gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install
+        run: |
+          uv venv .venv --python ${{ env.PYTHON_VERSION }}
+          uv pip install --python .venv/bin/python -e '.[dev]'
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Run eval (fails below the agreed thresholds)
+        run: python eval/run_eval.py --dataset eval/datasets/sample_v1 --report eval/reports/ --fail-under
+      - name: Publish summary
+        if: always()
+        run: |
+          report=$(find eval/reports -name '*.md' -type f 2>/dev/null | sort | tail -n 1)
+          if [ -n "$report" ]; then cat "$report" >> "$GITHUB_STEP_SUMMARY"; else echo "No eval report produced." >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval/reports/
+          if-no-files-found: warn
+          retention-days: 30
+
+  review-portal:
+    name: Review portal
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/review-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/review-portal/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck --if-present
+      - run: npm run lint --if-present
+      - run: npm run build
+
+  mobile:
+    name: Mobile app
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck --if-present
+      - run: npm run lint --if-present
+      - name: Export web build
+        run: npx expo export --platform web
+
+  bicep:
+    name: Bicep
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and lint
+        run: |
+          az bicep install
+          az bicep build --file infra/bicep/main.bicep --stdout > /dev/null
+          az bicep lint --file infra/bicep/main.bicep
+      - name: Parameters file is valid JSON
+        run: python3 -m json.tool infra/bicep/main.parameters.json > /dev/null
+
+  docker:
+    name: Container images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: crewbrief-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: Smoke test (each service boots and answers /healthz)
+        run: |
+          set -eu
+          for pair in gateway:8000 form_api:8001 orchestrator:8002 roles:8003; do
+            svc=${pair%%:*}; port=${pair##*:}
+            docker run -d --name "$svc" -e SERVICE="$svc" -p "$port:$port" crewbrief-backend:ci
+          done
+          for pair in gateway:8000 form_api:8001 orchestrator:8002 roles:8003; do
+            svc=${pair%%:*}; port=${pair##*:}
+            for i in $(seq 1 30); do
+              if curl -fsS "http://127.0.0.1:$port/healthz" > /dev/null; then echo "$svc healthy"; break; fi
+              if [ "$i" = 30 ]; then docker logs "$svc"; exit 1; fi
+              sleep 1
+            done
+          done
+      - name: Build review portal image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/review-portal
+          push: false
+          tags: crewbrief-review-portal:ci
+          cache-from: type=gha,scope=portal
+          cache-to: type=gha,mode=max,scope=portal
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

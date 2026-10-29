@@ -1,0 +1,476 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/ConversationAnalystRequest.json",
+  "$defs": {
+    "CrewEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "user_id": {
+          "title": "User Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "default": "crew",
+          "title": "Role",
+          "type": "string"
+        },
+        "checked_in_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked In At"
+        },
+        "acknowledged": {
+          "default": false,
+          "title": "Acknowledged",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "user_id",
+        "name"
+      ],
+      "title": "CrewEntry",
+      "type": "object"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "description": "A pointer to the transcript span that supports a field.",
+      "properties": {
+        "segment_id": {
+          "title": "Segment Id",
+          "type": "string"
+        },
+        "speaker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speaker Id"
+        },
+        "start_ms": {
+          "default": 0,
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "end_ms": {
+          "default": 0,
+          "title": "End Ms",
+          "type": "integer"
+        },
+        "quote": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "segment_id"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "Gap": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/GapKind"
+        },
+        "severity": {
+          "$ref": "#/$defs/GapSeverity"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Question"
+        },
+        "status": {
+          "$ref": "#/$defs/GapStatus",
+          "default": "open"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved At"
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution"
+        },
+        "asked_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asked At"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "severity",
+        "path",
+        "message"
+      ],
+      "title": "Gap",
+      "type": "object"
+    },
+    "GapKind": {
+      "enum": [
+        "unsupported_field",
+        "high_risk_without_control",
+        "hazard_without_control",
+        "contradiction",
+        "missing_required_field",
+        "unconfirmed_hazard",
+        "low_confidence"
+      ],
+      "title": "GapKind",
+      "type": "string"
+    },
+    "GapSeverity": {
+      "enum": [
+        "blocking",
+        "warning",
+        "info"
+      ],
+      "title": "GapSeverity",
+      "type": "string"
+    },
+    "GapStatus": {
+      "enum": [
+        "open",
+        "resolved",
+        "dismissed"
+      ],
+      "title": "GapStatus",
+      "type": "string"
+    },
+    "Observation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ObservationKind"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "code_hint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Code Hint"
+        },
+        "negated": {
+          "default": false,
+          "title": "Negated",
+          "type": "boolean"
+        },
+        "speaker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speaker Id"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "attributes": {
+          "additionalProperties": true,
+          "title": "Attributes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "title": "Observation",
+      "type": "object"
+    },
+    "ObservationKind": {
+      "enum": [
+        "job_detail",
+        "task",
+        "site_condition",
+        "hazard",
+        "control",
+        "ppe",
+        "emergency",
+        "permit",
+        "answer"
+      ],
+      "title": "ObservationKind",
+      "type": "string"
+    },
+    "SegmentSource": {
+      "enum": [
+        "azure_stt",
+        "device_text",
+        "replay",
+        "voice_prompt"
+      ],
+      "title": "SegmentSource",
+      "type": "string"
+    },
+    "TranscriptSegment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "session_id": {
+          "title": "Session Id",
+          "type": "string"
+        },
+        "seq": {
+          "default": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "speaker_id": {
+          "title": "Speaker Id",
+          "type": "string"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        },
+        "speaker_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speaker Name"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "start_ms": {
+          "default": 0,
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "end_ms": {
+          "default": 0,
+          "title": "End Ms",
+          "type": "integer"
+        },
+        "confidence": {
+          "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "is_final": {
+          "default": true,
+          "title": "Is Final",
+          "type": "boolean"
+        },
+        "language": {
+          "default": "en-AU",
+          "title": "Language",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/SegmentSource",
+          "default": "azure_stt"
+        },
+        "filtered": {
+          "default": false,
+          "title": "Filtered",
+          "type": "boolean"
+        },
+        "filter_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filter Reason"
+        },
+        "redacted": {
+          "default": false,
+          "title": "Redacted",
+          "type": "boolean"
+        },
+        "received_at": {
+          "format": "date-time",
+          "title": "Received At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "session_id",
+        "speaker_id",
+        "text"
+      ],
+      "title": "TranscriptSegment",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "window": {
+      "items": {
+        "$ref": "#/$defs/TranscriptSegment"
+      },
+      "title": "Window",
+      "type": "array"
+    },
+    "crew": {
+      "items": {
+        "$ref": "#/$defs/CrewEntry"
+      },
+      "title": "Crew",
+      "type": "array"
+    },
+    "open_gaps": {
+      "items": {
+        "$ref": "#/$defs/Gap"
+      },
+      "title": "Open Gaps",
+      "type": "array"
+    },
+    "recent_observations": {
+      "items": {
+        "$ref": "#/$defs/Observation"
+      },
+      "title": "Recent Observations",
+      "type": "array"
+    },
+    "task_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Task Type"
+    }
+  },
+  "required": [
+    "session_id",
+    "window"
+  ],
+  "title": "ConversationAnalystRequest",
+  "type": "object"
+}

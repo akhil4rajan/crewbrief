@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/User.json",
+  "$defs": {
+    "UserRole": {
+      "enum": [
+        "crew",
+        "supervisor",
+        "safety_admin",
+        "service"
+      ],
+      "title": "UserRole",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "email": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Email"
+    },
+    "roles": {
+      "items": {
+        "$ref": "#/$defs/UserRole"
+      },
+      "title": "Roles",
+      "type": "array"
+    },
+    "crew_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Crew Id"
+    },
+    "employee_no": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Employee No"
+    }
+  },
+  "required": [
+    "id",
+    "name"
+  ],
+  "title": "User",
+  "type": "object"
+}

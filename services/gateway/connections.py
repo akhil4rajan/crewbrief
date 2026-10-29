@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 CLOSE_TRY_AGAIN_LATER = 1013
 CLOSE_GOING_AWAY = 1001
+FLUSH_TIMEOUT_S = 2.0
 
 
 class ConnectionKind(StrEnum):
@@ -61,6 +62,7 @@ class ClientConnection:
             while True:
                 message = await self._queue.get()
                 await self.ws.send_text(message)
+                self._queue.task_done()
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001 - socket already gone; the receive loop cleans up
@@ -80,11 +82,11 @@ class ClientConnection:
             with contextlib.suppress(Exception):
                 await self.ws.close(code=code, reason=reason)
 
-    async def flush(self, timeout: float = 2.0) -> None:
+    async def flush(self) -> None:
         """Best effort: give queued frames a moment to go out before a deliberate close."""
-        deadline = asyncio.get_running_loop().time() + timeout
-        while not self._queue.empty() and not self.closed and asyncio.get_running_loop().time() < deadline:
-            await asyncio.sleep(0.02)
+        with contextlib.suppress(TimeoutError):
+            async with asyncio.timeout(FLUSH_TIMEOUT_S):
+                await self._queue.join()
 
 
 class ConnectionManager:

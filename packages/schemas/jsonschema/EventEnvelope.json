@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/EventEnvelope.json",
+  "$defs": {
+    "EventType": {
+      "enum": [
+        "session.state_changed",
+        "session.updated",
+        "recording.changed",
+        "transcript.segment",
+        "form.patched",
+        "form.snapshot",
+        "gaps.updated",
+        "voice.prompt",
+        "presence.updated",
+        "error"
+      ],
+      "title": "EventType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/EventType"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "ts": {
+      "format": "date-time",
+      "title": "Ts",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    }
+  },
+  "required": [
+    "type",
+    "session_id"
+  ],
+  "title": "EventEnvelope",
+  "type": "object"
+}

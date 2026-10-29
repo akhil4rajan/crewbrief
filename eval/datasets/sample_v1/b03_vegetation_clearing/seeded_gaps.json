@@ -1,0 +1,11 @@
+[
+  {
+    "id": "SG1",
+    "description": "No muster point stated",
+    "kinds": [
+      "missing_required_field"
+    ],
+    "path": "/emergency/muster_point",
+    "lines": []
+  }
+]

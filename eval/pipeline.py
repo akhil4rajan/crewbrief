@@ -1,14 +1,14 @@
-"""Offline, in-process replay of a briefing through the specialist roles.
+"""Offline, in-process replay of a briefing through the same extraction step the orchestrator runs.
 
-Mirrors what the orchestrator does live, without any services running:
+Mirrors the live session runner without any services:
 
 1. transcript lines become ``TranscriptSegment``s (the ASR hypothesis when the dataset simulates
    recognition errors; low-confidence segments are filtered like the transcription service does);
-2. segments are grouped into extraction ticks every ``EXTRACTION_INTERVAL_SECONDS`` of audio, each
-   window carrying a little overlap with the previous one;
-3. per tick: conversation analyst -> hazard expert -> form filler, and the patches are applied with
-   ``packages.rules.apply_patches`` exactly as the form API would;
-4. the verifier runs every ``VERIFIER_EVERY_N_EXTRACTIONS`` ticks and once more at the end.
+2. segments are released in extraction ticks every ``EXTRACTION_INTERVAL_SECONDS`` of audio time,
+   each window prefixed with the runner's overlap segments;
+3. each tick calls ``services.orchestrator.pipeline.run_extraction`` (analyst -> hazard expert ->
+   form filler -> ``packages.rules.apply_patches``), so eval scores the production code path;
+4. the verifier runs after every ``VERIFIER_EVERY_N_EXTRACTIONS`` extractions and once more at the end.
 
 Roles are injected as a ``RoleName -> async handler`` mapping (``services.roles.registry.ROLE_HANDLERS``
 by default), so the same replay scores local heuristics or Azure-backed roles.
@@ -18,37 +18,37 @@ from __future__ import annotations
 
 import logging
 import time
+from collections import deque
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from packages.rules import apply_patches
 from packages.schemas import (
-    ConversationAnalystRequest,
     CrewEntry,
     Form,
-    FormFillerRequest,
     Gap,
     GapStatus,
     HazardAssessment,
-    HazardExpertRequest,
     HazardLibrary,
+    Model,
     Observation,
     RoleMeta,
     RoleName,
     SegmentSource,
     TranscriptSegment,
     VerifierRequest,
+    VerifierResponse,
     utcnow,
 )
+from services.orchestrator.clients import RESPONSE_MODELS
+from services.orchestrator.pipeline import RoleInvocationError, invoke_role, run_extraction
+from services.orchestrator.runner import OVERLAP_SEGMENTS, RECENT_OBSERVATIONS
 
 from .dataset import Briefing
 
 logger = logging.getLogger(__name__)
 
 RoleHandler = Callable[[Any], Awaitable[Any]]
-
-RECENT_OBSERVATIONS = 30  # context handed back to the analyst, like the orchestrator's rolling memory
 
 
 @dataclass
@@ -87,6 +87,37 @@ def segment_id(briefing_id: str, line_id: str) -> str:
     return f"seg_{briefing_id}_{line_id}"
 
 
+class RecordingRolesClient:
+    """In-process ``RolesClient`` that also records per-role calls, latency, errors and the hazard
+    expert's assessments (which the form only partly reflects) for the current briefing."""
+
+    def __init__(self, handlers: Mapping[RoleName, RoleHandler]) -> None:
+        self._handlers = handlers
+        self.run: BriefingRun | None = None
+
+    async def invoke(self, role: RoleName, request: Model) -> Model:
+        assert self.run is not None
+        stats = self.run.role_stats.setdefault(role.value, RoleStats())
+        stats.calls += 1
+        started = time.perf_counter()
+        try:
+            raw = await self._handlers[role](request)
+            response = raw if isinstance(raw, RESPONSE_MODELS[role]) else RESPONSE_MODELS[role].model_validate(raw)
+        except Exception:
+            stats.errors += 1
+            raise
+        finally:
+            stats.latency_ms += (time.perf_counter() - started) * 1000
+        stats.meta = response.meta  # type: ignore[attr-defined]
+        if role == RoleName.HAZARD_EXPERT:
+            for assessment in response.assessments:  # type: ignore[attr-defined]
+                self.run.assessments[assessment.hazard_code] = assessment
+        return response
+
+    async def aclose(self) -> None:
+        return None
+
+
 def build_segments(briefing: Briefing, session_id: str, min_confidence: float) -> list[TranscriptSegment]:
     names = {c.user_id: c.name for c in briefing.transcript.crew}
     segments = []
@@ -101,106 +132,74 @@ def build_segments(briefing: Briefing, session_id: str, min_confidence: float) -
     return segments
 
 
-def extraction_windows(segments: list[TranscriptSegment], interval_ms: int, overlap: int
-                       ) -> list[list[TranscriptSegment]]:
-    """Group usable segments into ticks of ``interval_ms`` audio time, prefixing ``overlap`` segments
-    from the previous tick so an utterance split across a boundary keeps its context."""
-    usable = [s for s in segments if not s.filtered]
-    windows: list[list[TranscriptSegment]] = []
-    bucket: list[TranscriptSegment] = []
-    boundary = interval_ms
-    previous: list[TranscriptSegment] = []
-    for seg in usable:
-        while seg.end_ms > boundary:
-            if bucket:
-                windows.append(previous[-overlap:] + bucket if overlap else bucket)
-                previous, bucket = bucket, []
-            boundary += interval_ms
-        bucket.append(seg)
-    if bucket:
-        windows.append(previous[-overlap:] + bucket if overlap else bucket)
-    return windows
+def extraction_batches(segments: list[TranscriptSegment], interval_ms: int) -> list[list[TranscriptSegment]]:
+    """New extractable segments available at each tick, i.e. finished within each interval of audio time."""
+    batches: dict[int, list[TranscriptSegment]] = {}
+    for seg in segments:
+        if not seg.filtered:
+            batches.setdefault(seg.end_ms // interval_ms, []).append(seg)
+    return [batches[k] for k in sorted(batches)]
 
 
 class OfflinePipeline:
     def __init__(self, handlers: Mapping[RoleName, RoleHandler], library: HazardLibrary, *,
-                 interval_ms: int, verifier_every: int, min_confidence: float, overlap: int = 1) -> None:
-        self._handlers = handlers
+                 interval_ms: int, verifier_every: int, min_confidence: float) -> None:
+        self._roles = RecordingRolesClient(handlers)
         self._library = library
         self._interval_ms = interval_ms
         self._verifier_every = max(1, verifier_every)
         self._min_confidence = min_confidence
-        self._overlap = overlap
 
     async def run(self, briefing: Briefing) -> BriefingRun:
         started = time.perf_counter()
         session_id = f"eval_{briefing.id}"
-        segments = build_segments(briefing, session_id, self._min_confidence)
         crew = [CrewEntry(user_id=c.user_id, name=c.name, role=c.role, checked_in_at=utcnow())
                 for c in briefing.transcript.crew]
-        run = BriefingRun(briefing_id=briefing.id, session_id=session_id, segments=segments,
+        run = BriefingRun(briefing_id=briefing.id, session_id=session_id,
+                          segments=build_segments(briefing, session_id, self._min_confidence),
                           form=Form(crew={c.user_id: c for c in crew}))
+        self._roles.run = run
 
-        windows = extraction_windows(segments, self._interval_ms, self._overlap)
-        for tick, window in enumerate(windows, start=1):
-            await self._extract(run, window, crew)
+        overlap: list[TranscriptSegment] = []
+        recent: deque[Observation] = deque(maxlen=RECENT_OBSERVATIONS)
+        since_verify = 0
+        batches = extraction_batches(run.segments, self._interval_ms)
+        for tick, batch in enumerate(batches, start=1):
             run.ticks = tick
-            if tick % self._verifier_every == 0 and tick != len(windows):
+            await self._extract(run, overlap + batch, crew, recent)
+            overlap = (overlap + batch)[-OVERLAP_SEGMENTS:]
+            since_verify += 1
+            if since_verify >= self._verifier_every and tick != len(batches):
                 await self._verify(run)
+                since_verify = 0
         await self._verify(run)  # end of briefing: final verifier pass before REVIEW
         run.wall_ms = (time.perf_counter() - started) * 1000
         return run
 
-    async def _call(self, run: BriefingRun, role: RoleName, request: Any) -> Any | None:
-        stats = run.role_stats.setdefault(role.value, RoleStats())
-        stats.calls += 1
-        started = time.perf_counter()
-        try:
-            response = await self._handlers[role](request)
-        except Exception as exc:  # one failing role must not abort the whole evaluation
-            stats.errors += 1
-            run.errors.append(f"{role.value} tick {run.ticks + 1}: {type(exc).__name__}: {exc}")
-            logger.warning("role failed during eval", extra={"role": role.value, "briefing": run.briefing_id},
-                           exc_info=True)
-            return None
-        finally:
-            stats.latency_ms += (time.perf_counter() - started) * 1000
-        stats.meta = getattr(response, "meta", None) or stats.meta
-        return response
-
-    async def _extract(self, run: BriefingRun, window: list[TranscriptSegment], crew: list[CrewEntry]) -> None:
+    async def _extract(self, run: BriefingRun, window: list[TranscriptSegment], crew: list[CrewEntry],
+                       recent: deque[Observation]) -> None:
         open_gaps = [g for g in run.gaps if g.status == GapStatus.OPEN]
-        analysis = await self._call(run, RoleName.CONVERSATION_ANALYST, ConversationAnalystRequest(
-            session_id=run.session_id, window=window, crew=crew, open_gaps=open_gaps,
-            recent_observations=run.observations[-RECENT_OBSERVATIONS:], task_type=run.task_type))
-        if analysis is None:
+        try:
+            result = await run_extraction(self._roles, run.session_id, run.form, window, crew, open_gaps,
+                                          list(recent), run.task_type, library=self._library)
+        except RoleInvocationError as exc:  # the runner retries then skips the batch; eval records and moves on
+            run.errors.append(f"tick {run.ticks}: {exc}")
+            logger.warning("role failed during eval", extra={"briefing": run.briefing_id, "error": str(exc)})
             return
-        run.dropped_segment_ids.update(analysis.dropped_segment_ids)
-        run.observations.extend(analysis.observations)
-        run.task_type = run.task_type or analysis.task_type_hint
-        if not analysis.observations:
-            return
-
-        expert = await self._call(run, RoleName.HAZARD_EXPERT, HazardExpertRequest(
-            session_id=run.session_id, observations=analysis.observations, task_type=run.task_type,
-            existing_hazard_codes=list(run.form.hazards)))
-        if expert is None:
-            return
-        run.task_type = expert.task_type or run.task_type
-        for assessment in expert.assessments:
-            run.assessments[assessment.hazard_code] = assessment
-
-        filler = await self._call(run, RoleName.FORM_FILLER, FormFillerRequest(
-            session_id=run.session_id, draft=run.form, observations=analysis.observations,
-            assessments=expert.assessments))
-        if filler is None:
-            return
-        run.form, applied, rejected = apply_patches(run.form, filler.patches, self._library)
-        run.applied_patches += len(applied)
-        run.rejected_patches.extend({"path": p.path, "rule": v.rule, "reason": v.message} for p, v in rejected)
+        run.form = result.form or run.form
+        run.task_type = result.task_type or run.task_type
+        run.observations.extend(result.observations)
+        recent.extend(result.observations)
+        run.dropped_segment_ids.update(result.dropped_segment_ids)
+        run.applied_patches += len(result.patches)
+        run.rejected_patches.extend({"path": p.path, "rule": v.rule, "reason": v.message} for p, v in result.rejected)
 
     async def _verify(self, run: BriefingRun) -> None:
-        response = await self._call(run, RoleName.VERIFIER, VerifierRequest(
-            session_id=run.session_id, draft=run.form, transcript=run.segments, existing_gaps=run.gaps))
-        if response is not None:
-            run.gaps = response.gaps
+        try:
+            verdict = await invoke_role(self._roles, RoleName.VERIFIER, VerifierRequest(
+                session_id=run.session_id, draft=run.form, transcript=run.segments, existing_gaps=run.gaps),
+                VerifierResponse)
+        except RoleInvocationError as exc:
+            run.errors.append(f"verifier after tick {run.ticks}: {exc}")
+            return
+        run.gaps = verdict.gaps

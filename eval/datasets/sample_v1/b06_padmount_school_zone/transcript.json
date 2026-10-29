@@ -1,0 +1,157 @@
+{
+  "briefing_id": "b06_padmount_school_zone",
+  "title": "Padmount substation maintenance outside a school, Glenwood NSW",
+  "crew": [
+    {
+      "user_id": "u-crew-3",
+      "name": "Jack O'Brien",
+      "role": "leading_hand"
+    },
+    {
+      "user_id": "u-crew-2",
+      "name": "Priya Nair",
+      "role": "crew"
+    },
+    {
+      "user_id": "u-crew-4",
+      "name": "Mei Chen",
+      "role": "crew"
+    }
+  ],
+  "lines": [
+    {
+      "id": "L01",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Morning. Job is routine maintenance on padmount substation PM 4471 on Gardenia Avenue, right outside Glenwood Public School. Work order 7781204.",
+      "start_ms": 1500,
+      "end_ms": 9060,
+      "asr_hypothesis": "Morning. Job is routine maintenance on pad mount substation PM 4471 on Gardenia Avenue, right outside Glenwood Public School. Work order 7781204."
+    },
+    {
+      "id": "L02",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "It's a school zone, forty k's from eight to nine thirty and two thirty to four. Kids everywhere at drop off and pick up.",
+      "start_ms": 9647,
+      "end_ms": 18287
+    },
+    {
+      "id": "L03",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "So we don't open anything until nine thirty, and we're packed up with the doors locked by two fifteen. Pedestrian barriers right around the padmount and the truck, and a spotter on the footpath whenever the doors are open.",
+      "start_ms": 19011,
+      "end_ms": 33051
+    },
+    {
+      "id": "L04",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-4",
+      "text": "The HV side's eleven kV. The switching operator's switching it out, then we test and earth the HV before we open the HV compartment.",
+      "start_ms": 33912,
+      "end_ms": 42552
+    },
+    {
+      "id": "L05",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "The LV board stays live for the school's supply, so the LV compartment stays shut and locked. Nobody goes near it.",
+      "start_ms": 43550,
+      "end_ms": 51110
+    },
+    {
+      "id": "L06",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "There's an arc flash risk when the operator does the switching, so everyone stands back ten metres and he's in the full arc flash suit.",
+      "start_ms": 52245,
+      "end_ms": 61245
+    },
+    {
+      "id": "L07",
+      "speaker": "Guest-4",
+      "user_id": null,
+      "text": "Morning! You lot going to be here all day? I've got the year twos crossing at nine.",
+      "start_ms": 61817,
+      "end_ms": 67937,
+      "noise": true,
+      "confidence": 0.83
+    },
+    {
+      "id": "L08",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Just till two, we'll stay out of your way.",
+      "start_ms": 68646,
+      "end_ms": 71886,
+      "noise": true
+    },
+    {
+      "id": "L09",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-4",
+      "text": "There's some old oil staining on the plinth, so we check the transformer for a leak, and the spill kit's on the truck.",
+      "start_ms": 72732,
+      "end_ms": 81012
+    },
+    {
+      "id": "L10",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Manual handling, the doors are heavy, so two people to open them.",
+      "start_ms": 81995,
+      "end_ms": 86315
+    },
+    {
+      "id": "L11",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Could be snakes or spiders in the cable pit, so gloves on and have a look before you put your hand in.",
+      "start_ms": 87435,
+      "end_ms": 95355,
+      "hyp_speaker": "Guest-3"
+    },
+    {
+      "id": "L12",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-4",
+      "text": "Anyone want anything from the bakery? The vanilla slices there are unreal.",
+      "start_ms": 95912,
+      "end_ms": 100232,
+      "noise": true
+    },
+    {
+      "id": "L13",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "There's no digging on this job, so no underground services to worry about.",
+      "start_ms": 100926,
+      "end_ms": 105606
+    },
+    {
+      "id": "L14",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Emergency. Muster point is the bus bay at the front gate of the school. Nearest hospital is Blacktown, about ten minutes. First aider is Priya. Comms is mobile, and the switching operator's on radio channel seven.",
+      "start_ms": 106437,
+      "end_ms": 119397
+    },
+    {
+      "id": "L15",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "It's going to be hot again, thirty three, so water and shade breaks.",
+      "start_ms": 120365,
+      "end_ms": 125045
+    },
+    {
+      "id": "L16",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Okay, sign on and wait for the switching operator. Nobody touches anything until he issues the access permit.",
+      "start_ms": 126150,
+      "end_ms": 132630
+    }
+  ]
+}

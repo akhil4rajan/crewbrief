@@ -71,14 +71,21 @@ class Check:
 
     @property
     def passed(self) -> bool:
+        """A gate with no data fails (an empty denominator must not pass CI); a target is just n/a."""
         if self.value is None:
-            return False
+            return not self.blocking
         return self.value >= self.threshold if self.op == ">=" else self.value <= self.threshold
+
+    @property
+    def status(self) -> str:
+        if self.value is None:
+            return "FAIL (no data)" if self.blocking else "n/a"
+        return "PASS" if self.passed else ("FAIL" if self.blocking else "WARN")
 
     def to_json(self) -> dict[str, Any]:
         return {"metric": self.metric, "op": self.op, "threshold": self.threshold,
                 "value": None if self.value is None else round(self.value, 4),
-                "passed": self.passed, "blocking": self.blocking}
+                "passed": self.passed, "status": self.status, "blocking": self.blocking}
 
 
 @dataclass

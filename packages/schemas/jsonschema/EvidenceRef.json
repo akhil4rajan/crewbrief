@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/EvidenceRef.json",
+  "additionalProperties": false,
+  "description": "A pointer to the transcript span that supports a field.",
+  "properties": {
+    "segment_id": {
+      "title": "Segment Id",
+      "type": "string"
+    },
+    "speaker_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Speaker Id"
+    },
+    "start_ms": {
+      "default": 0,
+      "title": "Start Ms",
+      "type": "integer"
+    },
+    "end_ms": {
+      "default": 0,
+      "title": "End Ms",
+      "type": "integer"
+    },
+    "quote": {
+      "default": "",
+      "maxLength": 1000,
+      "title": "Quote",
+      "type": "string"
+    }
+  },
+  "required": [
+    "segment_id"
+  ],
+  "title": "EvidenceRef",
+  "type": "object"
+}
