@@ -1,9 +1,11 @@
+# Version-update PRs are paused: open-pull-requests-limit 0 stops Dependabot opening them.
+# To resume, raise the limit (e.g. 5) for the ecosystems you want updated.
 version: 2
 updates:
   - package-ecosystem: pip
     directory: /
     schedule: { interval: weekly, day: monday }
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       python-minor:
         update-types: [minor, patch]
@@ -13,7 +15,7 @@ updates:
   - package-ecosystem: npm
     directory: /apps/review-portal
     schedule: { interval: weekly, day: monday }
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       portal-minor:
         update-types: [minor, patch]
@@ -21,6 +23,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 0
     groups:
       actions:
         patterns: ["*"]
@@ -28,3 +31,4 @@ updates:
   - package-ecosystem: docker
     directories: [/, /apps/review-portal]
     schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 0
