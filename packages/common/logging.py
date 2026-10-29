@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextvars
 import json
 import logging
+import re
 import sys
 from datetime import UTC, datetime
 
@@ -12,6 +13,18 @@ correlation_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("cor
 session_id_var: contextvars.ContextVar[str | None] = contextvars.ContextVar("session_id", default=None)
 
 _RESERVED = set(vars(logging.makeLogRecord({})).keys()) | {"message", "asctime"}
+_TOKEN_RE = re.compile(r"(access_token=|[Bb]earer\s+)[A-Za-z0-9._~+/=-]+")
+
+
+class RedactTokensFilter(logging.Filter):
+    """Bearer tokens travel in WebSocket query strings; never let them reach the logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        if "access_token=" in message or "earer " in message:
+            record.msg = _TOKEN_RE.sub(r"\1[redacted]", message)
+            record.args = None
+        return True
 
 
 class JsonFormatter(logging.Formatter):
@@ -47,6 +60,7 @@ class ConsoleFormatter(logging.Formatter):
 def configure_logging(service: str, level: str = "INFO", fmt: str = "json") -> None:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter(service) if fmt == "json" else ConsoleFormatter(service))
+    handler.addFilter(RedactTokensFilter())
     root = logging.getLogger()
     root.handlers[:] = [handler]
     root.setLevel(level.upper())

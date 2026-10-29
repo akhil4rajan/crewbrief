@@ -26,13 +26,21 @@ _QUESTION_START = re.compile(
     r"are there)\b")
 
 
+# Speech-to-text often spells out utility acronyms ("L V", "E W P") and numbers ("eleven kV").
+_SPELLED_ACRONYMS = re.compile(r"\b(l v|h v|e w p|p p e|l o t o|u h f|t m p|s w m s|j s a)\b")
+_SPOKEN_KV = re.compile(r"\b(eleven|twenty two|thirty three|sixty six)\s+k\s*v\b")
+_KV_NUMBERS = {"eleven": "11", "twenty two": "22", "thirty three": "33", "sixty six": "66"}
+
+
 def normalise(text: str) -> str:
     """Lowercase, unify apostrophes, hyphens/slashes to spaces, keep commas as scope markers."""
     t = text.translate(_APOSTROPHES).lower()
     t = re.sub(r"[-/]", " ", t)
     t = re.sub(r"[^a-z0-9', ]+", " ", t)
     t = re.sub(r"\s*,\s*", " , ", t)
-    return re.sub(r"\s+", " ", t).strip()
+    t = re.sub(r"\s+", " ", t).strip()
+    t = _SPELLED_ACRONYMS.sub(lambda m: m.group(1).replace(" ", ""), t)
+    return _SPOKEN_KV.sub(lambda m: f"{_KV_NUMBERS[m.group(1)]} kv", t)
 
 
 @dataclass(frozen=True)

@@ -16,6 +16,7 @@
         "session.created",
         "session.transition",
         "crew.checked_in",
+        "crew.acknowledged",
         "recording.changed",
         "transcript.segments_received",
         "form.patch_applied",

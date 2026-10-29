@@ -229,7 +229,15 @@ def evaluate_draft(form: Form, library: HazardLibrary) -> list[RuleViolation]:
         path = f"/hazards/{code}"
         if hazard.status == HazardStatus.PRESENT:
             active = [c for c in hazard.controls.values() if c.status != "proposed"]
-            if hazard.severity.is_high_risk and not any(c.type.satisfies_high_risk_rule for c in active):
+            definition = library.hazard(code)
+            critical = set(definition.critical_controls) if definition else set()
+            if hazard.severity.is_high_risk and critical and not critical & {c.code for c in active}:
+                names = ", ".join(c.name for cc in sorted(critical) if (c := library.control(cc)))
+                out.append(RuleViolation(
+                    rule="high_risk_requires_critical_control", severity=GapSeverity.BLOCKING, path=path,
+                    message=f"{hazard.name} is {hazard.severity.value} risk and needs one of: {names}",
+                    gap_kind=GapKind.HIGH_RISK_WITHOUT_CONTROL))
+            elif hazard.severity.is_high_risk and not any(c.type.satisfies_high_risk_rule for c in active):
                 out.append(RuleViolation(
                     rule="high_risk_requires_isolation_or_engineering", severity=GapSeverity.BLOCKING, path=path,
                     message=f"{hazard.name} is {hazard.severity.value} risk but has no confirmed isolation or "

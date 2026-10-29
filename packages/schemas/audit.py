@@ -19,6 +19,7 @@ class AuditAction(StrEnum):
     SESSION_CREATED = "session.created"
     SESSION_TRANSITION = "session.transition"
     CREW_CHECKED_IN = "crew.checked_in"
+    CREW_ACKNOWLEDGED = "crew.acknowledged"
     RECORDING_CHANGED = "recording.changed"
     SEGMENTS_RECEIVED = "transcript.segments_received"
     PATCH_APPLIED = "form.patch_applied"

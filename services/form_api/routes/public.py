@@ -88,6 +88,11 @@ async def check_in(session_id: str, user: Crew, svc: Service,
     return await svc.check_in(user, session_id, body.user_id if body else None)
 
 
+@router.post("/sessions/{session_id}/acknowledge")
+async def acknowledge(session_id: str, user: Crew, svc: Service) -> SessionDetail:
+    return await svc.acknowledge_form(user, session_id)
+
+
 @router.post("/sessions/{session_id}/consent")
 async def consent(session_id: str, user: Crew, svc: Service) -> Session:
     return await svc.acknowledge_consent(user, session_id)

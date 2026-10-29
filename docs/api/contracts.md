@@ -40,9 +40,10 @@ Public (`/api`, bearer token):
 | GET | `/api/sessions/{id}` | → `SessionDetail` | any |
 | POST | `/api/sessions/{id}/check-in` | `{user_id?}` (defaults to caller) → `SessionDetail` | crew |
 | POST | `/api/sessions/{id}/consent` | → `Session` (records recording consent notice) | crew |
-| POST | `/api/sessions/{id}/start` | → `Session` (CREATED→BRIEFING, notifies orchestrator) | crew |
+| POST | `/api/sessions/{id}/start` | → `Session` (CREATED→BRIEFING, notifies orchestrator; 409 `consent_required` until `/consent` is recorded) | crew |
 | POST | `/api/sessions/{id}/end-briefing` | → `Session` (orchestrator runs final extraction + verifier, then GAP_CHECK→REVIEW) | crew, supervisor |
 | POST | `/api/sessions/{id}/resume-briefing` | → `Session` (REVIEW→DRAFTING) | supervisor |
+| POST | `/api/sessions/{id}/acknowledge` | → `SessionDetail` (caller confirms they read the form; REVIEW/SIGNED/SUBMITTED) | crew on the job |
 | GET | `/api/sessions/{id}/draft` | → `Draft` | any |
 | PATCH | `/api/sessions/{id}/draft` | `ApplyPatchesRequest` (human edits, `provenance.source="human"` forced server-side) → `ApplyPatchesResult` | crew (pre-REVIEW), supervisor |
 | GET | `/api/sessions/{id}/transcript` | → `TranscriptSegment[]` | any |
@@ -55,6 +56,7 @@ Public (`/api`, bearer token):
 | GET | `/api/sessions/{id}/diff` | → `{ai_revision, final_revision, changes: [{path, op, before, after, role}]}` | supervisor, safety_admin |
 | GET | `/api/metrics/edit-rate` | → `{sessions, fields: [{path_pattern, ai_filled, edited, edit_rate}], roles: [...]}` | supervisor, safety_admin |
 | GET | `/api/library` | → `HazardLibrary` (for pickers) | any |
+| DELETE | `/api/sessions/{id}?reason=` | → `Tombstone` (retention / erasure: purges transcript, drafts, gaps; audit kept) | safety_admin |
 
 `SessionDetail = {session: Session, draft: Draft, gaps: Gap[], transcript_count: int}`
 

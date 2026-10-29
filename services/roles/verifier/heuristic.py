@@ -25,6 +25,7 @@ _RULE_KINDS = {"required_field": GapKind.MISSING_REQUIRED_FIELD, "crew_required"
                "no_hazards": GapKind.MISSING_REQUIRED_FIELD, "evidence_required": GapKind.UNSUPPORTED_FIELD,
                "hazard_unconfirmed": GapKind.UNCONFIRMED_HAZARD,
                "high_risk_requires_isolation_or_engineering": GapKind.HIGH_RISK_WITHOUT_CONTROL,
+               "high_risk_requires_critical_control": GapKind.HIGH_RISK_WITHOUT_CONTROL,
                "hazard_requires_control": GapKind.HAZARD_WITHOUT_CONTROL}
 
 

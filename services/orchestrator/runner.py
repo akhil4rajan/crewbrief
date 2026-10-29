@@ -440,16 +440,25 @@ class SessionRunner:
         log.info("verification_done", extra={"session_id": self.session_id, "open_gaps": record.open_gaps,
                                              "voice_prompt": record.voice_prompt, "duration_ms": record.duration_ms})
 
-    def _recently_asked(self, gap: Gap) -> bool:
-        times = [t for t in (gap.asked_at, self._asked.get(gap.id)) if t is not None]
-        if not times:
+    def _already_asked(self, gap: Gap) -> bool:
+        return gap.asked_at is not None or gap.id in self._asked
+
+    def _in_cooldown(self) -> bool:
+        if not self._asked:
             return False
-        return (utcnow() - max(times)).total_seconds() < self._settings.voice_prompt_cooldown_seconds
+        last = max(self._asked.values())
+        return (utcnow() - last).total_seconds() < self._settings.voice_prompt_cooldown_seconds
 
     async def _maybe_prompt(self, gaps: list[Gap]) -> str | None:
-        """Ask the crew about the single most urgent open gap that was not asked recently."""
+        """Ask the crew about the most urgent open gap not yet asked.
+
+        Each gap is asked once per briefing (unanswered ones stay on the supervisor's list), and
+        questions are spaced by the cooldown so the crew is never talked over.
+        """
+        if self._in_cooldown():
+            return None
         candidates = [g for g in gaps if g.status == GapStatus.OPEN
-                      and g.severity in (GapSeverity.BLOCKING, GapSeverity.WARNING) and not self._recently_asked(g)]
+                      and g.severity in (GapSeverity.BLOCKING, GapSeverity.WARNING) and not self._already_asked(g)]
         if not candidates:
             return None
         gap = min(candidates, key=gap_priority)

@@ -72,6 +72,9 @@ class HazardDef(Model):
     description: str = ""
     keywords: list[str] = Field(default_factory=list)
     typical_controls: list[str] = Field(default_factory=list)  # control codes
+    # Critical controls: for a high-risk hazard, at least one of these must be confirmed. Used where a
+    # generic isolation/engineering control (e.g. a barricade) does not address the mechanism of harm.
+    critical_controls: list[str] = Field(default_factory=list)
     references: list[str] = Field(default_factory=list)  # safety document ids
 
 

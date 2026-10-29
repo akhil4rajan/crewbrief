@@ -319,6 +319,30 @@ class FormService:
             self._events.emit(EventType.PRESENCE_UPDATED, session_id, {"crew": _dump(form.crew.values())})
         return await self.detail(session_id)
 
+    async def acknowledge_form(self, user: User, session_id: str) -> SessionDetail:
+        """A crew member confirms they have read the final form. Allowed in REVIEW and after sign-off."""
+        async with self._lock(session_id):
+            session = await self.get_session(session_id)
+            if session.state not in (S.REVIEW, S.SIGNED, S.SUBMITTED):
+                raise Conflict(f"Cannot acknowledge a form in {session.state}", code="invalid_state")
+            draft = await self._load_draft(session_id)
+            entry = draft.form.crew.get(user.id)
+            if entry is None:
+                raise Forbidden("Only crew members on this job can acknowledge the form")
+            if not entry.acknowledged:
+                form = draft.form.model_copy(deep=True)
+                entry = entry.model_copy(update={"acknowledged": True})
+                form.crew[user.id] = entry
+                draft = await self._save_draft(draft, form, source=Source.SYSTEM.value, actor_id=user.id)
+                await self._audit(session_id, Actor.of(user), AuditAction.CREW_ACKNOWLEDGED, path=f"/crew/{user.id}",
+                                  after=True)
+                patch = FormPatch(op=PatchOp.REPLACE, path=f"/crew/{user.id}", value=entry.model_dump(mode="json"),
+                                  provenance=Provenance(source=Source.SYSTEM, updated_by=user.id, confidence=1.0))
+                self._events.emit(EventType.FORM_PATCHED, session_id, {"revision": draft.revision,
+                                                                       "patches": _dump([patch]), "source": "system"})
+                self._events.emit(EventType.PRESENCE_UPDATED, session_id, {"crew": _dump(form.crew.values())})
+        return await self.detail(session_id)
+
     async def acknowledge_consent(self, user: User, session_id: str) -> Session:
         async with self._lock(session_id):
             session = await self.get_session(session_id)
@@ -335,6 +359,10 @@ class FormService:
         async with self._lock(session_id):
             session = await self.get_session(session_id)
             self._ensure_participant(user, session)
+            if session.consent_acknowledged_at is None:
+                # Crews must be told recording is active before it starts (workplace surveillance law).
+                raise Conflict("Recording consent must be acknowledged before the briefing starts",
+                               code="consent_required")
             session = await self._transition(session, S.BRIEFING, Actor.of(user), "briefing started")
         # Outside the lock: the orchestrator calls back into /internal/* for this session.
         await self._orchestrator.start(session_id)

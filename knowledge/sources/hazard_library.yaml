@@ -15,7 +15,7 @@ hazards:
     category: electrical
     severity: critical
     description: Electric shock or burns from energised low-voltage (230/400 V) mains, service cables, pillars or switchboards.
-    keywords: [live lv, low voltage, lv mains, lv conductors, lv network, lv cable, lv cables, live mains, live lv mains, lv service, service mains, live service, energised, still live, it's live, lines are live, live parts, live work, live low voltage, "415 volts", "240 volts", "230 volts", "415"]
+    keywords: [live lv, low voltage, lv mains, lv conductors, lv network, lv cable, lv cables, live mains, live lv mains, lv service, service mains, live service, energised, still live, it's live, lines are live, live parts, live work, live low voltage, "415 volts", "240 volts", "230 volts", "415", lv, the lv, lv board, lv fuses, lv compartment, lv underbuilt, stays live, still alive, treat it as live, treat everything as live, wires down, lines down, conductors are down, conductors are on the road, faulted cable]
     typical_controls: [CT-ISO-LOTO, CT-ISO-FUSES, CT-ENG-EARTH, CT-ENG-TEST-DEAD, CT-ENG-INSUL-COVERS, CT-PPE-ARC, CT-PPE-INSUL-GLOVES, CT-ADM-ACCESS-PERMIT]
     references: [DOC-ESR-001]
 
@@ -24,7 +24,7 @@ hazards:
     category: electrical
     severity: critical
     description: Electrocution or flashover from energised high-voltage (11 kV to 66 kV) conductors, cables or plant.
-    keywords: [hv, high voltage, 11kv, 11 kv, 22kv, 22 kv, 33kv, 33 kv, 66kv, hv mains, hv conductors, hv feeder, hv cable, hv side, live hv]
+    keywords: [hv, high voltage, 11kv, 11 kv, 22kv, 22 kv, 33kv, 33 kv, 66kv, hv mains, hv conductors, hv feeder, hv cable, hv side, live hv, hv is isolated]
     typical_controls: [CT-ISO-HV-SWITCHING, CT-ENG-EARTH, CT-ENG-TEST-DEAD, CT-ADM-ACCESS-PERMIT, CT-ADM-MAD, CT-PPE-ARC]
     references: [DOC-ESR-001]
 
@@ -78,7 +78,7 @@ hazards:
     category: electrical
     severity: critical
     description: Striking live underground electricity cables, gas or water mains while digging, boring or driving pegs.
-    keywords: [underground cables, underground cable, underground services, buried cables, buried services, cable strike, gas main, water main, underground assets, services in the ground]
+    keywords: [underground cables, underground cable, underground services, buried cables, buried services, cable strike, gas main, water main, underground assets, services in the ground, dial before you dig, potholed, pothole, telstra pit, auger]
     typical_controls: [CT-ADM-DBYD, CT-ENG-CABLE-LOCATE, CT-ENG-POTHOLE, CT-ISO-LOTO]
     references: [DOC-EXC-004]
 
@@ -106,7 +106,7 @@ hazards:
     category: height
     severity: critical
     description: Falls from poles, ladders, roofs or EWP baskets while working above 2 m.
-    keywords: [working at heights, working at height, work at height, fall from height, falling from height, at height, up the pole, top of the pole, ladder, up the ladder, up on the roof, working on the roof, up high]
+    keywords: [working at heights, working at height, work at height, fall from height, falling from height, at height, up the pole, top of the pole, ladder, up the ladder, up on the roof, working on the roof, up high, in the ewp, in the bucket, harness on, clipped to, the high stuff]
     typical_controls: [CT-SUB-EWP, CT-ENG-ANCHOR, CT-ENG-LADDER-SECURE, CT-PPE-HARNESS, CT-ADM-RESCUE-PLAN]
     references: [DOC-POLE-006, DOC-EWP-002]
 
@@ -134,7 +134,7 @@ hazards:
     category: struck_by
     severity: high
     description: Tools, hardware or branches falling from height onto people below.
-    keywords: [falling objects, falling object, dropped tools, dropping tools, drop a tool, dropped objects, things falling, something falls, under the bucket, working overhead]
+    keywords: [falling objects, falling object, dropped tools, dropping tools, drop a tool, dropped objects, things falling, something falls, under the bucket, working overhead, felling, drop zone, tree lengths, under the cut]
     typical_controls: [CT-ENG-TOOL-LANYARD, CT-ISO-BARRIERS, CT-ADM-EXCLUSION, CT-PPE-HARDHAT]
     references: [DOC-EWP-002]
 
@@ -152,7 +152,7 @@ hazards:
     category: electrical
     severity: critical
     description: A crane, borer, EWP boom or tipper encroaching on or contacting energised overhead conductors.
-    keywords: [crane near the lines, boom near the lines, plant near the lines, borer near the lines, near the overhead, under the lines, under the wires, swinging near the lines, encroach, encroachment]
+    keywords: [crane near the lines, boom near the lines, plant near the lines, borer near the lines, near the overhead, under the lines, under the wires, swinging near the lines, encroach, encroachment, boom to the lv, boom near, the boom, "closest i'll get the boom"]
     typical_controls: [CT-ADM-SPOTTER, CT-ADM-MAD, CT-ENG-PROXIMITY, CT-ENG-INSUL-COVERS, CT-ISO-HV-SWITCHING, CT-ISO-LOTO]
     references: [DOC-ESR-001, DOC-POLE-006]
 
@@ -201,6 +201,7 @@ hazards:
     description: Trench wall collapse, people or plant falling into open excavations, spoil falling back in.
     keywords: [excavation, excavate, trench, trenching, digging, dig, open hole, open trench, cave in, trench collapse, spoil, the hole]
     typical_controls: [CT-ENG-SHORING, CT-ISO-BARRIERS, CT-ADM-DBYD, CT-ENG-POTHOLE]
+    critical_controls: [CT-ENG-SHORING]
     references: [DOC-EXC-004]
 
   - code: HZ-CONFINED
@@ -244,7 +245,7 @@ hazards:
     category: health
     severity: low
     description: Hearing damage from chainsaws, concrete saws, jackhammers and generators.
-    keywords: [noise, noisy, loud, hearing, jackhammer, concrete saw, chainsaw noise]
+    keywords: [noise, noisy, loud, hearing, jackhammer, concrete saw, chainsaw noise, earmuffs, chainsaw, chipper]
     typical_controls: [CT-PPE-HEARING]
     references: []
 
@@ -254,7 +255,7 @@ hazards:
     category: environmental
     severity: medium
     description: Heat exhaustion, heat stroke and sunburn on hot days, worse in arc-rated clothing.
-    keywords: [hot day, heat stress, heat stroke, heat exhaustion, the heat, in this heat, extreme heat, heatwave, dehydration, dehydrated, sunburn, uv, scorcher, stinker, "40 degrees", forty degrees, it's hot, hot today, hot one]
+    keywords: [hot day, heat stress, heat stroke, heat exhaustion, the heat, in this heat, extreme heat, heatwave, dehydration, dehydrated, sunburn, uv, scorcher, stinker, "40 degrees", forty degrees, it's hot, hot today, hot one, going to be hot, hot again, shade breaks, water breaks]
     typical_controls: [CT-ADM-HYDRATION, CT-ENG-SHADE, CT-PPE-SUN, CT-ADM-WORK-SCHEDULE]
     references: [DOC-ENV-005]
 
@@ -263,7 +264,7 @@ hazards:
     category: environmental
     severity: high
     description: Lightning strike, wind-blown debris and EWP instability during storms and high winds.
-    keywords: [storm, storms, lightning, thunder, thunderstorm, high wind, high winds, strong wind, strong winds, gusty, gusts, windy, severe weather, hail, weather warning]
+    keywords: [storm, storms, lightning, thunder, thunderstorm, high wind, high winds, strong wind, strong winds, gusty, gusts, windy, severe weather, hail, weather warning, wind, wind meter, gusting]
     typical_controls: [CT-ELIM-STOP-WORK, CT-ADM-WEATHER-MONITOR]
     references: [DOC-ENV-005]
 
@@ -308,7 +309,7 @@ hazards:
     category: human_factors
     severity: medium
     description: Reduced alertness after long shifts, callouts or extended storm restoration.
-    keywords: [fatigue, fatigued, tired, exhausted, long shift, long day, up all night, no sleep, double shift, callout, call out, hours of work]
+    keywords: [fatigue, fatigued, tired, exhausted, long shift, long day, up all night, no sleep, double shift, callout, call out, hours of work, "i'm cooked", sixteen hours, since six this morning, knackered, buggered, worn out]
     typical_controls: [CT-ADM-FATIGUE]
     references: []
 
@@ -317,7 +318,7 @@ hazards:
     category: environmental
     severity: medium
     description: Poor visibility at night, at dawn or in fog and smoke, for crews, drivers and plant operators.
-    keywords: [night, at night, dark, after dark, low light, poor visibility, night work, fog, foggy, smoke haze]
+    keywords: [night, at night, dark, after dark, low light, poor visibility, night work, fog, foggy, smoke haze, pitch black, light tower, head torches]
     typical_controls: [CT-ENG-LIGHTING, CT-PPE-HIVIS]
     references: [DOC-TMP-003]
 
@@ -326,7 +327,7 @@ hazards:
     category: health
     severity: medium
     description: Skin and eye contact with transformer oil, SF6 by-products, fuel or battery acid; spills to the environment.
-    keywords: [transformer oil, oil leak, leaking oil, insulating oil, pcb, pcbs, sf6, chemicals, fuel spill, diesel spill, battery acid]
+    keywords: [transformer oil, oil leak, leaking oil, insulating oil, pcb, pcbs, sf6, chemicals, fuel spill, diesel spill, battery acid, resin, sds, oil staining, spill kit]
     typical_controls: [CT-ADM-SDS, CT-ENG-SPILL-KIT, CT-PPE-GLOVES, CT-PPE-EYE]
     references: []
 

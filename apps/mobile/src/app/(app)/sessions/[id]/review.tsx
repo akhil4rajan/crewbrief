@@ -2,8 +2,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-import { api, ApiError, errorMessage } from "@/api/client";
-import type { Session, SessionDetail } from "@/api/types";
+import { api, errorMessage } from "@/api/client";
+import type { Session } from "@/api/types";
 import { useCurrentUser } from "@/auth/AuthContext";
 import { FormSummary } from "@/components/FormSummary";
 import { GapList } from "@/components/GapList";
@@ -42,25 +42,9 @@ export default function ReviewScreen() {
     setAcking(true);
     setError(null);
     try {
-      const result = await api.patchDraft(id, {
-        expected_revision: draft.revision,
-        patches: [{ op: "replace", path: `/crew/${me.id}/acknowledged`, value: true }],
-      });
-      if (result.rejected.length > 0) throw new Error(result.rejected[0]!.reason);
-      setData((prev: SessionDetail | null) => {
-        const base = prev ?? detail;
-        const entry = base.draft.form.crew[me.id];
-        if (!entry) return base;
-        const form = { ...base.draft.form, crew: { ...base.draft.form.crew, [me.id]: { ...entry, acknowledged: true } } };
-        return { ...base, draft: { ...base.draft, revision: result.revision, form } };
-      });
+      setData(await api.acknowledge(id));
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) void reload();
-      setError(
-        err instanceof ApiError && err.status === 403
-          ? "This server doesn't accept crew acknowledgements once the form is with the supervisor. Tell your supervisor you've read it."
-          : errorMessage(err),
-      );
+      setError(errorMessage(err));
     } finally {
       setAcking(false);
     }

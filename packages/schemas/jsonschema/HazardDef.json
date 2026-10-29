@@ -49,6 +49,13 @@
       "title": "Typical Controls",
       "type": "array"
     },
+    "critical_controls": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Critical Controls",
+      "type": "array"
+    },
     "references": {
       "items": {
         "type": "string"

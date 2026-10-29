@@ -142,6 +142,7 @@ export class ApiClient {
       body: userId ? { user_id: userId } : {},
     });
   consent = (id: string) => this.request<Session>(`/api/sessions/${enc(id)}/consent`, { method: "POST" });
+  acknowledge = (id: string) => this.request<SessionDetail>(`/api/sessions/${enc(id)}/acknowledge`, { method: "POST" });
   start = (id: string) => this.request<Session>(`/api/sessions/${enc(id)}/start`, { method: "POST" });
   endBriefing = (id: string) =>
     this.request<Session>(`/api/sessions/${enc(id)}/end-briefing`, { method: "POST" });
