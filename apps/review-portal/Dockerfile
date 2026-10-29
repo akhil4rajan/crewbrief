@@ -8,7 +8,7 @@ COPY . .
 RUN npm run build
 
 # Runtime stage: unprivileged nginx serving static files with SPA fallback.
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 USER root
 RUN mkdir -p /usr/share/nginx/runtime /etc/nginx/snippets \
  && chown -R 101:0 /usr/share/nginx/runtime \
