@@ -69,6 +69,9 @@ function NewBriefing() {
   const queryClient = useQueryClient();
   const library = useLibrary();
   const crew = useQuery({ queryKey: ["users", "crew"], queryFn: () => api.users("crew") });
+  const supervisors = useQuery({ queryKey: ["users", "supervisor"], queryFn: () => api.users("supervisor") });
+  const [supervisorId, setSupervisorId] = useState("");
+  const chosenSupervisor = supervisorId || supervisors.data?.[0]?.id || "";
 
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [title, setTitle] = useState("");
@@ -102,6 +105,7 @@ function NewBriefing() {
       task_type: taskType || null,
       location: location.trim() || null,
       crew_member_ids: crewIds,
+      supervisor_id: chosenSupervisor || null,
     });
   };
 
@@ -149,6 +153,16 @@ function NewBriefing() {
         <label className="field">
           <span>Location</span>
           <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Address or asset id" />
+        </label>
+        <label className="field">
+          <span>Supervisor to sign off</span>
+          <select value={chosenSupervisor} onChange={(e) => setSupervisorId(e.target.value)} disabled={supervisors.isPending}>
+            {supervisors.data?.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
         </label>
         <fieldset className="field">
           <legend>Crew on this job</legend>

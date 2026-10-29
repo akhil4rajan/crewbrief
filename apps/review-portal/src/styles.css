@@ -1479,8 +1479,8 @@ select.status-unconfirmed {
 }
 .gap {
   display: flex;
-  align-items: flex-start;
-  gap: 4px;
+  flex-direction: column;
+  align-items: stretch;
   border: 1px solid var(--border);
   border-left: 4px solid var(--info);
   border-radius: var(--radius-sm);
@@ -1520,8 +1520,14 @@ select.status-unconfirmed {
 .gap-message {
   font-weight: 500;
 }
-.gap .btn {
-  margin: 8px 6px 0 0;
+.gap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+.gap-actions:empty {
+  display: none;
 }
 .gap-question {
   font-size: 0.85rem;

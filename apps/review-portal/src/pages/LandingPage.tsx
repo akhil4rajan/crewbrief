@@ -82,6 +82,33 @@ export function LandingPage() {
           </p>
         </section>
 
+        <section className="entry" aria-labelledby="entry-title">
+          <h2 id="entry-title">Get started</h2>
+          {error && (
+            <p className="inline-error" role="alert">
+              {error}
+            </p>
+          )}
+          {mode === "dev" ? (
+            <div className="entry-grid">
+              <EntryCard
+                area="crew"
+                icon="🦺"
+                title="I'm on the crew"
+                body="Run a pre-job briefing on your phone or tablet and watch the form fill in."
+              />
+              <EntryCard
+                area="supervisor"
+                icon="📋"
+                title="I'm a supervisor"
+                body="Review drafted hazard assessments with evidence, then sign off."
+              />
+            </div>
+          ) : (
+            <EntraEntry />
+          )}
+        </section>
+
         <section className="numbers" aria-label="Key numbers">
           {NUMBERS.map((n) => (
             <div key={n.label} className="number">
@@ -111,32 +138,6 @@ export function LandingPage() {
           </ol>
         </section>
 
-        <section className="entry" aria-labelledby="entry-title">
-          <h2 id="entry-title">Try it</h2>
-          {error && (
-            <p className="inline-error" role="alert">
-              {error}
-            </p>
-          )}
-          {mode === "dev" ? (
-            <div className="entry-grid">
-              <EntryCard
-                area="crew"
-                icon="🦺"
-                title="I'm on the crew"
-                body="Run a pre-job briefing on your phone or tablet and watch the form fill in."
-              />
-              <EntryCard
-                area="supervisor"
-                icon="📋"
-                title="I'm a supervisor"
-                body="Review drafted hazard assessments with evidence, then sign off."
-              />
-            </div>
-          ) : (
-            <EntraEntry />
-          )}
-        </section>
       </main>
       <footer className="landing-foot muted small">
         Raw audio is never stored. Transcripts are redacted for personal information.

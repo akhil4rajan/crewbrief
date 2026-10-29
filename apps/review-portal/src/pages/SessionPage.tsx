@@ -131,7 +131,7 @@ export function SessionPage() {
 
 const LIVE_LABEL: Record<LiveStatus, string> = {
   connecting: "Connecting…",
-  open: "Live",
+  open: "Live updates on",
   reconnecting: "Reconnecting…",
   offline: "Offline — polling",
 };

@@ -14,7 +14,7 @@ import { useSessionUi } from "./SessionContext";
 const ORDER: Record<GapSeverity, number> = { blocking: 0, warning: 1, info: 2 };
 
 export function GapsPane() {
-  const { detail, focusPath } = useSessionUi();
+  const { detail, focusPath, edit, applyEdit, humanProvenance, editing } = useSessionUi();
   const { user } = useAuth();
   const [showClosed, setShowClosed] = useState(false);
   const [dismissing, setDismissing] = useState<Gap | null>(null);
@@ -43,7 +43,21 @@ export function GapsPane() {
       ) : (
         <ul className="gap-list">
           {open.map((g) => (
-            <GapCard key={g.id} gap={g} onFocus={() => focusPath(g.path)} onDismiss={perm.allowed ? () => setDismissing(g) : undefined} />
+            <GapCard
+              key={g.id}
+              gap={g}
+              onFocus={() => focusPath(g.path)}
+              onDismiss={perm.allowed ? () => setDismissing(g) : undefined}
+              onDecide={
+                edit.allowed && g.kind === "unconfirmed_hazard" && g.path.startsWith("/hazards/")
+                  ? (status) =>
+                      void applyEdit([
+                        { id: `pat_${Date.now()}`, op: "replace", path: `${g.path}/status`, value: status, provenance: humanProvenance() },
+                      ])
+                  : undefined
+              }
+              busy={editing}
+            />
           ))}
         </ul>
       )}
@@ -66,7 +80,21 @@ export function GapsPane() {
   );
 }
 
-function GapCard({ gap, onFocus, onDismiss }: { gap: Gap; onFocus: () => void; onDismiss?: () => void }) {
+type HazardDecision = "not_present" | "present";
+
+function GapCard({
+  gap,
+  onFocus,
+  onDismiss,
+  onDecide,
+  busy = false,
+}: {
+  gap: Gap;
+  onFocus: () => void;
+  onDismiss?: () => void;
+  onDecide?: (status: HazardDecision) => void;
+  busy?: boolean;
+}) {
   return (
     <li className={`gap gap-card-${gap.severity} gap-status-${gap.status}`}>
       <button type="button" className="gap-main" onClick={onFocus} title="Show this field on the form">
@@ -81,7 +109,6 @@ function GapCard({ gap, onFocus, onDismiss }: { gap: Gap; onFocus: () => void; o
             {gap.asked_at && <span className="muted small"> · asked {formatTime(gap.asked_at)}</span>}
           </span>
         )}
-        <span className="muted small mono">{gap.path}</span>
         {gap.status !== "open" && (
           <span className="small">
             {humanize(gap.status)}
@@ -89,11 +116,23 @@ function GapCard({ gap, onFocus, onDismiss }: { gap: Gap; onFocus: () => void; o
           </span>
         )}
       </button>
-      {onDismiss && (
-        <button type="button" className="btn btn-ghost btn-small" onClick={onDismiss}>
-          Dismiss
-        </button>
-      )}
+      <div className="gap-actions">
+        {onDecide && (
+          <>
+            <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("not_present")}>
+              Not applicable
+            </button>
+            <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("present")}>
+              Confirm present
+            </button>
+          </>
+        )}
+        {onDismiss && (
+          <button type="button" className="btn btn-ghost btn-small" onClick={onDismiss}>
+            Dismiss
+          </button>
+        )}
+      </div>
     </li>
   );
 }

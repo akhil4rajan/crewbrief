@@ -10,7 +10,6 @@ import type {
 } from "../api/types";
 import { GapSeverityBadge, SeverityBadge } from "../components/Feedback";
 import { formatOffset } from "../format";
-import { ConfidenceMeter } from "../session/Provenance";
 import { sortHazards } from "../session/Hazards";
 
 const HAZARD_STATUS: Record<HazardStatus, string> = {
@@ -39,10 +38,9 @@ function text(field: FieldValue | null | undefined): string | null {
 export function CrewForm({ form, live }: { form: Form; live?: boolean }) {
   const { taskTypeName } = useLibraryIndex();
   const hazards = sortHazards(Object.values(form.hazards));
-  const controls = hazards.reduce(
-    (n, h) => n + Object.keys(h.controls).length,
-    0,
-  );
+  // The crew sees what they actually said; library suggestions stay with the supervisor.
+  const stated = (h: (typeof hazards)[number]) => Object.values(h.controls).filter((c) => c.status !== "proposed");
+  const controls = hazards.reduce((n, h) => n + stated(h).length, 0);
   const taskType = text(form.job.task_type);
   const job: [string, string | null][] = [
     ["Job", text(form.job.title)],
@@ -94,27 +92,22 @@ export function CrewForm({ form, live }: { form: Form; live?: boolean }) {
                   </span>
                 </span>
               </div>
-              {Object.keys(h.controls).length ? (
+              {stated(h).length ? (
                 <ul className="chip-list">
-                  {Object.values(h.controls).map((c) => (
-                    <li
-                      key={c.code}
-                      className={`chip cf-control control-${c.status}`}
-                      title={c.description}
-                    >
-                      ✓ {c.name}{" "}
-                      <span className="muted">
-                        · {CONTROL_STATUS[c.status]}
-                      </span>
+                  {stated(h).map((c) => (
+                    <li key={c.code} className={`chip cf-control control-${c.status}`} title={c.description}>
+                      ✓ {c.name} <span className="muted">· {CONTROL_STATUS[c.status]}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                h.status !== "not_present" && (
-                  <p className="warn-text small">No control yet</p>
-                )
+                h.status !== "not_present" && <p className="warn-text small">No control stated yet</p>
               )}
-              <ConfidenceMeter value={h.provenance.confidence} />
+              {Object.keys(h.controls).length > stated(h).length && (
+                <p className="muted small">
+                  +{Object.keys(h.controls).length - stated(h).length} suggested from the hazard library
+                </p>
+              )}
             </li>
           ))}
         </ul>
