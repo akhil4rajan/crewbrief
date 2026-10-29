@@ -16,7 +16,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
@@ -25,7 +25,6 @@ from packages.prompts import Prompt
 
 log = logging.getLogger(__name__)
 
-T = TypeVar("T", bound=BaseModel)
 COGNITIVE_SERVICES_SCOPE = "https://cognitiveservices.azure.com/.default"
 # Keywords the strict structured-output schema dialect does not accept.
 _UNSUPPORTED_KEYWORDS = {"default", "title", "maxLength", "minLength", "minimum", "maximum", "format",
@@ -87,7 +86,8 @@ def _get_client(settings: Settings) -> Any:
     return _client
 
 
-async def complete_json(*, deployment: str, prompt: Prompt, payload: dict[str, Any], output_model: type[T],
+async def complete_json[T: BaseModel](*, deployment: str, prompt: Prompt, payload: dict[str, Any],
+                                      output_model: type[T],
                         settings: Settings | None = None, temperature: float = 0.0) -> LlmResult[T]:
     """Run one chat completion and return the validated structured output."""
     s = settings or get_settings()

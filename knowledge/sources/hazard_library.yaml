@@ -16,7 +16,7 @@ hazards:
     severity: critical
     description: Electric shock or burns from energised low-voltage (230/400 V) mains, service cables, pillars or switchboards.
     keywords: [live lv, low voltage, lv mains, lv conductors, lv network, lv cable, lv cables, live mains, live lv mains, lv service, service mains, live service, energised, still live, it's live, lines are live, live parts, live work, live low voltage, "415 volts", "240 volts", "230 volts", "415"]
-    typical_controls: [CT-ISO-LOTO, CT-ISO-FUSES, CT-ENG-TEST-DEAD, CT-ENG-EARTH, CT-ENG-INSUL-COVERS, CT-PPE-ARC, CT-PPE-INSUL-GLOVES, CT-ADM-ACCESS-PERMIT]
+    typical_controls: [CT-ISO-LOTO, CT-ISO-FUSES, CT-ENG-EARTH, CT-ENG-TEST-DEAD, CT-ENG-INSUL-COVERS, CT-PPE-ARC, CT-PPE-INSUL-GLOVES, CT-ADM-ACCESS-PERMIT]
     references: [DOC-ESR-001]
 
   - code: HZ-ELEC-HV
@@ -25,7 +25,7 @@ hazards:
     severity: critical
     description: Electrocution or flashover from energised high-voltage (11 kV to 66 kV) conductors, cables or plant.
     keywords: [hv, high voltage, 11kv, 11 kv, 22kv, 22 kv, 33kv, 33 kv, 66kv, hv mains, hv conductors, hv feeder, hv cable, hv side, live hv]
-    typical_controls: [CT-ISO-HV-SWITCHING, CT-ENG-TEST-DEAD, CT-ENG-EARTH, CT-ADM-ACCESS-PERMIT, CT-ADM-MAD, CT-PPE-ARC]
+    typical_controls: [CT-ISO-HV-SWITCHING, CT-ENG-EARTH, CT-ENG-TEST-DEAD, CT-ADM-ACCESS-PERMIT, CT-ADM-MAD, CT-PPE-ARC]
     references: [DOC-ESR-001]
 
   - code: HZ-ELEC-ARC

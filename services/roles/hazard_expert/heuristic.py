@@ -82,9 +82,9 @@ def build_assessments(req: HazardExpertRequest, codes: dict[str, str], lib: Haza
         update: dict[str, object] = {"evidence": merge_evidence(cur.evidence, ev),
                                      "observation_ids": cur.observation_ids + ids,
                                      "confidence": max(cur.confidence, confidence)}
-        if rank[status] > rank[cur.status] or (cur.status == HazardStatus.NOT_PRESENT and ev):
-            if not (status == HazardStatus.UNCONFIRMED and not ev and cur.evidence):
-                update.update(status=status, origin=origin if origin == HazardOrigin.MENTIONED else cur.origin)
+        if (rank[status] > rank[cur.status] or (cur.status == HazardStatus.NOT_PRESENT and ev)) \
+                and not (status == HazardStatus.UNCONFIRMED and not ev and cur.evidence):
+            update.update(status=status, origin=origin if origin == HazardOrigin.MENTIONED else cur.origin)
         found[code] = cur.model_copy(update=update)
 
     # 1. Hazards the crew talked about.

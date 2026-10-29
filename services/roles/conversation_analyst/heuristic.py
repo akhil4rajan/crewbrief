@@ -77,6 +77,8 @@ class _SegmentExtractor:
         matches = self.m.find(clause.norm)
         spans = [(x.start, x.end) for x in matches]
         control_spans = [(x.start, x.end) for x in matches if x.kind == "control"]
+        ppe_spans = [(x.start, x.end) for x in matches if x.kind == "control"
+                     and (c := self.lib.control(x.code)) is not None and c.type.value == "ppe"]
         question = clause.is_question
         speaker = seg.user_id or seg.speaker_id
         for x in matches:
@@ -87,6 +89,9 @@ class _SegmentExtractor:
             if question:
                 attrs["question"] = True
             if x.kind == "hazard":
+                # "arc flash gear" names PPE; it is not a statement that the hazard is present.
+                if _inside_longer(x, ppe_spans):
+                    continue
                 h = self.lib.hazard(x.code)
                 out.append(Observation(kind=ObservationKind.HAZARD, text=h.name if h else x.keyword,
                                        code_hint=x.code, negated=negated, speaker_id=speaker, evidence=ev,
@@ -102,7 +107,7 @@ class _SegmentExtractor:
                                        speaker_id=speaker, evidence=ev, confidence=conf, attributes=attrs))
             elif x.kind == "site_condition":
                 # "wet methods", "isolate the solar": a control phrase is not a statement about the site.
-                if any(s <= x.start and x.end <= e and (e - s) > (x.end - x.start) for s, e in control_spans):
+                if _inside_longer(x, control_spans):
                     continue
                 sc = next((s for s in self.lib.site_conditions if s.code == x.code), None)
                 out.append(Observation(kind=ObservationKind.SITE_CONDITION, text=sc.name if sc else x.keyword,
@@ -138,6 +143,10 @@ class _SegmentExtractor:
             out.append(Observation(kind=ObservationKind.TASK, text=description, speaker_id=speaker, evidence=ev,
                                    confidence=0.75, attributes={"cue": cue}))
         return out
+
+
+def _inside_longer(x, spans: list[tuple[int, int]]) -> bool:  # type: ignore[no-untyped-def]
+    return any(s <= x.start and x.end <= e and (e - s) > (x.end - x.start) for s, e in spans)
 
 
 def _dedupe(observations: list[Observation]) -> list[Observation]:
@@ -249,7 +258,8 @@ def extract_window(req: ConversationAnalystRequest, lib: HazardLibrary) -> tuple
             prompt_ctx.remaining -= 1
         elif pending and speaker != pending_speaker and not own:
             seg_obs.extend(_resolve_reply(seg, pending))
-        if not seg_obs and off_topic:
+        # Off-topic chatter, or an unlinked voice (customer, passer-by) saying nothing about the job.
+        if not seg_obs and (off_topic or (crew_ids and not seg.user_id)):
             dropped.append(seg.id)
             continue
         questions = [o for o in own if o.attributes.get("question")]

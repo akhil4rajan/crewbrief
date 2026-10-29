@@ -26,9 +26,11 @@ log = logging.getLogger(__name__)
 INDEX_RELATIVE_PATH = Path("search") / "index.json"
 SEARCHABLE_KINDS = {"hazard", "control", "task_type", "site_condition", "document_chunk"}
 
-_STOPWORDS = frozenset(
-    "a an and are as at be but by for from has have i in is it its it's of on or our so that the their "
-    "there they this to up was we we'll we're will with you your".split())
+_STOPWORDS = frozenset({
+    "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "from", "has", "have", "i", "in", "is", "it",
+    "its", "it's", "of", "on", "or", "our", "so", "that", "the", "their", "there", "they", "this", "to", "up",
+    "was", "we", "we'll", "we're", "will", "with", "you", "your",
+})
 _TOKEN_RE = re.compile(r"[a-z0-9]+(?:'[a-z]+)?")
 
 

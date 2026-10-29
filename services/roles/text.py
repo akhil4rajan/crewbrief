@@ -157,17 +157,13 @@ def is_negated(norm: str, start: int, end: int, others: list[tuple[int, int]] | 
     before = _PSEUDO_NEGATION.sub(lambda m: " " * len(m.group(0)), norm[:start])
     if _INSTRUCTION.search(before):
         return False
-    pos = len(before)
-    count = 0
-    for m in reversed(list(re.finditer(r"\S+", before))):
+    for count, m in enumerate(reversed(list(re.finditer(r"\S+", before)))):
         tok = m.group(0)
         if tok in SCOPE_BREAKERS or count >= NEGATION_WINDOW:
             break
-        count += 1
         if tok in NEGATION_CUES or tok.endswith("n't"):
             between = [(s, e) for s, e in (others or []) if m.end() <= s and e <= start]
             return all(_LIST_JOINER.fullmatch(norm[e:start].strip()) for _, e in between)
-        pos = m.start()
     return bool(_POST_NEGATION.match(norm[end:end + 60].strip()))
 
 
