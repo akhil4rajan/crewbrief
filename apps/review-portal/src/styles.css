@@ -1060,9 +1060,10 @@ main {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  flex-wrap: wrap;
 }
 .field-value > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1072,9 +1073,11 @@ main {
 }
 .field-meta {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
   margin-left: auto;
+  white-space: nowrap;
 }
 .edit-btn {
   opacity: 0.55;
@@ -1478,6 +1481,7 @@ select.status-unconfirmed {
   overflow-y: auto;
 }
 .gap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -1528,6 +1532,14 @@ select.status-unconfirmed {
 }
 .gap-actions:empty {
   display: none;
+}
+.gap .gap-dismiss {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.gap:has(.gap-dismiss) .gap-top {
+  padding-right: 72px;
 }
 .gap-question {
   font-size: 0.85rem;

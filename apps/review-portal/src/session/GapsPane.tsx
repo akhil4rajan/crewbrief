@@ -127,12 +127,12 @@ function GapCard({
             </button>
           </>
         )}
-        {onDismiss && (
-          <button type="button" className="btn btn-ghost btn-small" onClick={onDismiss}>
-            Dismiss
-          </button>
-        )}
       </div>
+      {onDismiss && (
+        <button type="button" className="btn btn-ghost btn-small gap-dismiss" onClick={onDismiss}>
+          Dismiss
+        </button>
+      )}
     </li>
   );
 }
