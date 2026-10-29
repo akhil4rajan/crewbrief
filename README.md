@@ -194,6 +194,25 @@ The crew view and the supervisor view are part of the same web app; **Supervisor
 
 `make check-env` shows which integrations are local, dummy or real (it never prints secret values).
 
+### Run locally on Windows
+
+The `make` targets need bash, so on Windows either use **WSL2** (every command above works unchanged
+inside Ubuntu on WSL) or **Docker Desktop** (`docker compose up --build`), or run natively with PowerShell:
+
+Prerequisites: Python 3.12+ (`py --version`), Node.js 20+ (`node --version`), Git. Then, from the repo root:
+
+```powershell
+py -3.12 -m venv .venv
+.venv\Scripts\pip install -e ".[dev]"
+powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
+```
+
+`scripts\dev.ps1` builds the local hazard search index and installs the web app's npm packages on first
+run, then opens one window per service (form-api :8001, gateway :8000, orchestrator :8002, roles :8003,
+web app :3000). Open `http://localhost:3000` in **Chrome or Edge** (browser speech recognition needs
+them). Press Enter in the script's window to stop everything. If Windows Firewall asks about Python or
+Node, allow access on private networks.
+
 ### Try it with a recorded briefing
 
 ```bash
