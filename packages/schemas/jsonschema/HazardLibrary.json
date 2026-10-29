@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/HazardLibrary.json",
+  "$defs": {
+    "ControlDef": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ControlType"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "type"
+      ],
+      "title": "ControlDef",
+      "type": "object"
+    },
+    "ControlType": {
+      "description": "Hierarchy of controls, most to least effective.",
+      "enum": [
+        "elimination",
+        "substitution",
+        "isolation",
+        "engineering",
+        "administrative",
+        "ppe"
+      ],
+      "title": "ControlType",
+      "type": "string"
+    },
+    "HazardDef": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        },
+        "typical_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Typical Controls",
+          "type": "array"
+        },
+        "critical_controls": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Critical Controls",
+          "type": "array"
+        },
+        "references": {
+          "items": {
+            "type": "string"
+          },
+          "title": "References",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "category",
+        "severity"
+      ],
+      "title": "HazardDef",
+      "type": "object"
+    },
+    "SafetyDocument": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "hazard_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Hazard Codes",
+          "type": "array"
+        },
+        "control_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Control Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "path"
+      ],
+      "title": "SafetyDocument",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SiteConditionDef": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        },
+        "implies_hazards": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Implies Hazards",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "name"
+      ],
+      "title": "SiteConditionDef",
+      "type": "object"
+    },
+    "TaskTypeDef": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        },
+        "typical_hazards": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Typical Hazards",
+          "type": "array"
+        }
+      },
+      "required": [
+        "code",
+        "name"
+      ],
+      "title": "TaskTypeDef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "hazards": {
+      "items": {
+        "$ref": "#/$defs/HazardDef"
+      },
+      "title": "Hazards",
+      "type": "array"
+    },
+    "controls": {
+      "items": {
+        "$ref": "#/$defs/ControlDef"
+      },
+      "title": "Controls",
+      "type": "array"
+    },
+    "task_types": {
+      "items": {
+        "$ref": "#/$defs/TaskTypeDef"
+      },
+      "title": "Task Types",
+      "type": "array"
+    },
+    "site_conditions": {
+      "items": {
+        "$ref": "#/$defs/SiteConditionDef"
+      },
+      "title": "Site Conditions",
+      "type": "array"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/SafetyDocument"
+      },
+      "title": "Documents",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "hazards",
+    "controls"
+  ],
+  "title": "HazardLibrary",
+  "type": "object"
+}

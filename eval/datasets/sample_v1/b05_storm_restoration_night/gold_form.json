@@ -1,0 +1,120 @@
+{
+  "briefing_id": "b05_storm_restoration_night",
+  "job": {
+    "title": [
+      "Storm restoration",
+      "Storm job: tree down on the LV",
+      "Tree down on LV conductors"
+    ],
+    "location": [
+      "Terralong Street, Kiama, near the Shoalhaven Street corner",
+      "Terralong Street, Kiama"
+    ],
+    "work_order_id": [
+      "88213",
+      "INC 88213",
+      "Incident 88213"
+    ],
+    "task_type": "TT-STORM"
+  },
+  "emergency": {
+    "nearest_hospital": [
+      "Shellharbour Hospital",
+      "Shellharbour"
+    ],
+    "first_aider": [
+      "Sam Taylor",
+      "u-crew-1",
+      "Sam"
+    ],
+    "communications": [
+      "The radio to control on channel two, and mobiles",
+      "Radio to control channel 2 and mobiles"
+    ]
+  },
+  "hazards_present": [
+    {
+      "code": "HZ-ELEC-LV",
+      "evidence_lines": [
+        "L01",
+        "L02",
+        "L03",
+        "L05"
+      ],
+      "required_controls": [
+        "CT-ISO-FUSES",
+        "CT-ENG-TEST-DEAD",
+        "CT-ENG-EARTH"
+      ],
+      "note": "Fallen LV conductors treated as live"
+    },
+    {
+      "code": "HZ-LOW-VIS",
+      "evidence_lines": [
+        "L02",
+        "L06"
+      ],
+      "required_controls": [
+        "CT-ENG-LIGHTING",
+        "CT-PPE-HIVIS"
+      ]
+    },
+    {
+      "code": "HZ-TRAFFIC",
+      "evidence_lines": [
+        "L07"
+      ],
+      "required_controls": [
+        "CT-ENG-TRAFFIC-DEVICES",
+        "CT-ENG-VEHICLE-BUFFER"
+      ]
+    },
+    {
+      "code": "HZ-SLIP",
+      "evidence_lines": [
+        "L08"
+      ],
+      "required_controls": [
+        "CT-ADM-HOUSEKEEPING"
+      ]
+    },
+    {
+      "code": "HZ-VEG",
+      "evidence_lines": [
+        "L09"
+      ],
+      "required_controls": [
+        "CT-PPE-CHAINSAW"
+      ],
+      "note": "Tree under tension, chainsaw"
+    },
+    {
+      "code": "HZ-FATIGUE",
+      "evidence_lines": [
+        "L10",
+        "L11"
+      ],
+      "required_controls": [
+        "CT-ADM-FATIGUE"
+      ],
+      "note": "16 hours on shift, no plan"
+    },
+    {
+      "code": "HZ-STORM",
+      "evidence_lines": [
+        "L02",
+        "L15"
+      ],
+      "required_controls": [
+        "CT-ELIM-STOP-WORK"
+      ]
+    }
+  ],
+  "hazards_not_present": [],
+  "hazards_acceptable": [
+    "HZ-ELEC-OH",
+    "HZ-PUBLIC",
+    "HZ-FALLING-OBJ"
+  ],
+  "notes": "Synthetic. Seeded: no muster point; fatigue raised with no control."
+}

@@ -1,0 +1,10 @@
+# Default owner for everything in the repository.
+* @akhil4rajan
+
+# Safety-critical paths: rules, schemas, prompts and the eval gate need owner review.
+/packages/rules/    @akhil4rajan
+/packages/schemas/  @akhil4rajan
+/packages/prompts/  @akhil4rajan
+/eval/              @akhil4rajan
+/infra/             @akhil4rajan
+/.github/           @akhil4rajan

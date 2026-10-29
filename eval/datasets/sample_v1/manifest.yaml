@@ -1,0 +1,22 @@
+# Synthetic sample dataset: six scripted Australian utility pre-job briefings.
+# It exercises every metric and the CI gate, but it is NOT the gold set: real recorded briefings with
+# SME-completed forms live in eval/datasets/gold_*/ and are never committed (see eval/README.md).
+name: sample_v1
+version: 1
+description: Scripted briefings with off-topic chatter, simulated STT and diarization errors, and seeded gaps.
+synthetic: true
+language: en-AU
+domain_terms: [tiger tails, franna, padmount substation, spill kit, chipper, gaiters]
+briefings:
+  - id: b01_lv_service_connection
+    tags: [lv, ewp, live-work, nsw]
+  - id: b02_pole_replacement_crane
+    tags: [crane, hv, overhead, traffic, vic]
+  - id: b03_vegetation_clearing
+    tags: [vegetation, chainsaw, heat, lv, qld]
+  - id: b04_underground_cable_fault
+    tags: [underground, excavation, lv, public, qld]
+  - id: b05_storm_restoration_night
+    tags: [storm, night, fatigue, lv, nsw]
+  - id: b06_padmount_school_zone
+    tags: [padmount, hv, school-zone, public, nsw]

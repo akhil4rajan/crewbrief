@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+#
+# Azure Developer CLI (azd) project. azd looks for this file at the project root, so it
+# lives here; the infrastructure itself is in infra/bicep. See docs/runbooks/deploy.md.
+#
+#   azd env new crewbrief-dev && azd env set AZURE_LOCATION australiaeast
+#   azd up            # provision + build + deploy
+
+name: crewbrief
+metadata:
+  template: crewbrief@0.1.0
+
+infra:
+  provider: bicep
+  path: infra/bicep
+  module: main
+
+# The four backend services share one Dockerfile; SERVICE picks the entrypoint.
+services:
+  gateway:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+      buildArgs:
+        - SERVICE=gateway
+  form-api:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+      buildArgs:
+        - SERVICE=form_api
+  orchestrator:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+      buildArgs:
+        - SERVICE=orchestrator
+  roles:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+      buildArgs:
+        - SERVICE=roles
+  review-portal:
+    project: apps/review-portal
+    language: js
+    host: containerapp
+    docker:
+      path: ./Dockerfile
+      context: .
+    # No build args: the image reads VITE_* at start-up (set on the container app in Bicep).

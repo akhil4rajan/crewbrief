@@ -1,0 +1,112 @@
+{
+  "briefing_id": "b01_lv_service_connection",
+  "job": {
+    "title": [
+      "New LV service connection",
+      "LV service connection",
+      "New overhead LV service connection"
+    ],
+    "location": [
+      "14 Banksia Street, Penrith",
+      "14 Banksia St Penrith"
+    ],
+    "work_order_id": [
+      "4471823",
+      "WO-4471823",
+      "WO 4471823"
+    ],
+    "task_type": "TT-LV-CONNECT"
+  },
+  "emergency": {
+    "muster_point": [
+      "Corner of Banksia and Wattle, by the post box",
+      "Corner of Banksia Street and Wattle Street"
+    ],
+    "nearest_hospital": [
+      "Nepean Hospital",
+      "Nepean"
+    ],
+    "first_aider": [
+      "Sam Taylor",
+      "u-crew-1",
+      "Sam"
+    ],
+    "communications": [
+      "Mobile, and the radio on channel six to the depot",
+      "Mobile and radio channel 6 to the depot"
+    ]
+  },
+  "hazards_present": [
+    {
+      "code": "HZ-ELEC-LV",
+      "evidence_lines": [
+        "L03",
+        "L04"
+      ],
+      "required_controls": [
+        "CT-ISO-LOTO",
+        "CT-PPE-ARC",
+        "CT-PPE-INSUL-GLOVES"
+      ],
+      "note": "Live LV work at the pole; crew relies on PPE only"
+    },
+    {
+      "code": "HZ-HEIGHT-EWP",
+      "evidence_lines": [
+        "L05",
+        "L08",
+        "L09",
+        "L10"
+      ],
+      "required_controls": [
+        "CT-ENG-OUTRIGGER-PADS",
+        "CT-ADM-EWP-PRESTART"
+      ]
+    },
+    {
+      "code": "HZ-HEIGHT-FALL",
+      "evidence_lines": [
+        "L08"
+      ],
+      "required_controls": [
+        "CT-PPE-HARNESS"
+      ]
+    },
+    {
+      "code": "HZ-TRAFFIC",
+      "evidence_lines": [
+        "L11"
+      ],
+      "required_controls": [
+        "CT-ENG-TRAFFIC-DEVICES"
+      ],
+      "note": "Quiet cul-de-sac, cones and signs"
+    },
+    {
+      "code": "HZ-MANUAL",
+      "evidence_lines": [
+        "L13"
+      ],
+      "required_controls": [
+        "CT-ADM-TEAM-LIFT",
+        "CT-ENG-MECH-AIDS"
+      ]
+    }
+  ],
+  "hazards_not_present": [
+    {
+      "code": "HZ-VEG",
+      "evidence_lines": [
+        "L12"
+      ]
+    }
+  ],
+  "hazards_acceptable": [
+    "HZ-PUBLIC",
+    "HZ-FALLING-OBJ",
+    "HZ-SLIP",
+    "HZ-ELEC-OH",
+    "HZ-STORM"
+  ],
+  "notes": "Synthetic. Seeded: live LV with PPE only; neutral/polarity testing never discussed."
+}

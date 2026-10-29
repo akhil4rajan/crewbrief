@@ -1,0 +1,152 @@
+{
+  "briefing_id": "b05_storm_restoration_night",
+  "title": "Night storm restoration, LV conductors down, Kiama NSW",
+  "crew": [
+    {
+      "user_id": "u-crew-1",
+      "name": "Sam Taylor",
+      "role": "leading_hand"
+    },
+    {
+      "user_id": "u-crew-4",
+      "name": "Mei Chen",
+      "role": "crew"
+    }
+  ],
+  "lines": [
+    {
+      "id": "L01",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Alright Mei, quick brief before we start. Storm job, a tree's come down on the LV across Terralong Street in Kiama, near the Shoalhaven Street corner. Incident 88213.",
+      "start_ms": 1500,
+      "end_ms": 11580
+    },
+    {
+      "id": "L02",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-4",
+      "text": "It's pitch black and still raining. The conductors are on the road and tangled up in the branches.",
+      "start_ms": 12167,
+      "end_ms": 18647
+    },
+    {
+      "id": "L03",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Treat everything as live until we prove otherwise. Nobody goes within eight metres of those wires.",
+      "start_ms": 19371,
+      "end_ms": 25131
+    },
+    {
+      "id": "L04",
+      "speaker": "Guest-3",
+      "user_id": null,
+      "text": "Kiama crew, control here, the Terralong transformer fuses are still in, over.",
+      "start_ms": 25992,
+      "end_ms": 30312,
+      "noise": true,
+      "confidence": 0.71
+    },
+    {
+      "id": "L05",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Control says the transformer fuses are still in. So I'll pull the LV fuses at the transformer and tag them, then we test dead and put earths on both sides before we touch anything.",
+      "start_ms": 31310,
+      "end_ms": 43550,
+      "asr_hypothesis": "Control says the transformer fuses are still in. So I'll pull the LV fuses at the transformer and tag them, then we test dead and put ears on both sides before we touch anything."
+    },
+    {
+      "id": "L06",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-4",
+      "text": "Copy. I'll set up the light tower, and we've both got head torches. Reflective vests on.",
+      "start_ms": 44685,
+      "end_ms": 50445
+    },
+    {
+      "id": "L07",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "The road's still open and cars are coming round that bend fast. Truck across the lane with the arrow board on, and cones and road closed signs at both ends.",
+      "start_ms": 51017,
+      "end_ms": 61817
+    },
+    {
+      "id": "L08",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-4",
+      "text": "Ground's slippery and there's debris everywhere, so watch your footing.",
+      "start_ms": 62526,
+      "end_ms": 66126,
+      "hyp_speaker": "Guest-1"
+    },
+    {
+      "id": "L09",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Chainsaw for the tree once it's earthed. I'll cut, you spot. Watch the branches, they're under tension.",
+      "start_ms": 66972,
+      "end_ms": 73092
+    },
+    {
+      "id": "L10",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-4",
+      "text": "Honestly I'm cooked. We've been going since six this morning, that's sixteen hours.",
+      "start_ms": 74075,
+      "end_ms": 78755
+    },
+    {
+      "id": "L11",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Yeah, me too. Let's just get this one done.",
+      "start_ms": 79875,
+      "end_ms": 83115
+    },
+    {
+      "id": "L12",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-4",
+      "text": "My kids are going to think I've moved out.",
+      "start_ms": 83672,
+      "end_ms": 86912,
+      "noise": true
+    },
+    {
+      "id": "L13",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Ha, tell them you're a superhero.",
+      "start_ms": 87606,
+      "end_ms": 89766,
+      "noise": true
+    },
+    {
+      "id": "L14",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Nearest hospital is Shellharbour, about twenty minutes. I'm the first aider. Comms is the radio to control on channel two, and mobiles.",
+      "start_ms": 90597,
+      "end_ms": 98517
+    },
+    {
+      "id": "L15",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-4",
+      "text": "Lightning's moved off to the south, but if it comes back we're straight back in the truck.",
+      "start_ms": 99485,
+      "end_ms": 105605
+    },
+    {
+      "id": "L16",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Good call. Let's go.",
+      "start_ms": 106710,
+      "end_ms": 108150
+    }
+  ]
+}

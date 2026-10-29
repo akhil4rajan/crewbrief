@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/RejectedPatch.json",
+  "$defs": {
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "description": "A pointer to the transcript span that supports a field.",
+      "properties": {
+        "segment_id": {
+          "title": "Segment Id",
+          "type": "string"
+        },
+        "speaker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speaker Id"
+        },
+        "start_ms": {
+          "default": 0,
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "end_ms": {
+          "default": 0,
+          "title": "End Ms",
+          "type": "integer"
+        },
+        "quote": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "segment_id"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "FormPatch": {
+      "additionalProperties": false,
+      "description": "One JSON-Pointer (RFC 6901) change to the draft form, with evidence and confidence.\n\n``value`` is the JSON of the target node (e.g. a full ``HazardEntry`` dict for\n``/hazards/HZ-ELEC-LV`` or a ``FieldValue`` dict for ``/job/title``). The provenance\non the patch is copied onto the node by the form API when the value carries none.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "op": {
+          "$ref": "#/$defs/PatchOp"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "value": {
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "op",
+        "path"
+      ],
+      "title": "FormPatch",
+      "type": "object"
+    },
+    "PatchOp": {
+      "enum": [
+        "add",
+        "replace",
+        "remove"
+      ],
+      "title": "PatchOp",
+      "type": "string"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Who/what produced a value and why we believe it. Required on every form field.",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/Source",
+          "default": "ai"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "prompt_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Version"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "updated_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated By"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Source": {
+      "enum": [
+        "ai",
+        "human",
+        "system"
+      ],
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "patch": {
+      "$ref": "#/$defs/FormPatch"
+    },
+    "rule": {
+      "title": "Rule",
+      "type": "string"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "patch",
+    "rule",
+    "reason"
+  ],
+  "title": "RejectedPatch",
+  "type": "object"
+}

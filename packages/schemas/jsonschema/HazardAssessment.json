@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/HazardAssessment.json",
+  "$defs": {
+    "ControlRecommendation": {
+      "additionalProperties": false,
+      "properties": {
+        "control_code": {
+          "title": "Control Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ControlType"
+        },
+        "mentioned": {
+          "default": false,
+          "title": "Mentioned",
+          "type": "boolean"
+        },
+        "status": {
+          "$ref": "#/$defs/ControlStatus",
+          "default": "proposed"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source_documents": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Documents",
+          "type": "array"
+        }
+      },
+      "required": [
+        "control_code",
+        "name",
+        "type"
+      ],
+      "title": "ControlRecommendation",
+      "type": "object"
+    },
+    "ControlStatus": {
+      "enum": [
+        "planned",
+        "in_place",
+        "proposed"
+      ],
+      "title": "ControlStatus",
+      "type": "string"
+    },
+    "ControlType": {
+      "description": "Hierarchy of controls, most to least effective.",
+      "enum": [
+        "elimination",
+        "substitution",
+        "isolation",
+        "engineering",
+        "administrative",
+        "ppe"
+      ],
+      "title": "ControlType",
+      "type": "string"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "description": "A pointer to the transcript span that supports a field.",
+      "properties": {
+        "segment_id": {
+          "title": "Segment Id",
+          "type": "string"
+        },
+        "speaker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speaker Id"
+        },
+        "start_ms": {
+          "default": 0,
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "end_ms": {
+          "default": 0,
+          "title": "End Ms",
+          "type": "integer"
+        },
+        "quote": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "segment_id"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "HazardOrigin": {
+      "enum": [
+        "mentioned",
+        "task_typical",
+        "site_condition",
+        "human"
+      ],
+      "title": "HazardOrigin",
+      "type": "string"
+    },
+    "HazardStatus": {
+      "enum": [
+        "present",
+        "unconfirmed",
+        "not_present"
+      ],
+      "title": "HazardStatus",
+      "type": "string"
+    },
+    "Severity": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "hazard_code": {
+      "title": "Hazard Code",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "category": {
+      "title": "Category",
+      "type": "string"
+    },
+    "severity": {
+      "$ref": "#/$defs/Severity"
+    },
+    "origin": {
+      "$ref": "#/$defs/HazardOrigin",
+      "default": "mentioned"
+    },
+    "status": {
+      "$ref": "#/$defs/HazardStatus",
+      "default": "present"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRef"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "confidence": {
+      "default": 0.5,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "controls": {
+      "items": {
+        "$ref": "#/$defs/ControlRecommendation"
+      },
+      "title": "Controls",
+      "type": "array"
+    },
+    "source_documents": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Documents",
+      "type": "array"
+    },
+    "observation_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Observation Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "hazard_code",
+    "name",
+    "category",
+    "severity"
+  ],
+  "title": "HazardAssessment",
+  "type": "object"
+}

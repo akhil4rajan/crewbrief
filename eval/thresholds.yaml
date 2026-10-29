@@ -1,0 +1,28 @@
+# Regression gate for eval/run_eval.py.
+#
+# `gates` fail the run (non-zero exit with --fail-under; CI passes it on every pull request).
+# `targets` are reported as warnings only, to track progress without blocking.
+# A metric fails when its pooled dataset value is below `min` or above `max`, or when it could not
+# be computed (no data) for a gated metric.
+
+gates:
+  analyst.critical_recall: {min: 0.98}       # README goal: critical hazard recall >= 98 %
+  form.evidence_coverage: {min: 0.95}        # every AI-filled field cites a transcript span
+  form.hallucination_rate: {max: 0.02}       # AI fields with no / unverifiable evidence
+  verifier.seeded_gap_catch_rate: {min: 0.90}
+
+targets:
+  analyst.recall_weighted: {min: 0.90}
+  analyst.precision_weighted: {min: 0.70}
+  analyst.not_present_respected: {min: 1.0}
+  analyst.offtopic_drop_rate: {min: 0.80}
+  analyst.false_drop_rate: {max: 0.05}
+  expert.control_recall: {min: 0.90}
+  expert.code_mapping: {min: 0.90}
+  form.field_semantic: {min: 0.80}
+  transcription.domain_wer: {max: 0.10}
+  diarization.der: {max: 0.15}
+
+settings:
+  # Content-token overlap (F1) at or above which a filled field counts as a semantic match.
+  field_semantic_threshold: 0.5

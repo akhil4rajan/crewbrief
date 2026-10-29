@@ -1,0 +1,174 @@
+{
+  "briefing_id": "b04_underground_cable_fault",
+  "title": "Underground LV cable fault with excavation, Coorparoo QLD",
+  "crew": [
+    {
+      "user_id": "u-crew-2",
+      "name": "Priya Nair",
+      "role": "leading_hand"
+    },
+    {
+      "user_id": "u-crew-1",
+      "name": "Sam Taylor",
+      "role": "crew"
+    },
+    {
+      "user_id": "u-crew-3",
+      "name": "Jack O'Brien",
+      "role": "crew"
+    }
+  ],
+  "lines": [
+    {
+      "id": "L01",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "Right, this is the underground cable fault on Logan Road at the Cavendish Road corner in Coorparoo. Work order 6620148. Four houses have been off supply since last night.",
+      "start_ms": 1500,
+      "end_ms": 11940
+    },
+    {
+      "id": "L02",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-1",
+      "text": "The fault locator puts it about twelve metres from the pillar, under the footpath.",
+      "start_ms": 12527,
+      "end_ms": 17567
+    },
+    {
+      "id": "L03",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "First thing, the faulted cable. We isolate at the pillar and at the substation end, lock and tag it, test it dead, then earth it before anyone touches it.",
+      "start_ms": 18291,
+      "end_ms": 28731,
+      "asr_hypothesis": "First thing, the faulted cable. We isolate at the pillar and at the substation end, lock and tagged, test it dead, then earth it before anyone touches it."
+    },
+    {
+      "id": "L04",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-3",
+      "text": "And spike it before we cut, yeah.",
+      "start_ms": 29592,
+      "end_ms": 32112
+    },
+    {
+      "id": "L05",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-1",
+      "text": "Dial before you dig shows a gas main on the other side of the footpath and Telstra in the same trench as our cable.",
+      "start_ms": 33110,
+      "end_ms": 41750
+    },
+    {
+      "id": "L06",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "So we pothole by hand and with the vac truck first, find the gas and the Telstra, then run the cable locator over it before the excavator goes in.",
+      "start_ms": 42885,
+      "end_ms": 53325,
+      "asr_hypothesis": "So we pothole by hand and with the vac truck first, find the gas and the Telstra, then run the cable locater over it before the excavator goes in."
+    },
+    {
+      "id": "L07",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-3",
+      "text": "The hole's going to be about one point eight deep and the soil's sandy, it'll want to fall in.",
+      "start_ms": 53897,
+      "end_ms": 60737
+    },
+    {
+      "id": "L08",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "Yep, noted.",
+      "start_ms": 61446,
+      "end_ms": 62546
+    },
+    {
+      "id": "L09",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-1",
+      "text": "Footpath's busy, there's a bus stop right there and people walking to the shops. We barricade the whole hole with mesh fencing and divert pedestrians to the other side with footpath closed signs.",
+      "start_ms": 63392,
+      "end_ms": 75272
+    },
+    {
+      "id": "L10",
+      "speaker": "Guest-4",
+      "user_id": null,
+      "text": "Excuse me, is the power going to be back on today? My fridge is full.",
+      "start_ms": 76255,
+      "end_ms": 81655,
+      "noise": true,
+      "confidence": 0.77
+    },
+    {
+      "id": "L11",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "We're working on it now, hopefully by this arvo.",
+      "start_ms": 82775,
+      "end_ms": 86015,
+      "noise": true
+    },
+    {
+      "id": "L12",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-3",
+      "text": "I'll run the excavator, Sam's my spotter, and nobody inside the swing radius.",
+      "start_ms": 86572,
+      "end_ms": 91252
+    },
+    {
+      "id": "L13",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-3",
+      "text": "No overhead lines over the hole either, so the excavator's clear up top.",
+      "start_ms": 91946,
+      "end_ms": 96626,
+      "hyp_speaker": "Guest-2"
+    },
+    {
+      "id": "L14",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "Manual handling the cable and the joint kit, use the cable rollers, don't drag it.",
+      "start_ms": 97457,
+      "end_ms": 102857
+    },
+    {
+      "id": "L15",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-1",
+      "text": "For the jointing, the resin's nasty stuff. Nitrile gloves, glasses, and read the SDS first.",
+      "start_ms": 103825,
+      "end_ms": 109225
+    },
+    {
+      "id": "L16",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "Emergency. Muster at the bus shelter on Cavendish Road. Nearest hospital is the PA, five minutes away. First aider is me, Priya. Comms is mobile and the two way on channel four.",
+      "start_ms": 110330,
+      "end_ms": 121850
+    },
+    {
+      "id": "L17",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-3",
+      "text": "Anyone know if the Broncos signed that new halfback?",
+      "start_ms": 122392,
+      "end_ms": 125632,
+      "noise": true
+    },
+    {
+      "id": "L18",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-2",
+      "text": "Focus, Jack. Right, sign the sheet.",
+      "start_ms": 126311,
+      "end_ms": 128471
+    }
+  ]
+}

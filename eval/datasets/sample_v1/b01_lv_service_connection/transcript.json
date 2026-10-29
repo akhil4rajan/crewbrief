@@ -1,0 +1,186 @@
+{
+  "briefing_id": "b01_lv_service_connection",
+  "title": "New LV overhead service connection, Penrith NSW",
+  "crew": [
+    {
+      "user_id": "u-crew-1",
+      "name": "Sam Taylor",
+      "role": "leading_hand"
+    },
+    {
+      "user_id": "u-crew-2",
+      "name": "Priya Nair",
+      "role": "crew"
+    }
+  ],
+  "lines": [
+    {
+      "id": "L01",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Righto, let's do the pre-job brief before we get stuck in. Job today is a new LV service connection at 14 Banksia Street, Penrith. Work order 4471823.",
+      "start_ms": 1500,
+      "end_ms": 11220
+    },
+    {
+      "id": "L02",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Yep, got the paperwork here. It's a new overhead service from the pole out the front to the house, the sparky's already done the meter box.",
+      "start_ms": 11807,
+      "end_ms": 21167
+    },
+    {
+      "id": "L03",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "So we're working on live LV at the pole. The mains are energised, four fifteen volts, we're not getting an outage for one service.",
+      "start_ms": 21891,
+      "end_ms": 30531,
+      "asr_hypothesis": "So we're working on live L V at the pole. The mains are energised, four fifteen volts, we're not getting an outage for one service."
+    },
+    {
+      "id": "L04",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Righto. So arc flash suits on, the rated gloves and the face shield, and we keep everyone well back from under the pole.",
+      "start_ms": 31392,
+      "end_ms": 39672
+    },
+    {
+      "id": "L05",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Yep. I'll be up in the EWP, you're my safety observer on the ground the whole time.",
+      "start_ms": 40670,
+      "end_ms": 46790,
+      "asr_hypothesis": "Yep. I'll be up in the EWB, you're my safety observer on the ground the whole time."
+    },
+    {
+      "id": "L06",
+      "speaker": "Guest-3",
+      "user_id": null,
+      "text": "Sorry mate, how long's the power going to be off? I've got the kids home sick.",
+      "start_ms": 47925,
+      "end_ms": 53685,
+      "noise": true,
+      "confidence": 0.81
+    },
+    {
+      "id": "L07",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Shouldn't be off at all for you, we'll be out of your hair by lunch.",
+      "start_ms": 54257,
+      "end_ms": 59657,
+      "noise": true
+    },
+    {
+      "id": "L08",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Working at heights in the bucket, so harness on and clipped in before you go up, and I'll check the EWP pre-start's been done.",
+      "start_ms": 60366,
+      "end_ms": 69006
+    },
+    {
+      "id": "L09",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Done it this morning at the depot, all good. Outriggers go on pads, the nature strip's soft after all the rain.",
+      "start_ms": 69852,
+      "end_ms": 77412,
+      "hyp_speaker": "Guest-2"
+    },
+    {
+      "id": "L10",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Yeah it's soggy, so we'll put the big pads down.",
+      "start_ms": 78395,
+      "end_ms": 81995
+    },
+    {
+      "id": "L11",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Traffic's quiet, it's a cul-de-sac, so just cones and a sign either side of the truck. No traffic controllers needed.",
+      "start_ms": 83115,
+      "end_ms": 90315
+    },
+    {
+      "id": "L12",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "There's no trees anywhere near the service run either, so no vegetation to worry about.",
+      "start_ms": 90872,
+      "end_ms": 96272
+    },
+    {
+      "id": "L13",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Manual handling, the service cable drum's heavy, so two-person lift or use the drum stand.",
+      "start_ms": 96966,
+      "end_ms": 102366
+    },
+    {
+      "id": "L14",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Did you watch the Panthers on Saturday? Unreal second half.",
+      "start_ms": 103197,
+      "end_ms": 106797,
+      "noise": true
+    },
+    {
+      "id": "L15",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Don't start, I lost fifty bucks on that game.",
+      "start_ms": 107765,
+      "end_ms": 111005,
+      "noise": true
+    },
+    {
+      "id": "L16",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Okay, emergency. Muster point is the corner of Banksia and Wattle, by the post box.",
+      "start_ms": 112110,
+      "end_ms": 117510
+    },
+    {
+      "id": "L17",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Nearest hospital's Nepean, about ten minutes up Derby Street.",
+      "start_ms": 118052,
+      "end_ms": 121292
+    },
+    {
+      "id": "L18",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "I'm first aider today, kit's in the truck behind the passenger seat. Comms is mobile, and the radio on channel six to the depot.",
+      "start_ms": 121971,
+      "end_ms": 130611
+    },
+    {
+      "id": "L19",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-2",
+      "text": "Weather's fine, bit of wind this arvo but nothing to worry about.",
+      "start_ms": 131427,
+      "end_ms": 135747
+    },
+    {
+      "id": "L20",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-1",
+      "text": "Alright, sign on and let's get into it.",
+      "start_ms": 136700,
+      "end_ms": 139580
+    }
+  ]
+}

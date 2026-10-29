@@ -1,0 +1,634 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/Form.json",
+  "$defs": {
+    "ControlEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/ControlType"
+        },
+        "status": {
+          "$ref": "#/$defs/ControlStatus",
+          "default": "proposed"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "type"
+      ],
+      "title": "ControlEntry",
+      "type": "object"
+    },
+    "ControlStatus": {
+      "enum": [
+        "planned",
+        "in_place",
+        "proposed"
+      ],
+      "title": "ControlStatus",
+      "type": "string"
+    },
+    "ControlType": {
+      "description": "Hierarchy of controls, most to least effective.",
+      "enum": [
+        "elimination",
+        "substitution",
+        "isolation",
+        "engineering",
+        "administrative",
+        "ppe"
+      ],
+      "title": "ControlType",
+      "type": "string"
+    },
+    "CrewEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "user_id": {
+          "title": "User Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "default": "crew",
+          "title": "Role",
+          "type": "string"
+        },
+        "checked_in_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked In At"
+        },
+        "acknowledged": {
+          "default": false,
+          "title": "Acknowledged",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "user_id",
+        "name"
+      ],
+      "title": "CrewEntry",
+      "type": "object"
+    },
+    "EmergencyPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "muster_point": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "nearest_hospital": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "first_aider": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "communications": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "EmergencyPlan",
+      "type": "object"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "description": "A pointer to the transcript span that supports a field.",
+      "properties": {
+        "segment_id": {
+          "title": "Segment Id",
+          "type": "string"
+        },
+        "speaker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speaker Id"
+        },
+        "start_ms": {
+          "default": 0,
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "end_ms": {
+          "default": 0,
+          "title": "End Ms",
+          "type": "integer"
+        },
+        "quote": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Quote",
+          "type": "string"
+        }
+      },
+      "required": [
+        "segment_id"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "FieldValue": {
+      "additionalProperties": false,
+      "description": "A scalar form field plus its provenance.",
+      "properties": {
+        "value": {
+          "default": null,
+          "title": "Value"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "title": "FieldValue",
+      "type": "object"
+    },
+    "HazardEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "status": {
+          "$ref": "#/$defs/HazardStatus",
+          "default": "unconfirmed"
+        },
+        "origin": {
+          "$ref": "#/$defs/HazardOrigin",
+          "default": "mentioned"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "controls": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ControlEntry"
+          },
+          "title": "Controls",
+          "type": "object"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "category",
+        "severity"
+      ],
+      "title": "HazardEntry",
+      "type": "object"
+    },
+    "HazardOrigin": {
+      "enum": [
+        "mentioned",
+        "task_typical",
+        "site_condition",
+        "human"
+      ],
+      "title": "HazardOrigin",
+      "type": "string"
+    },
+    "HazardStatus": {
+      "enum": [
+        "present",
+        "unconfirmed",
+        "not_present"
+      ],
+      "title": "HazardStatus",
+      "type": "string"
+    },
+    "JobDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "work_order_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "task_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "scheduled_start": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FieldValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "JobDetails",
+      "type": "object"
+    },
+    "Permit": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "reference": {
+          "default": "",
+          "title": "Reference",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "Permit",
+      "type": "object"
+    },
+    "PpeItem": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "code",
+        "name"
+      ],
+      "title": "PpeItem",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Who/what produced a value and why we believe it. Required on every form field.",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/Source",
+          "default": "ai"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "prompt_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Version"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "updated_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated By"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        }
+      },
+      "title": "Provenance",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SiteCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Code"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "title": "SiteCondition",
+      "type": "object"
+    },
+    "Source": {
+      "enum": [
+        "ai",
+        "human",
+        "system"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "TaskStep": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "order": {
+          "title": "Order",
+          "type": "integer"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      },
+      "required": [
+        "id",
+        "order",
+        "description"
+      ],
+      "title": "TaskStep",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "default": "jsa/1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "job": {
+      "$ref": "#/$defs/JobDetails"
+    },
+    "crew": {
+      "additionalProperties": {
+        "$ref": "#/$defs/CrewEntry"
+      },
+      "title": "Crew",
+      "type": "object"
+    },
+    "tasks": {
+      "additionalProperties": {
+        "$ref": "#/$defs/TaskStep"
+      },
+      "title": "Tasks",
+      "type": "object"
+    },
+    "site_conditions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/SiteCondition"
+      },
+      "title": "Site Conditions",
+      "type": "object"
+    },
+    "hazards": {
+      "additionalProperties": {
+        "$ref": "#/$defs/HazardEntry"
+      },
+      "title": "Hazards",
+      "type": "object"
+    },
+    "ppe": {
+      "additionalProperties": {
+        "$ref": "#/$defs/PpeItem"
+      },
+      "title": "Ppe",
+      "type": "object"
+    },
+    "emergency": {
+      "$ref": "#/$defs/EmergencyPlan"
+    },
+    "permits": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Permit"
+      },
+      "title": "Permits",
+      "type": "object"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FieldValue"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "Form",
+  "type": "object"
+}

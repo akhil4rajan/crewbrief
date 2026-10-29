@@ -1,0 +1,20 @@
+{
+  "id": "storm-restoration-night",
+  "title": "Storm restoration at night - Terralong Street, Kiama",
+  "task_type": "TT-STORM",
+  "location": "Terralong Street, Kiama NSW (near Shoalhaven Street)",
+  "crew": ["u-crew-1", "u-crew-4"],
+  "summary": "A tired two-person crew at night with conductors down. Shows fatigue and night-work hazards and gaps the supervisor must resolve before sign-off.",
+  "lines": [
+    {"speaker": "u-crew-1", "at_ms": 0, "text": "Alright Mei, quick brief. Storm job, a tree's come down on the LV across Terralong Street in Kiama. Incident 88213."},
+    {"speaker": "u-crew-4", "at_ms": 7000, "text": "It's pitch black and still raining. The conductors are on the road, tangled in the branches."},
+    {"speaker": "u-crew-1", "at_ms": 14000, "text": "Treat everything as live until we prove otherwise. Nobody goes within eight metres of those wires."},
+    {"speaker": "u-crew-4", "at_ms": 21000, "text": "Police have closed the street at both ends, so traffic's sorted."},
+    {"speaker": "u-crew-1", "at_ms": 27000, "text": "Control says the transformer fuses are still in. I'll pull the LV fuses at the transformer and tag them, then we test dead and earth both sides."},
+    {"speaker": "u-crew-4", "at_ms": 35000, "text": "Copy. I'll set up the light tower, and we've both got head torches and reflective vests."},
+    {"speaker": "u-crew-1", "at_ms": 42000, "text": "The chainsaw work only starts once it's earthed. Chaps, helmet and visor, earmuffs."},
+    {"speaker": "u-crew-4", "at_ms": 49000, "text": "Honestly I'm cooked. We've been going since six this morning, that's sixteen hours."},
+    {"speaker": "u-crew-1", "at_ms": 55000, "text": "Yeah, me too. Let's just get this one done."},
+    {"speaker": "u-crew-1", "at_ms": 61000, "text": "Muster point is the car park behind the surf club. Nearest hospital is Kiama Hospital. I'm first aider, comms is the radio to control on channel two."}
+  ]
+}

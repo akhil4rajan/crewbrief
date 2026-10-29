@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/AuditEntry.json",
+  "$defs": {
+    "ActorType": {
+      "enum": [
+        "user",
+        "service",
+        "system"
+      ],
+      "title": "ActorType",
+      "type": "string"
+    },
+    "AuditAction": {
+      "enum": [
+        "session.created",
+        "session.transition",
+        "crew.checked_in",
+        "crew.acknowledged",
+        "recording.changed",
+        "transcript.segments_received",
+        "form.patch_applied",
+        "form.patch_rejected",
+        "form.human_edit",
+        "gaps.updated",
+        "gap.dismissed",
+        "voice.prompt",
+        "role.invoked",
+        "session.signed_off",
+        "session.gap_override",
+        "session.submitted",
+        "session.abandoned",
+        "session.consent_acknowledged",
+        "session.deleted"
+      ],
+      "title": "AuditAction",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Append-only. Every field records evidence, model + prompt version and reviewer action.",
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "ts": {
+      "format": "date-time",
+      "title": "Ts",
+      "type": "string"
+    },
+    "actor_id": {
+      "title": "Actor Id",
+      "type": "string"
+    },
+    "actor_type": {
+      "$ref": "#/$defs/ActorType"
+    },
+    "action": {
+      "$ref": "#/$defs/AuditAction"
+    },
+    "path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path"
+    },
+    "before": {
+      "default": null,
+      "title": "Before"
+    },
+    "after": {
+      "default": null,
+      "title": "After"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "prompt_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prompt Version"
+    },
+    "details": {
+      "additionalProperties": true,
+      "title": "Details",
+      "type": "object"
+    }
+  },
+  "required": [
+    "session_id",
+    "actor_id",
+    "actor_type",
+    "action"
+  ],
+  "title": "AuditEntry",
+  "type": "object"
+}

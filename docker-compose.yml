@@ -1,0 +1,131 @@
+# CrewBrief local stack:  docker compose up --build
+#
+# Runs fully offline with the dummy values in .env (CREWBRIEF_MODE=local).
+# Real keys go in .env.local (optional, never committed); it overrides .env.
+# Service-to-service URLs are rewritten to compose DNS names below. Browser-facing
+# URLs (PUBLIC_GATEWAY_WS_URL, VITE_*) keep pointing at localhost.
+# Review portal: http://localhost:3000
+
+name: crewbrief
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: crewbrief-backend:local
+  env_file:
+    - path: .env
+      required: true
+    - path: .env.local
+      required: false
+  environment: &backend-env
+    GATEWAY_URL: http://gateway:8000
+    FORM_API_URL: http://form-api:8001
+    ORCHESTRATOR_URL: http://orchestrator:8002
+    ROLES_URL: http://roles:8003
+    PUBLIC_GATEWAY_WS_URL: ws://localhost:8000
+    DATA_DIR: /app/var
+    HOST: 0.0.0.0
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  deploy:
+    resources:
+      limits:
+        cpus: "1.0"
+        memory: 768M
+      reservations:
+        memory: 256M
+  healthcheck: &backend-healthcheck
+    test: ["CMD", "python", "/app/scripts/container_healthcheck.py", "/readyz"]
+    interval: 10s
+    timeout: 4s
+    retries: 6
+    start_period: 20s
+
+services:
+  roles:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      SERVICE: roles
+    ports:
+      - "127.0.0.1:8003:8003"
+
+  form-api:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      SERVICE: form_api
+      SQLITE_PATH: /app/var/crewbrief.db
+    ports:
+      - "8001:8001"
+    volumes:
+      - crewbrief-data:/app/var
+
+  orchestrator:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      SERVICE: orchestrator
+    ports:
+      - "127.0.0.1:8002:8002"
+    depends_on:
+      form-api:
+        condition: service_healthy
+      roles:
+        condition: service_healthy
+
+  gateway:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      SERVICE: gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      form-api:
+        condition: service_healthy
+      orchestrator:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  review-portal:
+    build:
+      context: apps/review-portal
+    image: crewbrief-review-portal:local
+    # Runtime config: the container writes /config.js from these at start-up. The browser
+    # calls these URLs, so they stay on localhost.
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8001}
+      VITE_GATEWAY_URL: ${VITE_GATEWAY_URL:-http://localhost:8000}
+      VITE_AUTH_MODE: dev
+    ports:
+      - "3000:8080"
+    restart: unless-stopped
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    depends_on:
+      gateway:
+        condition: service_healthy
+      form-api:
+        condition: service_healthy
+
+volumes:
+  crewbrief-data:

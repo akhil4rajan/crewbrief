@@ -87,7 +87,7 @@ CREATED → BRIEFING → DRAFTING ⇄ GAP_CHECK → REVIEW → SIGNED → SUBMIT
 
 | Component | Type | Responsibility |
 |---|---|---|
-| **Mobile app** | Client | Crew sign-in, audio capture, on-device noise suppression and VAD, live form view, offline buffering |
+| **Web app** | Client | One React app for both sides. Crew: tap-in, recording notice, audio capture with browser noise suppression and VAD, live form view, voice prompts. Supervisors: review, evidence, sign-off, accuracy metrics. |
 | **Realtime gateway** | Service | Authenticates devices and terminates WebSockets. Routes audio to the Speech service and form patches back to clients. |
 | **Transcription service** | Service | Azure AI Speech `ConversationTranscriber`, phrase lists and Custom Speech for utility terminology, filtering of low-confidence segments |
 | **Session orchestrator** | Deterministic code | Per-session state machine. Schedules roles, enforces rules, holds the session timeline. |
@@ -111,35 +111,45 @@ CREATED → BRIEFING → DRAFTING ⇄ GAP_CHECK → REVIEW → SIGNED → SUBMIT
 ```
 crewbrief/
 ├── apps/
-│   ├── mobile/                 # Crew app (React Native)
-│   └── review-portal/          # Supervisor review web app
+│   └── review-portal/          # The web app (React + Vite): landing page, crew briefing view (/crew), supervisor review (/sessions)
 ├── services/
-│   ├── gateway/                # WebSocket gateway (FastAPI)
-│   ├── transcription/          # Azure AI Speech integration
-│   ├── orchestrator/           # Session state machine
+│   ├── gateway/                # WebSockets for devices and live UI (FastAPI) + tools/replay.py
+│   ├── transcription/          # Azure AI Speech integration, confidence filters, PII redaction
+│   ├── orchestrator/           # Session state machine and extraction pipeline
 │   ├── roles/
 │   │   ├── conversation_analyst/
 │   │   ├── hazard_expert/
 │   │   ├── form_filler/
 │   │   ├── verifier/
 │   │   └── voice_prompter/
-│   └── form-api/               # Drafts, sign-off, submission, audit
+│   └── form_api/               # Drafts, sign-off, submission, audit, metrics
 ├── packages/
-│   ├── schemas/                # Form schema, patch contracts (JSON Schema / Pydantic)
+│   ├── schemas/                # Form schema, patch contracts (Pydantic → JSON Schema)
+│   ├── rules/                  # Safety rules enforced in code
+│   ├── common/                 # Config, auth, logging, errors, events, HTTP client
 │   └── prompts/                # Versioned prompts per role
 ├── knowledge/
-│   └── ingest/                 # Ingest hazard register & safety docs into AI Search
+│   ├── sources/                # Hazard & control library (YAML) and safety documents
+│   ├── ingest/                 # Ingest the library & docs into a local index or AI Search
+│   └── search.py               # Local BM25 / Azure AI Search retrieval
 ├── eval/
-│   ├── datasets/               # Gold briefings + SME-completed forms (not committed; see eval/README)
+│   ├── datasets/sample_v1/     # Synthetic briefings + gold forms (real gold data is not committed)
 │   ├── metrics/                # WER, DER, hazard recall/precision, evidence coverage
+│   ├── thresholds.yaml         # CI gate
 │   └── run_eval.py
-├── infra/
-│   ├── bicep/                  # Azure infrastructure as code
-│   └── azure.yaml              # azd configuration
+├── samples/                    # Scripted briefings for the replay tool
+├── infra/bicep/                # Azure infrastructure as code
+├── azure.yaml                  # azd configuration (azd requires it at the repo root)
 ├── docs/
+│   ├── api/contracts.md        # Service contracts
+│   ├── architecture.md
 │   ├── adr/                    # Architecture decision records
 │   └── runbooks/
+├── scripts/                    # dev.sh, check_env.py, container health check
+├── .github/                    # CI (lint, eval gate, builds, Bicep, secret scan) and deploy
+├── Dockerfile                  # One image for all Python services
 ├── docker-compose.yml
+├── Makefile
 └── README.md
 ```
 
@@ -148,44 +158,74 @@ crewbrief/
 ### Prerequisites
 
 - Python 3.12+, Node 20+
-- Docker
-- Azure CLI and Azure Developer CLI (`azd`)
-- An Azure subscription with access to Azure AI Speech, Azure OpenAI (Foundry), Azure AI Search and Cosmos DB
+- Docker (optional, for `docker compose`)
+- Azure CLI and Azure Developer CLI (`azd`), only to deploy to Azure
 
-### Provision Azure resources
+### Run locally (no Azure needed)
+
+The committed `.env` holds **dummy** values and `CREWBRIEF_MODE=local`, so every Azure dependency is
+replaced by an offline stand-in: rule-based roles instead of Azure OpenAI, a local search index instead
+of AI Search, SQLite instead of Cosmos DB, and in-process fan-out instead of Web PubSub. Put real keys in
+`.env.local` (git-ignored), which overrides `.env`.
+
+```bash
+make setup        # Python venv + deps, npm install for the web app
+make ingest       # build the local hazard search index
+make dev          # gateway :8000, form-api :8001, orchestrator :8002, roles :8003, portal :3000
+```
+
+or, with Docker:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:3000`. The landing page has two ways in:
+
+* **I'm on the crew**: pick a crew member (e.g. Sam Taylor), start a briefing (or pick a demo
+  scenario), tap in, acknowledge the recording notice and start. Talk into the mic (browser speech
+  recognition in local mode), type lines, or press **Play demo script** to run the scripted
+  briefing. The form fills in live and CrewBrief speaks its questions. End the briefing to send it
+  for review.
+* **I'm a supervisor**: pick Alex Morgan to review, edit and sign off the draft.
+
+The crew view and the supervisor view are part of the same web app; **Supervisor view** and
+**Open crew view** links switch between them during a demo.
+
+`make check-env` shows which integrations are local, dummy or real (it never prints secret values).
+
+### Try it with a recorded briefing
+
+```bash
+make replay       # python -m services.gateway.tools.replay --script samples/briefing_01.json
+```
+
+The draft form, gaps and voice prompts stream to the console and to the review portal live.
+`--audio file.wav` streams real audio instead (needs Azure AI Speech).
+
+### Use real Azure services
 
 ```bash
 azd auth login
 azd env new crewbrief-dev
 azd env set AZURE_LOCATION australiaeast
-azd provision
+azd provision                         # see docs/runbooks/deploy.md
+azd env get-values > .env.local       # then set CREWBRIEF_MODE=azure in .env.local
+python -m knowledge.ingest --source ./knowledge/sources --index hazards --target azure
 ```
 
-### Run locally
-
-```bash
-cp .env.example .env          # fill in values from `azd env get-values`
-docker compose up --build     # gateway, orchestrator, form-api, roles
-```
-
-### Load the knowledge base
-
-```bash
-python -m knowledge.ingest --source ./knowledge/sources --index hazards
-```
-
-### Try it with a recorded briefing
-
-```bash
-python -m services.gateway.tools.replay --audio samples/briefing_01.wav
-```
-
-The draft form streams to the console and to the review portal at `http://localhost:3000`.
+Individual integrations can be switched on their own, e.g. `LLM_PROVIDER=azure` keeps everything local
+except Azure OpenAI. If an LLM call fails, the role falls back to its rule-based version
+(`LLM_FALLBACK_TO_HEURISTIC=true`) and the audit log records the fallback.
 
 ## Configuration
 
+All settings are in `.env.example` (typed in `packages/common/config.py`). The most important:
+
 | Variable | Description |
 |---|---|
+| `CREWBRIEF_MODE` | `local` (offline stand-ins, default) or `azure` |
+| `STT_PROVIDER`, `LLM_PROVIDER`, `SEARCH_PROVIDER`, `STORE_PROVIDER`, `PUBSUB_PROVIDER`, `VOICE_PROVIDER`, `PII_PROVIDER` | Per-integration override of the mode |
 | `AZURE_SPEECH_ENDPOINT` | Azure AI Speech resource endpoint |
 | `AZURE_SPEECH_REGION` | e.g. `australiaeast` |
 | `AZURE_OPENAI_ENDPOINT` | Foundry / Azure OpenAI endpoint |
@@ -195,11 +235,13 @@ The draft form streams to the console and to the review portal at `http://localh
 | `SEARCH_ENDPOINT` / `SEARCH_INDEX` | Azure AI Search for the hazard library |
 | `COSMOS_ENDPOINT` | Draft and session state |
 | `WEBPUBSUB_ENDPOINT` | Live updates to clients |
+| `AUTH_MODE` | `dev` (local tokens for seeded users) or `entra` |
 | `EXTRACTION_INTERVAL_SECONDS` | How often the analyst runs (default `8`) |
 | `RETAIN_RAW_AUDIO` | `false` by default; transcripts only |
 | `PII_REDACTION` | `true` by default |
 
-Authentication uses managed identity (`DefaultAzureCredential`). Don't put keys in `.env` for anything beyond local development.
+Authentication uses managed identity (`DefaultAzureCredential`). Don't put keys in `.env` for anything
+beyond local development; values containing `dummy` are treated as unset.
 
 ## Accuracy and evaluation
 
@@ -220,10 +262,10 @@ A form that looks complete but is wrong is worse than no form. Accuracy is measu
 Recall matters more than precision. A missed hazard costs far more than an extra one.
 
 ```bash
-python eval/run_eval.py --dataset eval/datasets/gold_v1 --report eval/reports/
+python eval/run_eval.py --dataset eval/datasets/sample_v1 --report eval/reports/ --fail-under   # or: make eval
 ```
 
-CI fails a pull request if critical hazard recall or evidence coverage drops below the agreed threshold.
+CI fails a pull request if critical hazard recall, evidence coverage, hallucination rate or the seeded-gap catch rate crosses the thresholds in `eval/thresholds.yaml`. The committed `sample_v1` set is synthetic; real SME gold data (`eval/datasets/gold_*`) is kept out of git.
 
 **2. Shadow pilot.** Crews fill in forms manually as today while CrewBrief drafts in parallel. The two are compared before the agent is shown to anyone.
 
@@ -250,18 +292,20 @@ CI fails a pull request if critical hazard recall or evidence coverage drops bel
 
 ## Roadmap
 
-- [ ] Phase 0: form schema, hazard library ingestion, 20 gold briefings, offline prototype scored end to end
-- [ ] Phase 1: real-time pipeline for a single crew with live form updates
-- [ ] Phase 2: verifier and spoken gap prompts
+- [x] Phase 0: form schema, hazard library ingestion, offline prototype scored end to end (6 synthetic briefings; 20 SME gold briefings still to collect)
+- [x] Phase 1: real-time pipeline for a single crew with live form updates
+- [x] Phase 2: verifier and spoken gap prompts
 - [ ] Phase 3: shadow pilot with 10 crews
 - [ ] Phase 4: scale-out, PTU, multi-region Speech, offline mode
 - [ ] Later: work-order and switching-instruction context, weather and fire-danger inputs
 
 ## Contributing
 
-1. Create a branch from `main`.
+1. Create a branch from `main` named `<type>/<short-description>` (e.g. `feature/match-history-page`).
 2. Any change to prompts, schemas or model deployments must include an eval run (`eval/run_eval.py`) and its report in the pull request.
 3. Record significant design decisions as an ADR in `docs/adr/`.
+
+See `CONTRIBUTING.md` and `SECURITY.md`.
 
 ---
 

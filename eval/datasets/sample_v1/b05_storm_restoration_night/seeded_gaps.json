@@ -1,0 +1,24 @@
+[
+  {
+    "id": "SG1",
+    "description": "No muster point stated",
+    "kinds": [
+      "missing_required_field"
+    ],
+    "path": "/emergency/muster_point",
+    "lines": []
+  },
+  {
+    "id": "SG2",
+    "description": "Crew say they have worked 16 hours but agree no fatigue control",
+    "kinds": [
+      "hazard_without_control",
+      "high_risk_without_control"
+    ],
+    "path": "/hazards/HZ-FATIGUE",
+    "lines": [
+      "L10",
+      "L11"
+    ]
+  }
+]

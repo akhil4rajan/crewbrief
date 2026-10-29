@@ -1,0 +1,195 @@
+{
+  "briefing_id": "b02_pole_replacement_crane",
+  "title": "Pole replacement with crane near 11 kV lines, Scoresby VIC",
+  "crew": [
+    {
+      "user_id": "u-crew-3",
+      "name": "Jack O'Brien",
+      "role": "leading_hand"
+    },
+    {
+      "user_id": "u-crew-1",
+      "name": "Sam Taylor",
+      "role": "crew"
+    },
+    {
+      "user_id": "u-crew-4",
+      "name": "Mei Chen",
+      "role": "crew"
+    },
+    {
+      "user_id": "c-crane-1",
+      "name": "Dave Kowalski",
+      "role": "contractor"
+    }
+  ],
+  "lines": [
+    {
+      "id": "L01",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Morning all. This is the pole replacement on Ferntree Gully Road, Scoresby, pole SCB 2214. Work order 5530917.",
+      "start_ms": 1500,
+      "end_ms": 7980
+    },
+    {
+      "id": "L02",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "We're swapping the rotten pole for a new concrete one. The eleven kV stays on the new crossarm, and there's LV underbuilt.",
+      "start_ms": 8567,
+      "end_ms": 16487
+    },
+    {
+      "id": "L03",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "The HV is isolated and earthed under access permit AP 7731, the switching operator confirmed it at six thirty. The LV is still live, so we treat it as live.",
+      "start_ms": 17211,
+      "end_ms": 28011,
+      "asr_hypothesis": "The HV is isolated and earthed under access permit AP 7731, the switching operator confirmed it at six thirty. The LV is still alive, so we treat it as live."
+    },
+    {
+      "id": "L04",
+      "speaker": "Guest-4",
+      "user_id": "c-crane-1",
+      "text": "Crane's a forty tonne Franna. I'll set up on the eastern side, outriggers fully extended on the mats.",
+      "start_ms": 28872,
+      "end_ms": 35352
+    },
+    {
+      "id": "L05",
+      "speaker": "Guest-4",
+      "user_id": "c-crane-1",
+      "text": "Closest I'll get the boom to the LV is about three metres, so I want a dedicated spotter on the boom the whole time.",
+      "start_ms": 36350,
+      "end_ms": 44990
+    },
+    {
+      "id": "L06",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-4",
+      "text": "I'll spot for you Dave. And we'll put the tiger tails on the LV so it's covered.",
+      "start_ms": 46125,
+      "end_ms": 52245,
+      "asr_hypothesis": "I'll spot for you Dave. And we'll put the tiger tails on the L V so it's covered."
+    },
+    {
+      "id": "L07",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-1",
+      "text": "Ferntree Gully Road's a sixty zone and it's busy, heaps of trucks. We'll have to watch the traffic.",
+      "start_ms": 52817,
+      "end_ms": 59297
+    },
+    {
+      "id": "L08",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Yep, everyone keep an eye on the traffic.",
+      "start_ms": 60006,
+      "end_ms": 62886
+    },
+    {
+      "id": "L09",
+      "speaker": "Guest-5",
+      "user_id": null,
+      "text": "Unit forty two, are you clear of the Boronia job yet, over.",
+      "start_ms": 63732,
+      "end_ms": 68052,
+      "noise": true,
+      "confidence": 0.48
+    },
+    {
+      "id": "L10",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Suspended load. Nobody under the pole while it's on the hook, and use tag lines to steer it.",
+      "start_ms": 69035,
+      "end_ms": 75515
+    },
+    {
+      "id": "L11",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-4",
+      "text": "The old pole's rotten at the base, so it could snap when we take the load. Crane takes the weight before we cut anything.",
+      "start_ms": 76635,
+      "end_ms": 85275,
+      "hyp_speaker": "Guest-2"
+    },
+    {
+      "id": "L12",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-1",
+      "text": "I'll be in the EWP for the crossarm transfer. Harness on, clipped to the anchor point.",
+      "start_ms": 85832,
+      "end_ms": 91592
+    },
+    {
+      "id": "L13",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Dial before you dig is done for the new hole and we potholed yesterday. There's a Telstra pit two metres away but nothing in line with the auger.",
+      "start_ms": 92286,
+      "end_ms": 102366
+    },
+    {
+      "id": "L14",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-4",
+      "text": "Who's grabbing coffee? I'll have a flat white.",
+      "start_ms": 103197,
+      "end_ms": 106077,
+      "noise": true
+    },
+    {
+      "id": "L15",
+      "speaker": "Guest-2",
+      "user_id": "u-crew-1",
+      "text": "Servo's got that new machine, I'll duck over after.",
+      "start_ms": 107045,
+      "end_ms": 110285,
+      "noise": true
+    },
+    {
+      "id": "L16",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Weather, a bit of wind around midday. If it's gusting over thirty k's we stop the lift.",
+      "start_ms": 111390,
+      "end_ms": 117510
+    },
+    {
+      "id": "L17",
+      "speaker": "Guest-4",
+      "user_id": "c-crane-1",
+      "text": "Yep, I'll call it off the wind meter on the crane.",
+      "start_ms": 118052,
+      "end_ms": 122012
+    },
+    {
+      "id": "L18",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Emergency. Muster point is the bus stop on the north side of Ferntree Gully Road. Nearest hospital is the Angliss in Upper Ferntree Gully.",
+      "start_ms": 122691,
+      "end_ms": 131331
+    },
+    {
+      "id": "L19",
+      "speaker": "Guest-3",
+      "user_id": "u-crew-4",
+      "text": "I'm the first aider, kit's in the tray of my ute. Comms is UHF channel eighteen between us and the crane.",
+      "start_ms": 132147,
+      "end_ms": 139707
+    },
+    {
+      "id": "L20",
+      "speaker": "Guest-1",
+      "user_id": "u-crew-3",
+      "text": "Good. Anything else? No? Let's sign on.",
+      "start_ms": 140660,
+      "end_ms": 143180
+    }
+  ]
+}

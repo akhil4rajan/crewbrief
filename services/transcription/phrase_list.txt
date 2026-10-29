@@ -1,0 +1,70 @@
+# Utility field terminology boosted in Azure AI Speech (PhraseListGrammar).
+# One phrase per line; blank lines and lines starting with # are ignored.
+LV
+HV
+low voltage
+high voltage
+LV mains
+HV mains
+live LV
+live line
+de-energised
+energised
+EWP
+elevated work platform
+bucket truck
+crane borer
+earthing
+portable earths
+earth stick
+isolation
+isolation point
+LOTO
+lock out tag out
+danger tag
+test before touch
+prove dead
+voltage tester
+pole
+pole top
+crossarm
+pit
+pillar
+padmount
+padmount substation
+kiosk
+recloser
+sectionaliser
+drop out fuse
+service fuse
+service connection
+service main
+neutral
+neutral integrity test
+polarity test
+insulated gloves
+LV mat
+LV covers
+arc flash
+arc rated
+face shield
+exclusion zone
+traffic control
+traffic management plan
+stop slow bat
+spotter
+safety observer
+switching instruction
+access permit
+vegetation
+overhead lines
+underground cables
+dial before you dig
+asbestos
+pit lid
+muster point
+tailboard
+take five
+SWMS
+JSA
+leading hand

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "SG1",
+    "description": "Arc flash during switching managed only by distance and arc PPE (no remote operation)",
+    "kinds": [
+      "high_risk_without_control"
+    ],
+    "path": "/hazards/HZ-ELEC-ARC",
+    "lines": [
+      "L06"
+    ]
+  }
+]

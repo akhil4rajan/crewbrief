@@ -1,0 +1,41 @@
+# Seeded users for local development (AUTH_MODE=dev). In Azure, users come from Entra ID.
+users:
+  - id: u-crew-1
+    name: Sam Taylor
+    email: sam.taylor@example.com
+    roles: [crew]
+    crew_id: crew-north-1
+    employee_no: E1001
+  - id: u-crew-2
+    name: Priya Nair
+    email: priya.nair@example.com
+    roles: [crew]
+    crew_id: crew-north-1
+    employee_no: E1002
+  - id: u-crew-3
+    name: Jack O'Brien
+    email: jack.obrien@example.com
+    roles: [crew]
+    crew_id: crew-north-1
+    employee_no: E1003
+  - id: u-crew-4
+    name: Mei Chen
+    email: mei.chen@example.com
+    roles: [crew]
+    crew_id: crew-south-1
+    employee_no: E1004
+  - id: u-sup-1
+    name: Alex Morgan
+    email: alex.morgan@example.com
+    roles: [supervisor]
+    employee_no: E2001
+  - id: u-sup-2
+    name: Jordan Lee
+    email: jordan.lee@example.com
+    roles: [supervisor]
+    employee_no: E2002
+  - id: u-admin-1
+    name: Casey Brooks
+    email: casey.brooks@example.com
+    roles: [safety_admin]
+    employee_no: E3001

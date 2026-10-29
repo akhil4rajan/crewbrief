@@ -1,0 +1,6 @@
+# The azd project file is ../azure.yaml (the repository root).
+#
+# azd discovers its project by searching for azure.yaml from the current directory
+# upwards, so the real file must sit at the root next to the Dockerfile it builds.
+# It points `infra.path` at infra/bicep. Run azd commands from the repository root.
+# See docs/runbooks/deploy.md.

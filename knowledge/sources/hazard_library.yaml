@@ -1,0 +1,1028 @@
+# CrewBrief hazard & control library — electricity distribution field work (Australia).
+#
+# Codes are stable identifiers used in forms, patches, audit and eval. Never reuse or rename a code;
+# retire it instead. Keywords are lowercase phrases crews actually say on site. They drive the local
+# phrase matcher and the search index, so prefer specific multi-word phrases over single generic words.
+# The first keyword of a control is used as its short spoken label ("no isolation or earthing control").
+#
+# Validate and index with:  python -m knowledge.ingest --source ./knowledge/sources --index hazards
+version: "2026.10"
+
+hazards:
+  # --- Electrical -----------------------------------------------------------------------------
+  - code: HZ-ELEC-LV
+    name: Contact with live LV conductors
+    category: electrical
+    severity: critical
+    description: Electric shock or burns from energised low-voltage (230/400 V) mains, service cables, pillars or switchboards.
+    keywords: [live lv, low voltage, lv mains, lv conductors, lv network, lv cable, lv cables, live mains, live lv mains, lv service, service mains, live service, energised, still live, it's live, lines are live, live parts, live work, live low voltage, "415 volts", "240 volts", "230 volts", "415", lv, the lv, lv board, lv fuses, lv compartment, lv underbuilt, stays live, still alive, treat it as live, treat everything as live, wires down, lines down, conductors are down, conductors are on the road, faulted cable]
+    typical_controls: [CT-ISO-LOTO, CT-ISO-FUSES, CT-ENG-EARTH, CT-ENG-TEST-DEAD, CT-ENG-INSUL-COVERS, CT-PPE-ARC, CT-PPE-INSUL-GLOVES, CT-ADM-ACCESS-PERMIT]
+    references: [DOC-ESR-001]
+
+  - code: HZ-ELEC-HV
+    name: Contact with live HV conductors
+    category: electrical
+    severity: critical
+    description: Electrocution or flashover from energised high-voltage (11 kV to 66 kV) conductors, cables or plant.
+    keywords: [hv, high voltage, 11kv, 11 kv, 22kv, 22 kv, 33kv, 33 kv, 66kv, hv mains, hv conductors, hv feeder, hv cable, hv side, live hv, hv is isolated]
+    typical_controls: [CT-ISO-HV-SWITCHING, CT-ENG-EARTH, CT-ENG-TEST-DEAD, CT-ADM-ACCESS-PERMIT, CT-ADM-MAD, CT-PPE-ARC]
+    references: [DOC-ESR-001]
+
+  - code: HZ-ELEC-ARC
+    name: Arc flash during switching or fault
+    category: electrical
+    severity: high
+    description: Burns and blast injury from an arc during switching, fuse operation or a fault on energised equipment.
+    keywords: [arc flash, flashover, arc blast, fault current, switching, operating the switch, drop out fuse, ddo fuse, ddo fuses]
+    typical_controls: [CT-ISO-HV-SWITCHING, CT-ENG-REMOTE-OP, CT-PPE-ARC, CT-PPE-EYE, CT-ADM-EXCLUSION]
+    references: [DOC-ESR-001]
+
+  - code: HZ-ELEC-INDUCED
+    name: Induced voltage from parallel circuits
+    category: electrical
+    severity: high
+    description: Dangerous voltage induced on isolated conductors that run parallel to or cross energised circuits.
+    keywords: [induced voltage, induction, induced, parallel circuit, parallel circuits, parallel lines, parallel line, transmission line, transmission lines, crossing under]
+    typical_controls: [CT-ENG-EARTH, CT-ENG-EQUIPOTENTIAL, CT-ENG-TEST-DEAD]
+    references: [DOC-ESR-001]
+
+  - code: HZ-ELEC-BACKFEED
+    name: Backfeed from solar, batteries or generators
+    category: electrical
+    severity: critical
+    description: Isolated mains re-energised by customer solar inverters, home batteries or standby generators.
+    keywords: [backfeed, back feed, solar, solar panels, rooftop solar, pv system, inverter, inverters, home battery, battery system, standby generator, backup generator, customer's generator, private generator, embedded generation]
+    typical_controls: [CT-ISO-SOLAR, CT-ISO-LOTO, CT-ENG-TEST-DEAD, CT-ENG-EARTH]
+    references: [DOC-ESR-001]
+
+  - code: HZ-ELEC-STORED
+    name: Stored electrical or mechanical energy
+    category: electrical
+    severity: high
+    description: Residual charge in cables and capacitors, or charged springs in switchgear, released during work.
+    keywords: [stored energy, capacitor, capacitors, capacitor bank, residual charge, cable charge, spring charged, charged springs]
+    typical_controls: [CT-ENG-DISCHARGE, CT-ENG-TEST-DEAD, CT-ENG-EARTH]
+    references: [DOC-ESR-001]
+
+  - code: HZ-ELEC-OH
+    name: Contact with overhead powerlines
+    category: electrical
+    severity: critical
+    description: Contact with, or encroachment inside the approach distance of, energised overhead conductors, including fallen lines.
+    keywords: [overhead lines, overhead conductors, overhead powerlines, overhead wires, powerlines, power lines, aerial lines, low hanging lines, sagging lines, lines overhead, wires overhead, wires down, lines down, fallen lines, conductor down, conductors down]
+    typical_controls: [CT-ADM-MAD, CT-ADM-SPOTTER, CT-ENG-INSUL-COVERS, CT-ISO-LOTO, CT-ISO-HV-SWITCHING]
+    references: [DOC-ESR-001, DOC-VEG-008]
+
+  - code: HZ-ELEC-UG
+    name: Strike of underground cables or services
+    category: electrical
+    severity: critical
+    description: Striking live underground electricity cables, gas or water mains while digging, boring or driving pegs.
+    keywords: [underground cables, underground cable, underground services, buried cables, buried services, cable strike, gas main, water main, underground assets, services in the ground, dial before you dig, potholed, pothole, telstra pit, auger]
+    typical_controls: [CT-ADM-DBYD, CT-ENG-CABLE-LOCATE, CT-ENG-POTHOLE, CT-ISO-LOTO]
+    references: [DOC-EXC-004]
+
+  - code: HZ-ELEC-NEUTRAL
+    name: Faulty neutral or reversed polarity at the installation
+    category: electrical
+    severity: high
+    description: Shock from metalwork made live by a broken, high-impedance or reversed neutral at a customer installation.
+    keywords: [neutral, lost neutral, open neutral, broken neutral, high impedance neutral, polarity, reverse polarity, reversed polarity, tingle, tingles, shock from the tap]
+    typical_controls: [CT-ENG-NEUTRAL-TEST, CT-ENG-TEST-DEAD, CT-PPE-INSUL-GLOVES]
+    references: [DOC-ESR-001]
+
+  - code: HZ-ELEC-TOOLS
+    name: Faulty portable electrical equipment
+    category: electrical
+    severity: medium
+    description: Shock from damaged leads, power tools or generator-supplied equipment.
+    keywords: [power tools, extension lead, extension leads, extension cord, portable tools, generator leads, damaged lead]
+    typical_controls: [CT-ADM-TEST-TAG, CT-ENG-RCD, CT-SUB-BATTERY-TOOLS]
+    references: [DOC-ESR-001]
+
+  # --- Working at height -------------------------------------------------------------------------
+  - code: HZ-HEIGHT-FALL
+    name: Fall from height
+    category: height
+    severity: critical
+    description: Falls from poles, ladders, roofs or EWP baskets while working above 2 m.
+    keywords: [working at heights, working at height, work at height, fall from height, falling from height, at height, up the pole, top of the pole, ladder, up the ladder, up on the roof, working on the roof, up high, in the ewp, in the bucket, harness on, clipped to, the high stuff]
+    typical_controls: [CT-SUB-EWP, CT-ENG-ANCHOR, CT-ENG-LADDER-SECURE, CT-PPE-HARNESS, CT-ADM-RESCUE-PLAN]
+    references: [DOC-POLE-006, DOC-EWP-002]
+
+  - code: HZ-HEIGHT-EWP
+    name: EWP tip-over, crush or entrapment
+    category: height
+    severity: high
+    description: Elevated work platform overturning on soft ground, or an operator crushed against structures or trapped aloft.
+    keywords: [ewp, elevated work platform, bucket truck, cherry picker, boom lift, the bucket, basket, outriggers, stabilisers, stabilizers, crush injury, entrapment, trapped in the basket]
+    typical_controls: [CT-ENG-OUTRIGGER-PADS, CT-ENG-EWP-LOWERING, CT-ADM-EWP-PRESTART, CT-ADM-RESCUE-PLAN, CT-ADM-SPOTTER, CT-PPE-HARNESS]
+    references: [DOC-EWP-002]
+
+  - code: HZ-HEIGHT-POLE
+    name: Pole failure while climbing or working aloft
+    category: height
+    severity: high
+    description: A decayed, termite-damaged or unbalanced pole collapsing while climbed or while conductors are removed.
+    keywords: [climb the pole, climbing the pole, pole climbing, climbing, pole condition, rotten pole, pole is rotten, condemned pole, red tag pole, red tagged, pole failure, unsound pole, termites, pole steps]
+    typical_controls: [CT-ADM-POLE-TEST, CT-ENG-POLE-SUPPORT, CT-SUB-EWP, CT-PPE-HARNESS, CT-ADM-RESCUE-PLAN]
+    references: [DOC-POLE-006]
+
+  # --- Struck by / plant -----------------------------------------------------------------------
+  - code: HZ-FALLING-OBJ
+    name: Falling objects and dropped tools
+    category: struck_by
+    severity: high
+    description: Tools, hardware or branches falling from height onto people below.
+    keywords: [falling objects, falling object, dropped tools, dropping tools, drop a tool, dropped objects, things falling, something falls, under the bucket, working overhead, felling, drop zone, tree lengths, under the cut]
+    typical_controls: [CT-ENG-TOOL-LANYARD, CT-ISO-BARRIERS, CT-ADM-EXCLUSION, CT-PPE-HARDHAT]
+    references: [DOC-EWP-002]
+
+  - code: HZ-LIFTING
+    name: Suspended loads and lifting operations
+    category: struck_by
+    severity: high
+    description: Crane, borer-derrick or hiab lifts of poles, transformers and drums; dropped or swinging loads.
+    keywords: [crane, lifting, suspended load, under the load, slings, sling, rigging, crane borer, borer derrick, derrick, pole truck, chain block, hoist, crane lift, lifting the transformer, lift the pole]
+    typical_controls: [CT-ADM-LIFT-PLAN, CT-ADM-RIGGING-CHECK, CT-ADM-DOGMAN, CT-ENG-TAGLINES, CT-ISO-BARRIERS, CT-ADM-EXCLUSION]
+    references: [DOC-POLE-006]
+
+  - code: HZ-PLANT-NEAR-LINES
+    name: Mobile plant or crane contact with overhead lines
+    category: electrical
+    severity: critical
+    description: A crane, borer, EWP boom or tipper encroaching on or contacting energised overhead conductors.
+    keywords: [crane near the lines, boom near the lines, plant near the lines, borer near the lines, near the overhead, under the lines, under the wires, swinging near the lines, encroach, encroachment, boom to the lv, boom near, the boom, "closest i'll get the boom"]
+    typical_controls: [CT-ADM-SPOTTER, CT-ADM-MAD, CT-ENG-PROXIMITY, CT-ENG-INSUL-COVERS, CT-ISO-HV-SWITCHING, CT-ISO-LOTO]
+    references: [DOC-ESR-001, DOC-POLE-006]
+
+  - code: HZ-MOBILE-PLANT
+    name: Struck by mobile plant or reversing vehicles
+    category: struck_by
+    severity: high
+    description: Workers struck by reversing trucks, excavators or other plant moving on site.
+    keywords: [reversing, backing up, reverse in, mobile plant, excavator, backhoe, bobcat, skid steer, machinery, moving plant, truck movements, tipper, digger]
+    typical_controls: [CT-ENG-REVERSE-CAMERA, CT-ISO-BARRIERS, CT-ADM-SPOTTER, CT-ADM-EXCLUSION, CT-PPE-HIVIS]
+    references: [DOC-TMP-003]
+
+  # --- Traffic & public --------------------------------------------------------------------------
+  - code: HZ-TRAFFIC
+    name: Struck by passing traffic
+    category: traffic
+    severity: high
+    description: Workers or vehicles struck by road traffic while working on or beside a road.
+    keywords: [traffic, passing traffic, live traffic, live lane, cars going past, vehicles going past, trucks going past, busy road, main road, highway, roadside, on the road, in the road, road reserve, motorists]
+    typical_controls: [CT-ADM-TMP, CT-ENG-TRAFFIC-DEVICES, CT-ENG-VEHICLE-BUFFER, CT-ADM-TRAFFIC-CONTROLLERS, CT-PPE-HIVIS]
+    references: [DOC-TMP-003]
+
+  - code: HZ-PUBLIC
+    name: Members of the public entering the work area
+    category: public
+    severity: medium
+    description: Pedestrians, residents or onlookers walking into the work zone or under work at height.
+    keywords: [public, members of the public, pedestrians, people walking past, footpath, school kids, kids walking, onlookers, bystanders, residents, the homeowner, neighbours, passers by]
+    typical_controls: [CT-ADM-EXCLUSION, CT-ISO-BARRIERS, CT-ADM-SPOTTER]
+    references: [DOC-TMP-003]
+
+  - code: HZ-AGGRESSIVE
+    name: Aggressive or abusive customers
+    category: public
+    severity: medium
+    description: Verbal or physical aggression from customers, typically during disconnections or outages.
+    keywords: [aggressive customer, abusive, angry customer, irate, threatening, disconnection, non payment, debt disconnect]
+    typical_controls: [CT-ADM-DEESCALATE, CT-ADM-COMMS-CHECKIN]
+    references: []
+
+  # --- Civil -------------------------------------------------------------------------------------
+  - code: HZ-EXCAVATION
+    name: Excavation collapse or fall into an open trench
+    category: civil
+    severity: high
+    description: Trench wall collapse, people or plant falling into open excavations, spoil falling back in.
+    keywords: [excavation, excavate, trench, trenching, digging, dig, open hole, open trench, cave in, trench collapse, spoil, the hole]
+    typical_controls: [CT-ENG-SHORING, CT-ISO-BARRIERS, CT-ADM-DBYD, CT-ENG-POTHOLE]
+    critical_controls: [CT-ENG-SHORING]
+    references: [DOC-EXC-004]
+
+  - code: HZ-CONFINED
+    name: Hazardous atmosphere in pits, vaults or chambers
+    category: confined_space
+    severity: critical
+    description: Low oxygen, toxic or flammable gas in cable pits, vaults or substation basements; difficult rescue.
+    keywords: [confined space, cable pit, pit, pits, vault, manhole, underground chamber, chamber, substation basement, tunnel, bad air, gas build up, low oxygen, toxic gas, h2s]
+    typical_controls: [CT-ENG-GAS-MONITOR, CT-ENG-VENTILATION, CT-ENG-RESCUE-TRIPOD, CT-ADM-CONFINED-PERMIT, CT-ADM-STANDBY, CT-ADM-RESCUE-PLAN]
+    references: [DOC-CS-007]
+
+  - code: HZ-ASBESTOS
+    name: Asbestos in meter boards, pits or ducts
+    category: health
+    severity: high
+    description: Respirable asbestos fibres from old meter panels, asbestos-cement pits, ducts or pipes when disturbed.
+    keywords: [asbestos, acm, fibro, asbestos meter board, asbestos board, asbestos pit, asbestos cement, ac pit, ac pipe, zelemite]
+    typical_controls: [CT-ELIM-NO-DISTURB, CT-ENG-WET-METHODS, CT-ADM-ASBESTOS-REGISTER, CT-PPE-P2]
+    references: [DOC-ASB-009]
+
+  - code: HZ-MANUAL
+    name: Manual handling of heavy or awkward loads
+    category: ergonomic
+    severity: medium
+    description: Strains from lifting cable drums, crossarms, transformers or working in awkward postures.
+    keywords: [manual handling, heavy lifting, heavy lift, heavy load, heavy gear, lifting by hand, cable drum, cable drums, awkward load, awkward position, back injury, strain injury, sprain]
+    typical_controls: [CT-ENG-MECH-AIDS, CT-ADM-TEAM-LIFT]
+    references: []
+
+  - code: HZ-SLIP
+    name: Slips, trips and uneven ground
+    category: environmental
+    severity: medium
+    description: Slips and trips on wet, muddy, sloping or cluttered ground around the work site.
+    keywords: [slips, slip, trips, trip hazard, tripping hazard, tripping, uneven ground, rough ground, slippery, muddy, mud, loose gravel, wet grass, potholes, holes in the ground, steep, embankment]
+    typical_controls: [CT-ADM-HOUSEKEEPING, CT-ENG-LIGHTING, CT-PPE-BOOTS]
+    references: []
+
+  - code: HZ-NOISE
+    name: Noise from plant and tools
+    category: health
+    severity: low
+    description: Hearing damage from chainsaws, concrete saws, jackhammers and generators.
+    keywords: [noise, noisy, loud, hearing, jackhammer, concrete saw, chainsaw noise, earmuffs, chainsaw, chipper]
+    typical_controls: [CT-PPE-HEARING]
+    references: []
+
+  # --- Environment & weather ---------------------------------------------------------------------
+  - code: HZ-HEAT
+    name: Heat stress and UV exposure
+    category: environmental
+    severity: medium
+    description: Heat exhaustion, heat stroke and sunburn on hot days, worse in arc-rated clothing.
+    keywords: [hot day, heat stress, heat stroke, heat exhaustion, the heat, in this heat, extreme heat, heatwave, dehydration, dehydrated, sunburn, uv, scorcher, stinker, "40 degrees", forty degrees, it's hot, hot today, hot one, going to be hot, hot again, shade breaks, water breaks]
+    typical_controls: [CT-ADM-HYDRATION, CT-ENG-SHADE, CT-PPE-SUN, CT-ADM-WORK-SCHEDULE]
+    references: [DOC-ENV-005]
+
+  - code: HZ-STORM
+    name: Storms, lightning and high winds
+    category: environmental
+    severity: high
+    description: Lightning strike, wind-blown debris and EWP instability during storms and high winds.
+    keywords: [storm, storms, lightning, thunder, thunderstorm, high wind, high winds, strong wind, strong winds, gusty, gusts, windy, severe weather, hail, weather warning, wind, wind meter, gusting]
+    typical_controls: [CT-ELIM-STOP-WORK, CT-ADM-WEATHER-MONITOR]
+    references: [DOC-ENV-005]
+
+  - code: HZ-BUSHFIRE
+    name: Bushfire and fire ignition from work
+    category: environmental
+    severity: high
+    description: Igniting grass or bush with sparks from grinding, welding, vehicles or faults on elevated fire danger days.
+    keywords: [bushfire, bush fire, fire danger, fire danger rating, fire ban, total fire ban, grass fire, sparks, spark, ignition, hot work, grinding, angle grinder, dry grass, extreme fire danger, catastrophic]
+    typical_controls: [CT-ELIM-STOP-WORK, CT-ENG-FIRE-EXT, CT-ADM-FIRE-PERMIT, CT-ADM-WEATHER-MONITOR]
+    references: [DOC-ENV-005]
+
+  - code: HZ-VEG
+    name: Vegetation and tree work near lines
+    category: vegetation
+    severity: high
+    description: Trees or branches contacting live conductors, chainsaw injuries and falling limbs during clearing.
+    keywords: [vegetation, tree, trees, branches, branch, limb, chainsaw, pole saw, tree trimming, trimming, cutting back, overgrown, palm fronds, tree felling, tree in the lines, tree on the lines]
+    typical_controls: [CT-ISO-LOTO, CT-ENG-INSUL-TOOLS, CT-ADM-MAD, CT-ADM-EXCLUSION, CT-PPE-CHAINSAW]
+    references: [DOC-VEG-008]
+
+  - code: HZ-ANIMALS
+    name: Dogs and other animals
+    category: biological
+    severity: medium
+    description: Dog bites on customer premises, livestock in paddocks, swooping birds.
+    keywords: [dog, dogs, the dog, angry dog, savage dog, beware of dog, aggressive dog, cattle, livestock, bull, horses, magpie, magpies, swooping]
+    typical_controls: [CT-ADM-ANIMAL-SECURE]
+    references: []
+
+  - code: HZ-BITES
+    name: Snakes, spiders and insects
+    category: biological
+    severity: medium
+    description: Bites and stings from snakes, redbacks, funnel-webs, wasps and ants in pits, meter boxes and long grass.
+    keywords: [snake, snakes, brown snake, spider, spiders, redback, redbacks, funnel web, wasps, wasp nest, bees, bee hive, bull ants, jumping jacks, ticks, insects]
+    typical_controls: [CT-ADM-INSPECT-FIRST, CT-PPE-GLOVES, CT-ADM-FIRST-AID]
+    references: []
+
+  - code: HZ-FATIGUE
+    name: Fatigue
+    category: human_factors
+    severity: medium
+    description: Reduced alertness after long shifts, callouts or extended storm restoration.
+    keywords: [fatigue, fatigued, tired, exhausted, long shift, long day, up all night, no sleep, double shift, callout, call out, hours of work, "i'm cooked", sixteen hours, since six this morning, knackered, buggered, worn out]
+    typical_controls: [CT-ADM-FATIGUE]
+    references: []
+
+  - code: HZ-LOW-VIS
+    name: Low visibility and night work
+    category: environmental
+    severity: medium
+    description: Poor visibility at night, at dawn or in fog and smoke, for crews, drivers and plant operators.
+    keywords: [night, at night, dark, after dark, low light, poor visibility, night work, fog, foggy, smoke haze, pitch black, light tower, head torches]
+    typical_controls: [CT-ENG-LIGHTING, CT-PPE-HIVIS]
+    references: [DOC-TMP-003]
+
+  - code: HZ-HAZMAT
+    name: Hazardous substances (oil, SF6, fuel)
+    category: health
+    severity: medium
+    description: Skin and eye contact with transformer oil, SF6 by-products, fuel or battery acid; spills to the environment.
+    keywords: [transformer oil, oil leak, leaking oil, insulating oil, pcb, pcbs, sf6, chemicals, fuel spill, diesel spill, battery acid, resin, sds, oil staining, spill kit]
+    typical_controls: [CT-ADM-SDS, CT-ENG-SPILL-KIT, CT-PPE-GLOVES, CT-PPE-EYE]
+    references: []
+
+  - code: HZ-REMOTE
+    name: Working remotely or out of mobile coverage
+    category: human_factors
+    severity: medium
+    description: Delayed emergency response when working alone or outside mobile coverage.
+    keywords: [no coverage, no reception, no signal, no phone signal, out of range, black spot, remote area, remote site, working alone]
+    typical_controls: [CT-ADM-COMMS-CHECKIN, CT-ENG-SAT-PHONE]
+    references: []
+
+controls:
+  # --- Elimination / substitution ----------------------------------------------------------------
+  - code: CT-ELIM-STOP-WORK
+    name: Stop or postpone the work
+    type: elimination
+    description: Do not start, or stop and make safe, when conditions exceed limits (lightning, wind, catastrophic fire danger).
+    keywords: [stop work, postpone, call it off, stop the lift, we stop the lift, pull the pin, stand down, wait it out, stop the job, come down off the pole, come down if]
+
+  - code: CT-ELIM-NO-DISTURB
+    name: Do not disturb asbestos (work around it)
+    type: elimination
+    description: Plan the task so suspected asbestos material is not drilled, cut, broken or removed.
+    keywords: [don't disturb, do not disturb, won't disturb, work around it, leave the board, no drilling, won't drill, no cutting]
+
+  - code: CT-SUB-EWP
+    name: Use an EWP instead of climbing
+    type: substitution
+    description: Work from an elevated work platform rather than climbing the pole.
+    keywords: [ewp instead of climbing, use the ewp instead, in the ewp, from the ewp, in the bucket, work from the bucket, from the bucket, bucket instead, not climbing, nobody climbs]
+
+  - code: CT-SUB-BATTERY-TOOLS
+    name: Battery tools instead of leads
+    type: substitution
+    description: Use cordless tools to remove leads and generator supplies from the work area.
+    keywords: [battery tools, cordless tools, battery powered]
+
+  # --- Isolation ---------------------------------------------------------------------------------
+  - code: CT-ISO-LOTO
+    name: Isolate, lock out and tag out
+    type: isolation
+    description: Isolate the supply at a defined point, apply personal locks and danger tags, and keep them on until work is complete.
+    keywords: [isolation, isolate, isolated, isolating, lock out, locked out, lock it out, tag out, tagged out, loto, danger tag, danger tags, personal danger tag, lock and tag, de energise, de energised, deenergise, make it dead, made dead, kill the power, switch it off]
+
+  - code: CT-ISO-FUSES
+    name: Remove service fuses / open the service
+    type: isolation
+    description: Remove the service fuses or open the links at the pole or pillar so the service is disconnected from the network.
+    keywords: [pull the fuses, pull the fuse, remove the fuses, remove the fuse, service fuse, service fuses, fuses out, fuse out, pull the service, open the links, links out, disconnect at the pole, disconnect at the pillar]
+
+  - code: CT-ISO-HV-SWITCHING
+    name: HV switching program and isolation
+    type: isolation
+    description: Isolate HV plant to an approved switching program, with points of isolation locked and tagged by the switching operator.
+    keywords: [switching program, switching programme, switching instruction, switching sheet, switching schedule, hv isolation, isolate the hv, hv isolated, feeder isolated, open the abs, abs open, open the air break, open the switch, drop the ddos, dropped the ddos]
+
+  - code: CT-ISO-SOLAR
+    name: Isolate solar, batteries and generators at the switchboard
+    type: isolation
+    description: Isolate and tag inverter AC/DC isolators, home batteries and standby generators before treating the service as dead.
+    keywords: [isolate the solar, solar isolated, solar isolator, solar off, inverter isolated, isolate the inverter, turn off the inverter, inverter off, pv isolator, ac isolator, dc isolator, isolate the generator, generator off, battery isolated, isolate the battery]
+
+  - code: CT-ISO-BARRIERS
+    name: Physical barriers and barricading
+    type: isolation
+    description: Rigid barriers, fencing, pit guards or plates that physically separate people from the hazard.
+    keywords: [barriers, barricade, barricades, closed the street, closed the road, road closure, road is closed, street is closed, barricading, hard barriers, mesh fencing, temporary fencing, pit guard, pit guards, trench covers, plate the trench, steel plates, cover the hole, cover the pit]
+
+  # --- Engineering -------------------------------------------------------------------------------
+  - code: CT-ENG-TEST-DEAD
+    name: Test before touch (prove de-energised)
+    type: engineering
+    description: Prove the tester on a known live source, test the conductors dead, and re-prove the tester.
+    keywords: [test before touch, test before you touch, prove dead, proven dead, prove it dead, prove de energised, test dead, tested dead, test it dead, voltage tester, voltage detector, modiewark, live line tester, proving unit]
+
+  - code: CT-ENG-EARTH
+    name: Apply portable earths
+    type: engineering
+    description: Apply rated portable earthing and short-circuiting equipment on all sides of the work.
+    keywords: [earthing, earth, earths, earthed, portable earths, earth and short, earths and shorts, short circuit, run earths, put the earths on]
+
+  - code: CT-ENG-EQUIPOTENTIAL
+    name: Equipotential bonding
+    type: engineering
+    description: Bond conductors, plant and the work position together (with an equipotential mat) to control induced voltage.
+    keywords: [equipotential bonding, equipotential, bonding, bond the, bonding mat, equipotential mat, bond it]
+
+  - code: CT-ENG-DISCHARGE
+    name: Discharge stored energy
+    type: engineering
+    description: Discharge cables and capacitors through a rated discharge stick and release spring energy before work.
+    keywords: [discharge, discharged, discharge stick, discharging, release the springs, springs discharged]
+
+  - code: CT-ENG-INSUL-COVERS
+    name: Insulating covers and mats
+    type: engineering
+    description: Rated insulating covers, mats, blankets or tiger tails on adjacent live parts.
+    keywords: [insulating covers, insulated covers, insulating mats, insulating mat, line covers, tiger tails, tiger tail, rubber covers, insulating blankets, rubber blankets, shrouds, shrouding, cover up the live, covered up]
+
+  - code: CT-ENG-INSUL-TOOLS
+    name: Insulated tools and pole saws
+    type: engineering
+    description: Rated and tested insulated tools and insulated pole saws for work near energised conductors.
+    keywords: [insulated tools, insulated pole saw, insulated pruner, insulated saw]
+
+  - code: CT-ENG-REMOTE-OP
+    name: Remote or extended-reach operation
+    type: engineering
+    description: Operate switches and fuses with an operating stick or remotely so the operator stays outside the arc zone.
+    keywords: [hot stick, link stick, operating stick, operating pole, remote operation, operate remotely, remote racking]
+
+  - code: CT-ENG-CABLE-LOCATE
+    name: Locate and mark underground services
+    type: engineering
+    description: Electronic locate (cable locator, GPR) and mark-out of all services before breaking ground.
+    keywords: [cable locator, cable locate, locate the cables, locate the services, located the services, locator, cat and genny, cat scan, electronic locate, ground penetrating radar, gpr, service locator, mark out, marked out, mark outs]
+
+  - code: CT-ENG-POTHOLE
+    name: Non-destructive digging (potholing)
+    type: engineering
+    description: Expose services by vacuum excavation or hand digging before mechanical excavation within the tolerance zone.
+    keywords: [pothole, potholing, potholed, hydro vac, hydrovac, vacuum excavation, non destructive digging, ndd, hand dig, hand digging, dig by hand, sucker truck]
+
+  - code: CT-ENG-SHORING
+    name: Trench shoring, benching or battering
+    type: engineering
+    description: Support trench walls deeper than 1.5 m with shields or shoring, or bench/batter to a safe angle.
+    keywords: [shoring, shore the trench, trench shield, trench box, benching, battering, batter the sides, step the sides]
+
+  - code: CT-ENG-GAS-MONITOR
+    name: Atmospheric testing and gas monitoring
+    type: engineering
+    description: Test the atmosphere before entry and monitor continuously with a calibrated four-gas detector.
+    keywords: [gas test, gas testing, gas detector, gas monitor, four gas, 4 gas, atmospheric test, atmosphere test, test the atmosphere, sniffer]
+
+  - code: CT-ENG-VENTILATION
+    name: Forced ventilation
+    type: engineering
+    description: Ventilate the space with a blower or venturi before and during entry.
+    keywords: [ventilation, ventilate, forced ventilation, blower, venturi, air mover, purge the pit]
+
+  - code: CT-ENG-RESCUE-TRIPOD
+    name: Rescue tripod and retrieval winch
+    type: engineering
+    description: Tripod or davit with retrieval winch rigged over the entry for non-entry rescue.
+    keywords: [rescue tripod, tripod, davit, retrieval winch, retrieval line]
+
+  - code: CT-ENG-OUTRIGGER-PADS
+    name: Outrigger pads and level set-up
+    type: engineering
+    description: Deploy outriggers fully on rated pads or sole boards and level the truck before raising the boom.
+    keywords: [outrigger pads, outriggers down, outriggers out, pads under the outriggers, sole boards, packers, level the truck, stabilisers down, stabiliser pads, ground bearing]
+
+  - code: CT-ENG-EWP-LOWERING
+    name: EWP ground controls and emergency lowering
+    type: engineering
+    description: Tested ground-level and emergency lowering controls so the basket can be recovered from the ground.
+    keywords: [ground controls, emergency lowering, emergency descent, lower from the ground, base controls, auxiliary lowering]
+
+  - code: CT-ENG-ANCHOR
+    name: Rated anchor points and static lines
+    type: engineering
+    description: Fall-arrest anchor points or static lines rated for the load and inspected before use.
+    keywords: [anchor point, anchor points, static line, fall arrest anchor, rated anchor]
+
+  - code: CT-ENG-LADDER-SECURE
+    name: Secured ladder
+    type: engineering
+    description: Ladder tied off or footed, at the correct angle, extending past the landing.
+    keywords: [tie off the ladder, ladder tied, ladder tied off, foot the ladder, footed ladder, ladder secured, secure the ladder]
+
+  - code: CT-ENG-POLE-SUPPORT
+    name: Pole support during work
+    type: engineering
+    description: Support an unsound pole with a crane, pole dollies or temporary stays before climbing or de-tensioning.
+    keywords: [pole support, support the pole, pole dollies, pole dolly, hold the pole, crane holding the pole, temporary stay, temporary stays, pike pole]
+
+  - code: CT-ENG-TOOL-LANYARD
+    name: Tool lanyards and tethered tools
+    type: engineering
+    description: Tether tools and use closed tool bags when working aloft.
+    keywords: [tool lanyards, tool lanyard, tethered tools, tether the tools, tools tied off, bucket bag, tool bag]
+
+  - code: CT-ENG-TAGLINES
+    name: Taglines on suspended loads
+    type: engineering
+    description: Control swinging loads with non-conductive taglines so nobody stands under or beside the load.
+    keywords: [taglines, tagline, tag lines, tag line]
+
+  - code: CT-ENG-PROXIMITY
+    name: Proximity alarm or slew/height limiter
+    type: engineering
+    description: Plant fitted with a proximity warning device or limiter set to keep the boom outside the approach distance.
+    keywords: [proximity alarm, proximity warning, slew limiter, height limiter, range limiter]
+
+  - code: CT-ENG-REVERSE-CAMERA
+    name: Reversing camera and alarm
+    type: engineering
+    description: Reversing cameras and audible alarms on trucks and plant.
+    keywords: [reversing camera, reverse camera, reversing alarm, reversing beeper, reversing sensors, squawker]
+
+  - code: CT-ENG-TRAFFIC-DEVICES
+    name: Traffic control devices (signs, cones, barriers)
+    type: engineering
+    description: Signs, cones, arrow boards and barriers set out to the traffic guidance scheme.
+    keywords: [traffic control devices, cones, witches hats, signs out, road signs, traffic signs, signage, arrow board, vms board, lane closure, close the lane, traffic barriers, water barriers, delineators]
+
+  - code: CT-ENG-VEHICLE-BUFFER
+    name: Vehicle positioned as a buffer with beacons
+    type: engineering
+    description: Park the work vehicle upstream as a buffer with beacons on, or use a truck-mounted attenuator.
+    keywords: [vehicle as a buffer, truck as a buffer, buffer vehicle, park the truck behind, beacons on, amber beacons, flashing lights, tma, truck mounted attenuator, crash cushion]
+
+  - code: CT-ENG-RCD
+    name: Residual current device (safety switch)
+    type: engineering
+    description: Portable RCD on all leads and tools.
+    keywords: [rcd, safety switch, portable rcd, residual current device]
+
+  - code: CT-ENG-NEUTRAL-TEST
+    name: Neutral integrity and polarity testing
+    type: engineering
+    description: Test neutral integrity, polarity and loop impedance before and after connecting or reconnecting a service.
+    keywords: [neutral test, neutral integrity test, neutral and polarity, polarity test, test the neutral, test polarity, loop impedance, insulation resistance test, megger, meggered]
+
+  - code: CT-ENG-MECH-AIDS
+    name: Mechanical lifting aids
+    type: engineering
+    description: Use trolleys, drum jacks, cable rollers or the hiab instead of lifting by hand.
+    keywords: [mechanical aids, mechanical aid, trolley, cable rollers, drum jack, drum jacks, drum trailer, use the hiab, hiab, pallet jack]
+
+  - code: CT-ENG-SHADE
+    name: Shade and cool-down area
+    type: engineering
+    description: Shade structure or air-conditioned vehicle for rest and recovery.
+    keywords: [shade, shade tent, gazebo, shade structure, air conditioned truck, aircon in the truck, cool down in the truck]
+
+  - code: CT-ENG-FIRE-EXT
+    name: Fire extinguisher and water on hand
+    type: engineering
+    description: Charged extinguisher and knapsack or water cart at the work point on fire danger days.
+    keywords: [fire extinguisher, fire extinguishers, extinguisher, knapsack, water cart, fire unit, fire blanket, wet down the area]
+
+  - code: CT-ENG-WET-METHODS
+    name: Wet methods and HEPA vacuum for asbestos
+    type: engineering
+    description: Keep suspected asbestos material wet and clean up with a HEPA vacuum; never dry sweep.
+    keywords: [wet methods, wet it down, keep it wet, spray bottle, pva spray, hepa vac, hepa vacuum]
+
+  - code: CT-ENG-LIGHTING
+    name: Task and area lighting
+    type: engineering
+    description: Lighting tower, floodlights and head torches for night or low-light work.
+    keywords: [lighting tower, light tower, lighting, lights set up, flood lights, floodlights, head torches, head torch, portable lights, work lights]
+
+  - code: CT-ENG-SPILL-KIT
+    name: Spill kit and drip trays
+    type: engineering
+    description: Spill kit, bunding and drip trays for oil and fuel.
+    keywords: [spill kit, spill kits, bunding, drip tray, drip trays, absorbent]
+
+  - code: CT-ENG-SAT-PHONE
+    name: Satellite phone or personal locator beacon
+    type: engineering
+    description: Satellite phone, PLB or EPIRB where there is no mobile coverage.
+    keywords: [sat phone, satellite phone, epirb, plb, personal locator beacon]
+
+  # --- Administrative ----------------------------------------------------------------------------
+  - code: CT-ADM-ACCESS-PERMIT
+    name: Access permit / permit to work
+    type: administrative
+    description: Work under an access permit issued by an authorised person after isolation; every worker signs on and off.
+    keywords: [access permit, access authority, permit to work, work permit, sign on to the permit, sign onto the permit, sign on the permit, issued the permit, recipient of the permit, vicinity permit]
+
+  - code: CT-ADM-MAD
+    name: Maintain minimum approach distances
+    type: administrative
+    description: Keep people, tools and plant outside the minimum approach distance for the voltage.
+    keywords: [minimum approach distance, approach distance, approach distances, safe approach distance, no go zone, clearances, stay three metres, keep three metres, three metres from the lines, "3 metres"]
+
+  - code: CT-ADM-SPOTTER
+    name: Dedicated spotter / safety observer
+    type: administrative
+    description: A competent person whose only job is to watch plant, people and clearances and stop the work.
+    keywords: [spotter, safety observer, observer, safety watch, dedicated spotter, watching the boom]
+
+  - code: CT-ADM-EXCLUSION
+    name: Exclusion zone
+    type: administrative
+    description: Mark out and enforce an exclusion or drop zone around the work and below work at height.
+    keywords: [exclusion zone, exclusion zones, drop zone, bunting, no go area, keep people out, keep the public out, keep clear, cordon, cordoned off, tape off, taped off, barrier tape, keep everyone back, clear the area]
+
+  - code: CT-ADM-TMP
+    name: Traffic management plan
+    type: administrative
+    description: Approved traffic management plan / traffic guidance scheme and road occupancy approval for the site.
+    keywords: [traffic management plan, tmp, traffic guidance scheme, tgs, traffic control plan, tcp, traffic plan, road occupancy, road occupancy licence, rol]
+
+  - code: CT-ADM-TRAFFIC-CONTROLLERS
+    name: Accredited traffic controllers
+    type: administrative
+    description: Accredited traffic controllers with stop-slow bats managing traffic past the site.
+    keywords: [traffic controllers, traffic controller, traffic control, stop slow, stop slow bats, lollipop, traffic crew, tc crew, traffic management crew]
+
+  - code: CT-ADM-DBYD
+    name: Before You Dig plans checked
+    type: administrative
+    description: Current Before You Dig Australia (BYDA) plans obtained and checked on site for all asset owners.
+    keywords: [dial before you dig, before you dig, byda, dbyd, service plans, asset plans, utility plans, dial before u dig]
+
+  - code: CT-ADM-RESCUE-PLAN
+    name: Rescue plan and rescue kit
+    type: administrative
+    description: Task-specific rescue plan (pole-top, EWP or confined space) with a trained rescuer and rescue kit on site.
+    keywords: [rescue kit, rescue plan, pole top rescue, rescue procedure, ewp rescue, rescue drill, rescue gear, rescue]
+
+  - code: CT-ADM-EWP-PRESTART
+    name: EWP pre-start and function check
+    type: administrative
+    description: Logbook pre-start inspection and function test of the EWP, including emergency controls.
+    keywords: [prestart, pre start, prestart check, pre start check, function test, function check, daily check, log book, logbook, ewp check, checked the ewp]
+
+  - code: CT-ADM-POLE-TEST
+    name: Pole inspection before climbing
+    type: administrative
+    description: Check the pole inspection tag, sound and test the pole, and check for loading changes before climbing or de-tensioning.
+    keywords: [pole test, pole inspection, tested the pole, sounded the pole, sound the pole, bore the pole, pole tag, pole is sound, pole's sound, check the pole, checked the pole, inspected the pole]
+
+  - code: CT-ADM-LIFT-PLAN
+    name: Lift plan and load chart check
+    type: administrative
+    description: Plan the lift — load weight, radius, load chart, ground bearing and set-up position.
+    keywords: [lift plan, lifting plan, lift study, load chart, check the load chart]
+
+  - code: CT-ADM-RIGGING-CHECK
+    name: Rigging and lifting gear inspected
+    type: administrative
+    description: Slings, shackles and lifting gear inspected and within test date before use.
+    keywords: [rigging inspected, rigging check, slings tagged, sling inspection, inspect the slings, check the slings, lifting gear tagged, tagged slings]
+
+  - code: CT-ADM-DOGMAN
+    name: Licensed dogman or rigger
+    type: administrative
+    description: A licensed dogman or rigger directs the crane and slings the load.
+    keywords: [dogman, dogger, rigger, licensed rigger, dogging]
+
+  - code: CT-ADM-CONFINED-PERMIT
+    name: Confined space entry permit
+    type: administrative
+    description: Confined space entry permit issued after risk assessment, atmospheric testing and isolation.
+    keywords: [confined space permit, confined space entry permit, entry permit, cs permit]
+
+  - code: CT-ADM-STANDBY
+    name: Standby person at the entry
+    type: administrative
+    description: A trained standby person stays at the entry, in contact with the entrant, for the whole entry.
+    keywords: [standby person, stand by person, standby man, sentry, top man, hole watch, someone up top]
+
+  - code: CT-ADM-ASBESTOS-REGISTER
+    name: Check asbestos register / treat as asbestos
+    type: administrative
+    description: Check the asbestos register and labels; if unknown, assume asbestos until proven otherwise.
+    keywords: [asbestos register, check the register, treat it as asbestos, assume asbestos, assume it's asbestos, asbestos label, asbestos sticker]
+
+  - code: CT-ADM-TEAM-LIFT
+    name: Team lift and correct technique
+    type: administrative
+    description: Two-person lifts for loads over the individual limit, planned route and correct technique.
+    keywords: [team lift, two person lift, two man lift, lift together, buddy lift, lift with your legs, give us a hand]
+
+  - code: CT-ADM-HOUSEKEEPING
+    name: Housekeeping and clear access
+    type: administrative
+    description: Keep walkways clear, stow leads and materials, and pick a safe path.
+    keywords: [housekeeping, keep the area tidy, keep it tidy, clear walkways, clean up as we go, watch your footing, watch where you step, good footing]
+
+  - code: CT-ADM-HYDRATION
+    name: Hydration and rest breaks
+    type: administrative
+    description: Drink water regularly, take scheduled breaks in the shade and buddy-check for heat illness.
+    keywords: [hydration, hydrate, stay hydrated, staying hydrated, drink water, plenty of water, water breaks, electrolytes, hydrolyte, buddy check]
+
+  - code: CT-ADM-WORK-SCHEDULE
+    name: Schedule work for cooler or safer conditions
+    type: administrative
+    description: Start early, rotate tasks and reschedule heavy work outside the hottest part of the day.
+    keywords: [start early, early start, finish before the heat, reschedule, cooler part of the day, rotate jobs, job rotation, swap over]
+
+  - code: CT-ADM-WEATHER-MONITOR
+    name: Monitor weather and stop-work limits
+    type: administrative
+    description: Check BOM warnings and radar, apply the 30/30 lightning rule and EWP wind-speed limits.
+    keywords: [check the weather, weather check, monitor the weather, keep an eye on the weather, watch the weather, bom, weather radar, radar, "30 30 rule", thirty thirty rule, lightning tracker, wind speed, anemometer, wind gauge, wind limit]
+
+  - code: CT-ADM-FIRE-PERMIT
+    name: Hot work permit / total fire ban exemption
+    type: administrative
+    description: Hot work only under a permit and, on total fire ban days, under the network's exemption conditions with a fire watch.
+    keywords: [hot work permit, fire permit, total fire ban exemption, tfb exemption, fire ban exemption, exemption, fire watch]
+
+  - code: CT-ADM-ANIMAL-SECURE
+    name: Animals secured before entry
+    type: administrative
+    description: Owner secures dogs before entry; do not enter a yard with an unsecured dog.
+    keywords: [lock the dog up, dog locked up, dog's locked up, dog is locked up, tie the dog up, dog tied up, dog is tied up, secure the dog, dog secured, put the dog away, dog's inside, dog is inside, ask the owner, dog spray, dog deterrent, stay out of the yard]
+
+  - code: CT-ADM-INSPECT-FIRST
+    name: Look before you reach
+    type: administrative
+    description: Open and inspect meter boxes, pits and long grass with a torch before reaching in or walking through.
+    keywords: [look before you reach, check before you reach, inspect the box, check the box, tap the box, check for spiders, check for snakes, look inside the pit, check inside]
+
+  - code: CT-ADM-FIRST-AID
+    name: First aid kit and trained first aider
+    type: administrative
+    description: Stocked first aid kit (including snake bandage and defib where issued) and a trained first aider on site.
+    keywords: [first aid kit, first aid, snake bite kit, snake bandage, compression bandage, defib, defibrillator, aed, cpr]
+
+  - code: CT-ADM-FATIGUE
+    name: Fatigue management
+    type: administrative
+    description: Apply hours-of-work limits, minimum breaks and fit-for-work checks; rotate drivers.
+    keywords: [fatigue management, fatigue policy, rest break, take a break, ten hour break, "10 hour break", minimum break, hours limit, swap drivers, power nap, rest period, fit for work, fit for duty]
+
+  - code: CT-ADM-COMMS-CHECKIN
+    name: Scheduled check-ins with control
+    type: administrative
+    description: Agreed check-in schedule with the control room or supervisor and a buddy system.
+    keywords: [check in with control, call the control room, call control, ring control, scheduled call, radio check, comms check, buddy system, check on each other, regular contact]
+
+  - code: CT-ADM-SDS
+    name: Safety data sheet checked
+    type: administrative
+    description: Check the SDS and handling requirements for each substance before use.
+    keywords: [sds, safety data sheet, msds, data sheet]
+
+  - code: CT-ADM-DEESCALATE
+    name: De-escalate and withdraw
+    type: administrative
+    description: Do not engage with aggressive customers; withdraw to the vehicle and call the control room or police.
+    keywords: [de escalate, deescalate, walk away, leave site, withdraw, call the police, don't engage, back off, stay calm]
+
+  - code: CT-ADM-TEST-TAG
+    name: Test and tag of portable equipment
+    type: administrative
+    description: Leads and tools tested and tagged within date and visually inspected before use.
+    keywords: [test and tag, tested and tagged, test tag, in date tag, tag is in date, tagged leads]
+
+  # --- PPE ---------------------------------------------------------------------------------------
+  - code: CT-PPE-ARC
+    name: Arc-rated clothing and face shield
+    type: ppe
+    description: Arc-rated clothing and face shield rated for the prospective incident energy.
+    keywords: [arc flash gear, arc flash suit, arc rated, arc rated clothing, arc suit, flash suit, face shield, arc shield, cat 2, cat 4, fr clothing, flame resistant]
+
+  - code: CT-PPE-INSUL-GLOVES
+    name: Insulating gloves
+    type: ppe
+    description: Rated, in-test insulating gloves with leather outers, air-tested before use.
+    keywords: [insulating gloves, insulated gloves, lv gloves, hv gloves, rubber gloves, class 0 gloves, class 00 gloves, electrical gloves]
+
+  - code: CT-PPE-HARNESS
+    name: Harness and fall-arrest lanyard
+    type: ppe
+    description: Full-body harness with lanyard or pole strap, inspected and attached at all times aloft.
+    keywords: [harness, harnesses, full body harness, safety harness, fall arrest, lanyard, double lanyard, pole strap, pole belt, clipped on, clip on, clip in]
+
+  - code: CT-PPE-HARDHAT
+    name: Hard hat with chin strap
+    type: ppe
+    description: Hard hat (with chin strap when working at height or in wind).
+    keywords: [hard hat, hard hats, hardhat, hardhats, helmet, helmets, chin strap]
+
+  - code: CT-PPE-HIVIS
+    name: High-visibility clothing
+    type: ppe
+    description: Day/night high-visibility clothing to AS/NZS 4602.1.
+    keywords: [hi vis, high vis, hi viz, high visibility, vest, vests, reflective]
+
+  - code: CT-PPE-P2
+    name: P2 respirator and disposable coveralls
+    type: ppe
+    description: Fit-checked P2 (or better) respirator and disposable coveralls for asbestos or dust.
+    keywords: [p2 mask, p2 masks, p2, p3 mask, respirator, half face, disposable coveralls, coveralls, tyvek, dust mask]
+
+  - code: CT-PPE-CHAINSAW
+    name: Chainsaw PPE
+    type: ppe
+    description: Chainsaw chaps, helmet with visor and ear muffs for all chainsaw work.
+    keywords: [chainsaw chaps, chaps, chainsaw pants, chainsaw trousers, chainsaw helmet, face screen, visor]
+
+  - code: CT-PPE-GLOVES
+    name: Work gloves
+    type: ppe
+    description: Cut-resistant, leather or chemical gloves suited to the task.
+    keywords: [gloves, cut resistant gloves, leather gloves, rigger gloves, chemical gloves, nitrile gloves]
+
+  - code: CT-PPE-HEARING
+    name: Hearing protection
+    type: ppe
+    description: Ear muffs or plugs near chainsaws, saws, jackhammers and generators.
+    keywords: [hearing protection, ear muffs, earmuffs, ear plugs, earplugs, muffs]
+
+  - code: CT-PPE-SUN
+    name: Sun protection
+    type: ppe
+    description: Sunscreen, sunglasses, brim and long sleeves.
+    keywords: [sunscreen, sunnies, sunglasses, wide brim, brim, legionnaire, long sleeves, sun protection, slip slop slap]
+
+  - code: CT-PPE-BOOTS
+    name: Safety boots
+    type: ppe
+    description: Lace-up safety boots with ankle support (electrical-hazard rated for electrical work).
+    keywords: [safety boots, steel caps, steel cap boots, boots, gumboots, ankle support]
+
+  - code: CT-PPE-EYE
+    name: Eye protection
+    type: ppe
+    description: Safety glasses or goggles.
+    keywords: [safety glasses, safety specs, eye protection, goggles, glasses on]
+
+task_types:
+  - code: TT-LV-CONNECT
+    name: LV service connection
+    keywords: [service connection, new connection, connect service, connect the service, new service, service cable, run the service, connect the customer, overhead service, service line, lv connection, connect up the house]
+    typical_hazards: [HZ-ELEC-LV, HZ-ELEC-BACKFEED, HZ-ELEC-NEUTRAL, HZ-HEIGHT-FALL, HZ-HEIGHT-EWP, HZ-FALLING-OBJ, HZ-TRAFFIC, HZ-PUBLIC, HZ-ANIMALS]
+
+  - code: TT-POLE-REPLACE
+    name: Pole replacement
+    keywords: [pole replacement, replace the pole, replacing the pole, pole change, change the pole, pole changeover, change over the pole, new pole, swap the pole, stand the new pole]
+    typical_hazards: [HZ-ELEC-LV, HZ-ELEC-HV, HZ-ELEC-OH, HZ-PLANT-NEAR-LINES, HZ-LIFTING, HZ-HEIGHT-POLE, HZ-HEIGHT-FALL, HZ-ELEC-UG, HZ-EXCAVATION, HZ-TRAFFIC, HZ-FALLING-OBJ, HZ-MANUAL]
+
+  - code: TT-POLE-TOP
+    name: Pole-top work (crossarms, insulators, fittings)
+    keywords: [pole top work, crossarm replacement, change the crossarm, replace the crossarm, crossarm, crossarms, cross arm, insulator, insulators, pin insulator]
+    typical_hazards: [HZ-ELEC-LV, HZ-ELEC-HV, HZ-ELEC-INDUCED, HZ-HEIGHT-FALL, HZ-HEIGHT-EWP, HZ-HEIGHT-POLE, HZ-FALLING-OBJ, HZ-TRAFFIC]
+
+  - code: TT-HV-SWITCHING
+    name: HV switching
+    keywords: [hv switching, switching job, do the switching, switching operator, operate the abs, switching sequence]
+    typical_hazards: [HZ-ELEC-HV, HZ-ELEC-ARC, HZ-ELEC-BACKFEED, HZ-ELEC-INDUCED, HZ-TRAFFIC, HZ-SLIP]
+
+  - code: TT-VEG-CLEAR
+    name: Vegetation clearing near lines
+    keywords: [vegetation clearing, veg clearing, tree trimming, trim the trees, cut back the trees, line clearance, vegetation management, tree removal, veg job]
+    typical_hazards: [HZ-VEG, HZ-ELEC-OH, HZ-ELEC-LV, HZ-HEIGHT-EWP, HZ-FALLING-OBJ, HZ-NOISE, HZ-PUBLIC, HZ-BITES, HZ-TRAFFIC]
+
+  - code: TT-UG-FAULT
+    name: Underground cable fault repair
+    keywords: [underground fault, underground cable fault, cable fault, ug fault, joint the cable, cable joint, jointing, fault locate, thumper, find the fault]
+    typical_hazards: [HZ-ELEC-LV, HZ-ELEC-HV, HZ-ELEC-UG, HZ-ELEC-STORED, HZ-EXCAVATION, HZ-CONFINED, HZ-ASBESTOS, HZ-MOBILE-PLANT, HZ-TRAFFIC, HZ-PUBLIC, HZ-MANUAL]
+
+  - code: TT-PADMOUNT
+    name: Padmount transformer / kiosk maintenance
+    keywords: [padmount, pad mount, padmount transformer, padmount sub, kiosk, kiosk substation, ground mounted substation, transformer maintenance, distribution substation]
+    typical_hazards: [HZ-ELEC-HV, HZ-ELEC-LV, HZ-ELEC-ARC, HZ-ELEC-STORED, HZ-HAZMAT, HZ-BITES, HZ-PUBLIC, HZ-MANUAL]
+
+  - code: TT-STREETLIGHT
+    name: Streetlight repair
+    keywords: [streetlight, streetlights, street light, street lights, lantern, change the lantern, public lighting, luminaire, pe cell]
+    typical_hazards: [HZ-ELEC-LV, HZ-HEIGHT-EWP, HZ-HEIGHT-FALL, HZ-TRAFFIC, HZ-FALLING-OBJ, HZ-LOW-VIS, HZ-PUBLIC]
+
+  - code: TT-METER
+    name: Meter replacement
+    keywords: [meter replacement, meter change, change the meter, swap the meter, replace the meter, smart meter, meter exchange, new meter, meter board, meter box]
+    typical_hazards: [HZ-ELEC-LV, HZ-ELEC-NEUTRAL, HZ-ELEC-BACKFEED, HZ-ASBESTOS, HZ-ANIMALS, HZ-BITES, HZ-AGGRESSIVE, HZ-SLIP]
+
+  - code: TT-STORM
+    name: Storm restoration
+    keywords: [storm restoration, storm damage, restore supply, restoration, make safe, get the power back on, emergency response, outage]
+    typical_hazards: [HZ-ELEC-LV, HZ-ELEC-HV, HZ-ELEC-BACKFEED, HZ-ELEC-OH, HZ-STORM, HZ-VEG, HZ-FATIGUE, HZ-LOW-VIS, HZ-SLIP, HZ-TRAFFIC, HZ-PUBLIC, HZ-FALLING-OBJ]
+
+site_conditions:
+  - code: SC-WET
+    name: Wet weather or wet ground
+    keywords: [wet, raining, rain, drizzle, wet ground, wet grass, puddles, been raining, damp]
+    implies_hazards: [HZ-SLIP, HZ-ELEC-TOOLS]
+
+  - code: SC-WIND
+    name: High wind
+    keywords: [high wind, high winds, windy, strong wind, strong winds, gusty, gusts, blowing a gale]
+    implies_hazards: [HZ-STORM, HZ-FALLING-OBJ, HZ-HEIGHT-EWP]
+
+  - code: SC-STORM
+    name: Storms or lightning forecast
+    keywords: [storm, storms, lightning, thunder, thunderstorm, storm warning, storms forecast]
+    implies_hazards: [HZ-STORM]
+
+  - code: SC-TRAFFIC
+    name: Work on or beside a road
+    keywords: [traffic, busy road, main road, highway, on the road, in the road, roadside, road reserve, live lane, intersection, roundabout]
+    implies_hazards: [HZ-TRAFFIC]
+
+  - code: SC-SCHOOL
+    name: School zone or high pedestrian area
+    keywords: [school zone, school, near the school, school kids, kids walking, pedestrians, shopping centre, footpath, bus stop]
+    implies_hazards: [HZ-PUBLIC, HZ-TRAFFIC]
+
+  - code: SC-OVERHEAD
+    name: Overhead lines nearby
+    keywords: [overhead lines, overhead powerlines, overhead conductors, overhead wires, power lines, powerlines, lines overhead, wires overhead, under the lines]
+    implies_hazards: [HZ-ELEC-OH, HZ-PLANT-NEAR-LINES]
+
+  - code: SC-DOG
+    name: Dog or animals on site
+    keywords: [dog, dogs, beware of dog, dog in the yard, livestock, cattle, horses]
+    implies_hazards: [HZ-ANIMALS]
+
+  - code: SC-UNEVEN
+    name: Uneven, sloping or soft ground
+    keywords: [uneven ground, uneven, rough ground, soft ground, sloping, slope, steep, embankment, boggy, muddy, loose gravel, potholes]
+    implies_hazards: [HZ-SLIP, HZ-HEIGHT-EWP]
+
+  - code: SC-HEAT
+    name: Hot weather
+    keywords: [hot day, hot today, it's hot, heatwave, the heat, extreme heat, scorcher, stinker, "40 degrees", forty degrees, "38 degrees", high uv]
+    implies_hazards: [HZ-HEAT, HZ-FATIGUE]
+
+  - code: SC-NIGHT
+    name: Night or low light
+    keywords: [night, at night, night work, dark, after dark, low light, poor visibility, fog, foggy]
+    implies_hazards: [HZ-LOW-VIS, HZ-FATIGUE]
+
+  - code: SC-CONFINED
+    name: Pit, vault or confined space
+    keywords: [confined space, cable pit, pit, pits, vault, manhole, chamber, substation basement, tunnel]
+    implies_hazards: [HZ-CONFINED, HZ-BITES]
+
+  - code: SC-FIRE-DANGER
+    name: Elevated fire danger rating
+    keywords: [fire danger, fire danger rating, high fire danger, extreme fire danger, catastrophic, total fire ban, fire ban, tfb, bushfire season, dry grass, red flag day]
+    implies_hazards: [HZ-BUSHFIRE]
+
+  - code: SC-SOLAR
+    name: Customer solar, battery or generator on site
+    keywords: [solar, solar panels, rooftop solar, inverter, home battery, standby generator, backup generator]
+    implies_hazards: [HZ-ELEC-BACKFEED]
+
+  - code: SC-REMOTE
+    name: Remote site or no mobile coverage
+    keywords: [no coverage, no reception, no signal, black spot, out of range, remote area, remote site]
+    implies_hazards: [HZ-REMOTE]
+
+documents:
+  - id: DOC-ESR-001
+    title: Electrical Safety Rules — field extract
+    path: docs/electrical_safety_rules.md
+    hazard_codes: [HZ-ELEC-LV, HZ-ELEC-HV, HZ-ELEC-ARC, HZ-ELEC-INDUCED, HZ-ELEC-BACKFEED, HZ-ELEC-STORED, HZ-ELEC-OH, HZ-ELEC-NEUTRAL, HZ-ELEC-TOOLS, HZ-PLANT-NEAR-LINES]
+    control_codes: [CT-ISO-LOTO, CT-ISO-FUSES, CT-ISO-HV-SWITCHING, CT-ISO-SOLAR, CT-ENG-TEST-DEAD, CT-ENG-EARTH, CT-ENG-EQUIPOTENTIAL, CT-ENG-DISCHARGE, CT-ENG-INSUL-COVERS, CT-ENG-REMOTE-OP, CT-ENG-NEUTRAL-TEST, CT-ADM-ACCESS-PERMIT, CT-ADM-MAD, CT-ADM-SPOTTER, CT-PPE-ARC, CT-PPE-INSUL-GLOVES]
+
+  - id: DOC-EWP-002
+    title: Elevated work platform operation and rescue
+    path: docs/ewp_operation_and_rescue.md
+    hazard_codes: [HZ-HEIGHT-EWP, HZ-HEIGHT-FALL, HZ-FALLING-OBJ]
+    control_codes: [CT-ENG-OUTRIGGER-PADS, CT-ENG-EWP-LOWERING, CT-ADM-EWP-PRESTART, CT-ADM-RESCUE-PLAN, CT-ADM-SPOTTER, CT-ADM-EXCLUSION, CT-ENG-TOOL-LANYARD, CT-PPE-HARNESS, CT-ADM-WEATHER-MONITOR]
+
+  - id: DOC-TMP-003
+    title: Traffic management for roadside works
+    path: docs/traffic_management.md
+    hazard_codes: [HZ-TRAFFIC, HZ-PUBLIC, HZ-MOBILE-PLANT, HZ-LOW-VIS]
+    control_codes: [CT-ADM-TMP, CT-ENG-TRAFFIC-DEVICES, CT-ENG-VEHICLE-BUFFER, CT-ADM-TRAFFIC-CONTROLLERS, CT-PPE-HIVIS, CT-ADM-EXCLUSION, CT-ISO-BARRIERS, CT-ENG-REVERSE-CAMERA]
+
+  - id: DOC-EXC-004
+    title: Excavation and underground services
+    path: docs/excavation_and_underground_services.md
+    hazard_codes: [HZ-ELEC-UG, HZ-EXCAVATION]
+    control_codes: [CT-ADM-DBYD, CT-ENG-CABLE-LOCATE, CT-ENG-POTHOLE, CT-ENG-SHORING, CT-ISO-BARRIERS]
+
+  - id: DOC-ENV-005
+    title: Heat, storms and bushfire weather
+    path: docs/heat_storms_and_fire_weather.md
+    hazard_codes: [HZ-HEAT, HZ-STORM, HZ-BUSHFIRE]
+    control_codes: [CT-ADM-HYDRATION, CT-ENG-SHADE, CT-PPE-SUN, CT-ADM-WORK-SCHEDULE, CT-ELIM-STOP-WORK, CT-ADM-WEATHER-MONITOR, CT-ENG-FIRE-EXT, CT-ADM-FIRE-PERMIT]
+
+  - id: DOC-POLE-006
+    title: Pole climbing, pole testing and pole-top rescue
+    path: docs/pole_climbing_and_rescue.md
+    hazard_codes: [HZ-HEIGHT-POLE, HZ-HEIGHT-FALL, HZ-LIFTING, HZ-PLANT-NEAR-LINES]
+    control_codes: [CT-ADM-POLE-TEST, CT-ENG-POLE-SUPPORT, CT-SUB-EWP, CT-PPE-HARNESS, CT-ADM-RESCUE-PLAN, CT-ADM-LIFT-PLAN, CT-ADM-DOGMAN, CT-ENG-TAGLINES]
+
+  - id: DOC-CS-007
+    title: Confined spaces — pits, vaults and chambers
+    path: docs/confined_spaces.md
+    hazard_codes: [HZ-CONFINED, HZ-BITES]
+    control_codes: [CT-ADM-CONFINED-PERMIT, CT-ENG-GAS-MONITOR, CT-ENG-VENTILATION, CT-ADM-STANDBY, CT-ENG-RESCUE-TRIPOD, CT-ADM-RESCUE-PLAN, CT-ADM-INSPECT-FIRST]
+
+  - id: DOC-VEG-008
+    title: Vegetation management near powerlines
+    path: docs/vegetation_near_powerlines.md
+    hazard_codes: [HZ-VEG, HZ-ELEC-OH, HZ-FALLING-OBJ, HZ-NOISE]
+    control_codes: [CT-ADM-MAD, CT-ENG-INSUL-TOOLS, CT-ISO-LOTO, CT-ADM-EXCLUSION, CT-PPE-CHAINSAW, CT-PPE-HEARING]
+
+  - id: DOC-ASB-009
+    title: Asbestos in meter boards and pits
+    path: docs/asbestos_meter_boards_and_pits.md
+    hazard_codes: [HZ-ASBESTOS]
+    control_codes: [CT-ELIM-NO-DISTURB, CT-ENG-WET-METHODS, CT-ADM-ASBESTOS-REGISTER, CT-PPE-P2]

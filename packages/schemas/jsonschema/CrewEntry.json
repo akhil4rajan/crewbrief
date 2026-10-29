@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/CrewEntry.json",
+  "additionalProperties": false,
+  "properties": {
+    "user_id": {
+      "title": "User Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "role": {
+      "default": "crew",
+      "title": "Role",
+      "type": "string"
+    },
+    "checked_in_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Checked In At"
+    },
+    "acknowledged": {
+      "default": false,
+      "title": "Acknowledged",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "user_id",
+    "name"
+  ],
+  "title": "CrewEntry",
+  "type": "object"
+}

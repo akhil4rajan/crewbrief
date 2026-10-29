@@ -1,0 +1,25 @@
+[
+  {
+    "id": "SG1",
+    "description": "Live LV work with arc PPE and gloves only: no isolation or engineering control",
+    "kinds": [
+      "high_risk_without_control"
+    ],
+    "path": "/hazards/HZ-ELEC-LV",
+    "lines": [
+      "L03",
+      "L04"
+    ]
+  },
+  {
+    "id": "SG2",
+    "description": "New service connection but neutral integrity / polarity testing never discussed",
+    "kinds": [
+      "unconfirmed_hazard",
+      "hazard_without_control",
+      "high_risk_without_control"
+    ],
+    "path": "/hazards/HZ-ELEC-NEUTRAL",
+    "lines": []
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "SG1",
+    "description": "1.8 m excavation in sandy soil with no shoring, benching or battering",
+    "kinds": [
+      "high_risk_without_control"
+    ],
+    "path": "/hazards/HZ-EXCAVATION",
+    "lines": [
+      "L07",
+      "L08"
+    ]
+  }
+]

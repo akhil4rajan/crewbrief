@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/SiteConditionDef.json",
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "title": "Code",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "keywords": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Keywords",
+      "type": "array"
+    },
+    "implies_hazards": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Implies Hazards",
+      "type": "array"
+    }
+  },
+  "required": [
+    "code",
+    "name"
+  ],
+  "title": "SiteConditionDef",
+  "type": "object"
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/SafetyDocument.json",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "path": {
+      "title": "Path",
+      "type": "string"
+    },
+    "hazard_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Hazard Codes",
+      "type": "array"
+    },
+    "control_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Control Codes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "path"
+  ],
+  "title": "SafetyDocument",
+  "type": "object"
+}
