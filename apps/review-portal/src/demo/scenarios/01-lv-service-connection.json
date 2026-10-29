@@ -1,0 +1,23 @@
+{
+  "id": "lv-service-connection",
+  "title": "LV service connection - 14 Banksia Street, Penrith",
+  "task_type": "TT-LV-CONNECT",
+  "location": "14 Banksia Street, Penrith NSW (pole PEN 3302)",
+  "crew": ["u-crew-1", "u-crew-2", "u-crew-3"],
+  "summary": "Live LV work is discussed with PPE only. CrewBrief asks about isolation, the crew answers, and the blocking gap closes. Shows off-topic and passer-by speech being ignored.",
+  "lines": [
+    {"speaker": "u-crew-1", "at_ms": 0, "text": "Righto, morning all. Sam here, leading hand today. Let's do the pre-job brief before we get stuck in."},
+    {"speaker": "u-crew-1", "at_ms": 6000, "text": "Job is a new LV service connection off pole PEN 3302 at 14 Banksia Street, Penrith. Work order 4471823."},
+    {"speaker": "u-crew-2", "at_ms": 13000, "text": "Yep. We're working on live LV at the pole, the mains are energised and there's no outage for one service."},
+    {"speaker": "u-crew-1", "at_ms": 20000, "text": "So arc flash suits on, insulating gloves and face shields for the whole connection."},
+    {"speaker": "u-crew-3", "at_ms": 27000, "text": "Did anyone catch the footy last night? Panthers were robbed."},
+    {"speaker": "u-crew-1", "at_ms": 32000, "text": "Priya, you're in the EWP for the connection, harness on and clipped in, and I've checked the pre-start."},
+    {"speaker": "u-crew-3", "at_ms": 39000, "text": "I'll be the safety observer on the ground and I'll put cones and signs out on the footpath for pedestrians."},
+    {"speaker": "u-crew-2", "at_ms": 46000, "text": "There's a dog in the yard next door, so the owner's going to keep it inside while we're here."},
+    {"speaker": "u-crew-1", "at_ms": 53000, "text": "Emergency. Muster point is the corner of Banksia and Wattle by the post box. Nearest hospital is Nepean Hospital."},
+    {"speaker": "u-crew-3", "at_ms": 60000, "text": "I'm the first aider, kit's in the truck. Comms is mobile and the radio on channel six."},
+    {"speaker": "u-crew-1", "at_ms": 72000, "text": "Good point. We'll pull the service fuses and tag them, test before touch to prove it dead, then apply earths before anyone touches the service."},
+    {"speaker": "u-crew-2", "at_ms": 80000, "text": "And insulating covers on the LV mains next to the connection point."},
+    {"speaker": "u-crew-1", "at_ms": 87000, "text": "Righto, anything else? No? Let's sign on and get going."}
+  ]
+}

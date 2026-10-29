@@ -30,7 +30,8 @@ _TITLE = re.compile(
 
 _MUSTER = re.compile(
     r"\b(?:muster(?:ing)?|assembly|emergency meeting)\s*(?:point|area|spot)?\s*(?:is|will be|'s|:|today is)?\s*"
-    rf"(?:at|by|near|on|in|next to|over at|out at)?\s*(.{{3,60}}?){_END}", _I)
+    # Place names often contain "and" ("corner of Banksia and Wattle"), so only punctuation ends a muster point.
+    r"(?:at|by|near|on|in|next to|over at|out at)?\s*(.{3,80}?)(?=\s*(?:[,.;!?]|$))", _I)
 _HOSPITAL = re.compile(
     r"\b(?:nearest|closest)\s+(?:hospital|emergency department|emergency|e\.?d\.?|medical centre)\s*"
     rf"(?:is|'s|:|would be|will be)?\s*(?:at|in|the)?\s*(.{{3,60}}?){_END}", _I)
@@ -40,7 +41,10 @@ _FIRST_AIDER = [
     re.compile(r"\bfirst\s*aid(?:er| officer)\s*(?:today\s+)?(?:is|'s|will be)\s+([A-Z][a-z]+)\b", _I),
 ]
 _SELF_FIRST_AIDER = re.compile(r"\bI(?:'m| am)\s+(?:the\s+|our\s+)?first\s*aid(?:er| officer)\b", _I)
-_RADIO = re.compile(r"\b(?:(uhf|radio)\s*(?:channel|ch)?\s*|channel\s+)(\d{1,3})\b", _I)
+_NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+                 "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
+_RADIO = re.compile(r"\b(?:(uhf|radio)\s*(?:on\s+)?(?:channel|ch)?\s*|channel\s+)(\d{1,3}|"
+                    + "|".join(_NUMBER_WORDS) + r")\b", _I)
 _MOBILE = re.compile(r"\b(?:good|full|decent)\s+(?:mobile\s+)?(?:coverage|reception|signal)\b"
                      r"|\b(?:coverage|reception|signal)\s+(?:is|'s)\s+(?:good|fine|ok|okay)\b", _I)
 
@@ -113,7 +117,9 @@ def emergency(text: str, speaker_name: str | None) -> list[Extracted]:
             out.append(Extracted("emergency", "first_aider", speaker_name, 0.85))
     if m := _RADIO.search(text):
         band = "UHF" if (m.group(1) or "").lower() == "uhf" else "Radio"
-        out.append(Extracted("emergency", "communications", f"{band} channel {m.group(2)}", 0.85))
+        channel = m.group(2).lower()
+        channel = str(_NUMBER_WORDS.index(channel)) if channel in _NUMBER_WORDS else channel
+        out.append(Extracted("emergency", "communications", f"{band} channel {channel}", 0.85))
     elif _MOBILE.search(text):
         out.append(Extracted("emergency", "communications", "Mobile phone (coverage confirmed)", 0.7))
     return out

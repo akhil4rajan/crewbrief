@@ -346,7 +346,7 @@ controls:
     name: Stop or postpone the work
     type: elimination
     description: Do not start, or stop and make safe, when conditions exceed limits (lightning, wind, catastrophic fire danger).
-    keywords: [stop work, postpone, call it off, pull the pin, stand down, wait it out, stop the job, come down off the pole, come down if]
+    keywords: [stop work, postpone, call it off, stop the lift, we stop the lift, pull the pin, stand down, wait it out, stop the job, come down off the pole, come down if]
 
   - code: CT-ELIM-NO-DISTURB
     name: Do not disturb asbestos (work around it)
@@ -358,7 +358,7 @@ controls:
     name: Use an EWP instead of climbing
     type: substitution
     description: Work from an elevated work platform rather than climbing the pole.
-    keywords: [ewp instead of climbing, use the ewp instead, work from the bucket, from the bucket, bucket instead, not climbing, nobody climbs]
+    keywords: [ewp instead of climbing, use the ewp instead, in the ewp, from the ewp, in the bucket, work from the bucket, from the bucket, bucket instead, not climbing, nobody climbs]
 
   - code: CT-SUB-BATTERY-TOOLS
     name: Battery tools instead of leads
@@ -395,7 +395,7 @@ controls:
     name: Physical barriers and barricading
     type: isolation
     description: Rigid barriers, fencing, pit guards or plates that physically separate people from the hazard.
-    keywords: [barriers, barricade, barricades, barricading, hard barriers, mesh fencing, temporary fencing, pit guard, pit guards, trench covers, plate the trench, steel plates, cover the hole, cover the pit]
+    keywords: [barriers, barricade, barricades, closed the street, closed the road, road closure, road is closed, street is closed, barricading, hard barriers, mesh fencing, temporary fencing, pit guard, pit guards, trench covers, plate the trench, steel plates, cover the hole, cover the pit]
 
   # --- Engineering -------------------------------------------------------------------------------
   - code: CT-ENG-TEST-DEAD

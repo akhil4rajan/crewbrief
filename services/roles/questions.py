@@ -36,9 +36,13 @@ def _control_labels(library: HazardLibrary, hazard_code: str) -> str:
         if c is None or not c.type.satisfies_high_risk_rule or not c.keywords:
             continue
         label = "isolation" if c.type == ControlType.ISOLATION else c.keywords[0]
+        if len(label.split()) > 2:  # keep the spoken question short and natural
+            continue
+        label = " ".join(_ACRONYMS.get(w, w) for w in label.split())
         if label not in labels:
             labels.append(label)
-    return " or ".join(labels[:2]) or "isolation or engineering"
+    joined = " or ".join(labels[:2]) or "isolation or engineering"
+    return joined.removesuffix(" controls").removesuffix(" control")
 
 
 def gap_question(kind: GapKind, path: str, library: HazardLibrary) -> str | None:
