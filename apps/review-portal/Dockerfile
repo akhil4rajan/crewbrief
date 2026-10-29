@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build stage: compile the static bundle. Configuration is NOT baked in; it is injected at start-up.
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
