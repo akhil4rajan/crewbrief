@@ -234,7 +234,7 @@ function SpeakerRow({ sessionId, speaker, canEdit }: { sessionId: string; speake
   return (
     <li className="speaker-row">
       <span className="speaker-row-label">
-        <strong>{speaker.label}</strong>
+        <strong>{/^Speaker \d+$/.test(speaker.label) ? speaker.label : (current ?? speaker.label)}</strong>
         <span className="muted small">
           {speaker.segment_count} line{speaker.segment_count === 1 ? "" : "s"}
           {current ? ` · ${current}` : ""}

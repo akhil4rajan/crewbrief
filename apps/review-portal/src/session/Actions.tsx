@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
 import { qk } from "../api/queries";
 import type { Session, SessionDetail } from "../api/types";
@@ -28,11 +29,12 @@ export function ReviewActions({ detail }: { detail: SessionDetail }) {
   const perms = actionPermissions(user, s);
   const terminal = s.state === "SUBMITTED" || s.state === "ABANDONED";
 
-  const onSession = (label: string) => (session: Session) => {
+  // Sign-off and submit are announced by the live "Briefing is now …" notice, so they pass no label.
+  const onSession = (label?: string) => (session: Session) => {
     qc.setQueryData<SessionDetail>(qk.session(s.id), (d) => (d ? { ...d, session } : d));
     void qc.invalidateQueries({ queryKey: qk.session(s.id) });
     void qc.invalidateQueries({ queryKey: qk.sessions });
-    toast.push("success", label);
+    if (label) toast.push("success", label);
     setDialog(null);
   };
 
@@ -69,9 +71,9 @@ export function ReviewActions({ detail }: { detail: SessionDetail }) {
         )
       )}
 
-      {dialog === "sign-off" && <SignOffDialog detail={detail} onDone={onSession("Form signed off")} onClose={() => setDialog(null)} />}
+      {dialog === "sign-off" && <SignOffDialog detail={detail} onDone={onSession()} onClose={() => setDialog(null)} />}
       {dialog === "abandon" && <AbandonDialog session={s} onDone={onSession("Briefing abandoned")} onClose={() => setDialog(null)} />}
-      {dialog === "submit" && <SubmitDialog session={s} onDone={onSession("Form submitted")} onClose={() => setDialog(null)} />}
+      {dialog === "submit" && <SubmitDialog session={s} onDone={onSession()} onClose={() => setDialog(null)} />}
     </div>
   );
 }
@@ -179,7 +181,13 @@ function ActionButton({ perm, primary, onClick, children }: {
 
 function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onDone: (s: Session) => void; onClose: () => void }) {
   const toast = useToast();
-  const blocking = detail.gaps.filter((g) => g.status === "open" && g.severity === "blocking");
+  const openBlocking = detail.gaps
+    .filter((g) => g.status === "open" && g.severity === "blocking")
+    .map((g) => ({ key: g.id, message: g.message }));
+  // The rules engine can still block (e.g. a dismissed gap whose rule still fails): it answers 409
+  // `blocking_gaps` with the list, and the dialog switches to the override form.
+  const [serverBlocking, setServerBlocking] = useState<{ key: string; message: string }[] | null>(null);
+  const blocking = serverBlocking ?? openBlocking;
   const warnings = detail.gaps.filter((g) => g.status === "open" && g.severity === "warning").length;
   const [comment, setComment] = useState("");
   const [override, setOverride] = useState(false);
@@ -195,7 +203,17 @@ function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onD
         override_justification: needsOverride && override ? justification.trim() : null,
       }),
     onSuccess: onDone,
-    onError: (e) => toast.error(e, "Sign-off was refused"),
+    onError: (e) => {
+      const list = e instanceof ApiError && e.code === "blocking_gaps" ? e.problem?.blocking : undefined;
+      if (Array.isArray(list) && list.length) {
+        setServerBlocking(
+          list.map((b: { path?: string; message?: string }, i: number) => ({ key: `${b.path ?? i}`, message: b.message ?? "Blocking rule" })),
+        );
+        toast.push("warning", "Some safety rules still block sign-off", "Fix them, or override with a written reason.");
+      } else {
+        toast.error(e, "Sign-off was refused");
+      }
+    },
   });
 
   const submit = (e: FormEvent) => {
@@ -228,13 +246,16 @@ function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onD
         {needsOverride ? (
           <div className="callout callout-danger">
             <p>
-              <strong>{blocking.length} blocking gap{blocking.length > 1 ? "s" : ""}</strong> must be fixed, or overridden with a written
+              <strong>
+                {blocking.length} blocking item{blocking.length > 1 ? "s" : ""}
+              </strong>{" "}
+              must be fixed, or overridden with a written
               justification (audited).
             </p>
             <ul className="plain-list">
               {blocking.map((g) => (
-                <li key={g.id}>
-                  <GapSeverityBadge severity={g.severity} /> {g.message}
+                <li key={g.key}>
+                  <GapSeverityBadge severity="blocking" /> {g.message}
                 </li>
               ))}
             </ul>

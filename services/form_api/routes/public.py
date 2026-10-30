@@ -189,12 +189,14 @@ async def submit(session_id: str, user: Lead, svc: Service) -> Session:
 
 
 @router.get("/sessions/{session_id}/audit")
-async def audit(session_id: str, _: Reviewer, svc: Service) -> list[AuditEntry]:
+async def audit(session_id: str, user: Lead, svc: Service) -> list[AuditEntry]:
+    await svc.ensure_viewer(user, session_id)
     return await svc.audit_log(session_id)
 
 
 @router.get("/sessions/{session_id}/diff")
-async def diff(session_id: str, _: Reviewer, svc: Service) -> DiffResponse:
+async def diff(session_id: str, user: Lead, svc: Service) -> DiffResponse:
+    await svc.ensure_viewer(user, session_id)
     return await svc.diff(session_id)
 
 

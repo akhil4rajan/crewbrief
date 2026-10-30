@@ -197,6 +197,10 @@ class FormService:
     def _emit_gaps(self, session_id: str, gaps: list[Gap]) -> None:
         self._events.emit(EventType.GAPS_UPDATED, session_id, {"gaps": _dump(gaps)})
 
+    async def ensure_viewer(self, user: User, session_id: str) -> None:
+        """Audit log and AI-vs-final are visible to the crew on the job, supervisors and admins."""
+        self._ensure_participant(user, await self.get_session(session_id))
+
     @staticmethod
     def _ensure_participant(user: User, session: Session) -> None:
         """Crew may only act on briefings they are part of; supervisors and admins on any."""
@@ -644,11 +648,12 @@ class FormService:
             blocking: list[dict[str, Any]] = [
                 {"gap_id": g.id, "path": g.path, "message": g.message}
                 for g in gaps if g.status == GapStatus.OPEN and g.severity == GapSeverity.BLOCKING]
-            listed = {b["path"] for b in blocking}
-            # A dismissed gap does not make a broken safety rule go away.
+            # Rule violations count unless their gap is listed above or was dismissed: a dismissal needs a
+            # written reason and is audited, so it is the crew lead's explicit decision on that gap.
+            decided = {b["path"] for b in blocking} | {g.path for g in gaps if g.status == GapStatus.DISMISSED}
             blocking += [{"rule": v.rule, "path": v.path, "message": v.message}
                          for v in evaluate_draft(draft.form, self.library)
-                         if v.severity == GapSeverity.BLOCKING and v.path not in listed]
+                         if v.severity == GapSeverity.BLOCKING and v.path not in decided]
             if blocking:
                 if not req.override_blocking_gaps:
                     raise Conflict("Blocking gaps must be resolved, or overridden with a justification",

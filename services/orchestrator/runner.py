@@ -85,6 +85,9 @@ MAX_BACKOFF_S = 60.0
 VERIFY_TRANSCRIPT_LIMIT = 1000
 VOICE_SPEAKER_ID = "crewbrief"
 MAX_CLARIFICATIONS = 3
+# Only ask about what the crew actually raised: a high-risk hazard with no real control, or a contradiction.
+# Hazards that are merely typical for the task are left for the crew lead to decide at review.
+CLARIFY_KINDS = frozenset({GapKind.HIGH_RISK_WITHOUT_CONTROL, GapKind.CONTRADICTION})
 
 # Which gap the crew is asked about first. Lower is more urgent.
 _SEVERITY_RANK = {GapSeverity.BLOCKING: 0, GapSeverity.WARNING: 1, GapSeverity.INFO: 2}
@@ -368,8 +371,8 @@ class SessionRunner:
             while self._pending:  # each pass consumes its batch or raises (retried with backoff)
                 await self._extract(ctx, kind="final")
             gaps = await self._verify(live=False)
-            critical = sorted((g for g in gaps if g.status == GapStatus.OPEN and g.severity == GapSeverity.BLOCKING),
-                              key=gap_priority)[:MAX_CLARIFICATIONS]
+            critical = sorted((g for g in gaps if g.status == GapStatus.OPEN and g.severity == GapSeverity.BLOCKING
+                               and g.kind in CLARIFY_KINDS), key=gap_priority)[:MAX_CLARIFICATIONS]
             if critical:
                 await self._start_round(critical, gaps)
             else:
