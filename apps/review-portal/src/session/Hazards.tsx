@@ -1,3 +1,4 @@
+import { Plus, Trash2, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { pointer } from "../api/jsonPointer";
 import { useLibrary } from "../api/queries";
@@ -104,7 +105,7 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
             disabled={editing}
             onClick={() => void removeControl(c)}
           >
-            ×
+            <X size={16} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -123,12 +124,11 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
       <header className="hazard-head">
         <div className="hazard-title">
           <h4>{hazard.name}</h4>
-          <span className="muted small mono">{hazard.code}</span>
-          <span className="muted small">· {humanize(hazard.category)}</span>
+          <span className="muted small">{humanize(hazard.category)}</span>
         </div>
         <div className="hazard-badges">
           <SeverityBadge severity={hazard.severity} />
-          <span className="badge badge-outline">{ORIGIN_LABEL[hazard.origin]}</span>
+          <span className="muted small">{ORIGIN_LABEL[hazard.origin]}</span>
         </div>
       </header>
       {hazard.description && <p className="hazard-desc">{hazard.description}</p>}
@@ -153,7 +153,7 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
       </div>
 
       <div className="controls" data-path={`${base}/controls`}>
-        <h5>Controls the crew stated</h5>
+        <h5>Controls</h5>
         {stated.length === 0 ? (
           hazard.status !== "not_present" && <p className="warn-text small">No control stated</p>
         ) : (
@@ -162,18 +162,20 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
         {suggested.length > 0 && (
           <details className="suggested">
             <summary>
-              {suggested.length} suggested from the hazard library
+              {suggested.length} more suggested by the hazard library
             </summary>
             <ul>{suggested.map(controlRow)}</ul>
           </details>
         )}
         {edit.allowed && (
           <div className="hazard-actions">
-            <button type="button" className="btn btn-small" onClick={() => setAdding(true)}>
-              + Add control
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => setAdding(true)}>
+              <Plus size={16} aria-hidden="true" />
+              Add control
             </button>
             {hazard.code.includes("-CUSTOM-") && (
               <button type="button" className="btn btn-small btn-danger-ghost" disabled={editing} onClick={() => void removeHazard()}>
+                <Trash2 size={16} aria-hidden="true" />
                 Remove hazard
               </button>
             )}
@@ -231,15 +233,15 @@ function AddControlDialog({ hazard, onClose }: { hazard: HazardEntry; onClose: (
         <label className="field field-wide">
           <span>Control from the library</span>
           <select value={code} onChange={(e) => setCode(e.target.value)} required autoFocus>
-            <option value="">— Choose a control —</option>
+            <option value="">Choose a control</option>
             {available.map((c) => (
               <option key={c.code} value={c.code}>
-                {typical.has(c.code) ? "★ " : ""}
-                {c.name} · {humanize(c.type)} ({c.code})
+                {c.name} · {humanize(c.type)}
+                {typical.has(c.code) ? " (typical)" : ""}
               </option>
             ))}
           </select>
-          <span className="muted small">★ typical for this hazard</span>
+          <span className="muted small">Controls marked “typical” are usual for this hazard.</span>
         </label>
         <label className="field">
           <span>Status</span>
@@ -331,7 +333,7 @@ export function AddHazardDialog({ existing, onClose }: { existing: Record<string
           <label className="field field-wide">
             <span>Hazard</span>
             <select value={code} onChange={(e) => setCode(e.target.value)} required>
-              <option value="">— Choose a hazard —</option>
+              <option value="">Choose a hazard</option>
               {available.map((h) => (
                 <option key={h.code} value={h.code}>
                   {h.name} · {h.severity} ({h.code})

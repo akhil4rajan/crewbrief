@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, CircleCheck } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { api } from "../api/endpoints";
 import { qk } from "../api/queries";
@@ -12,6 +13,27 @@ import { actionPermissions } from "./permissions";
 import { useSessionUi } from "./SessionContext";
 
 const ORDER: Record<GapSeverity, number> = { blocking: 0, warning: 1, info: 2 };
+const LOW_KEY = (sessionId: string) => `crewbrief.lowPriorityOpen.${sessionId}`;
+
+/** Disclosure state remembered for this browser session. */
+function useSessionFlag(key: string): [boolean, (v: boolean) => void] {
+  const [value, setValue] = useState(() => {
+    try {
+      return sessionStorage.getItem(key) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const set = (v: boolean) => {
+    setValue(v);
+    try {
+      sessionStorage.setItem(key, v ? "1" : "0");
+    } catch {
+      // Storage unavailable: the choice lasts until the page reloads.
+    }
+  };
+  return [value, set];
+}
 
 /** "Needs your decision": open gaps as compact rows, blocking first, each with its actions. */
 export function DecisionsSection() {
@@ -23,43 +45,75 @@ export function DecisionsSection() {
 
   const open = detail.gaps.filter((g) => g.status === "open").sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
   const closed = detail.gaps.filter((g) => g.status !== "open");
-  const blocking = open.filter((g) => g.severity === "blocking").length;
+  const blocking = open.filter((g) => g.severity === "blocking");
+  const lower = open.filter((g) => g.severity !== "blocking");
+  const [showLower, setShowLower] = useSessionFlag(LOW_KEY(detail.session.id));
+
+  const row = (g: Gap) => (
+    <DecisionRow
+      key={g.id}
+      gap={g}
+      onFocus={() => focusPath(g.path)}
+      onDismiss={perm.allowed ? () => setDismissing(g) : undefined}
+      onDecide={
+        edit.allowed && g.kind === "unconfirmed_hazard" && g.path.startsWith("/hazards/")
+          ? (status) =>
+              void applyEdit([
+                { id: `pat_${Date.now()}`, op: "replace", path: `${g.path}/status`, value: status, provenance: humanProvenance() },
+              ])
+          : undefined
+      }
+      busy={editing}
+    />
+  );
 
   return (
     <section className="review-section" aria-labelledby="decide-title" data-path="/gaps" tabIndex={-1}>
       <header className="review-section-head">
-        <h2 id="decide-title">
-          Needs your decision <span className="count">{open.length}</span>
-        </h2>
-        {blocking > 0 && <span className="muted small">{blocking} must be settled before sign-off</span>}
+        <h2 id="decide-title">Needs your decision</h2>
+        {blocking.length > 0 && (
+          <span className="section-meta">
+            {blocking.length} to settle before sign-off
+          </span>
+        )}
       </header>
       {open.length === 0 ? (
-        <p className="ok-text">✓ Nothing to decide. Every gap is resolved.</p>
+        <p className="all-clear">
+          <CircleCheck size={20} aria-hidden="true" />
+          Nothing to decide. Every item is settled.
+        </p>
+      ) : blocking.length === 0 ? (
+        <p className="all-clear">
+          <CircleCheck size={20} aria-hidden="true" />
+          Nothing blocks sign-off.
+        </p>
       ) : (
-        <ul className="decision-list">
-          {open.map((g) => (
-            <DecisionRow
-              key={g.id}
-              gap={g}
-              onFocus={() => focusPath(g.path)}
-              onDismiss={perm.allowed ? () => setDismissing(g) : undefined}
-              onDecide={
-                edit.allowed && g.kind === "unconfirmed_hazard" && g.path.startsWith("/hazards/")
-                  ? (status) =>
-                      void applyEdit([
-                        { id: `pat_${Date.now()}`, op: "replace", path: `${g.path}/status`, value: status, provenance: humanProvenance() },
-                      ])
-                  : undefined
-              }
-              busy={editing}
-            />
-          ))}
-        </ul>
+        <ul className="decision-list">{blocking.map(row)}</ul>
+      )}
+      {lower.length > 0 && (
+        <div className="disclosure">
+          <button
+            type="button"
+            className="disclosure-btn"
+            aria-expanded={showLower}
+            aria-controls="lower-priority"
+            onClick={() => setShowLower(!showLower)}
+          >
+            <ChevronDown size={16} aria-hidden="true" className="chev" />
+            {showLower ? "Hide" : "Show"} {lower.length} lower-priority {lower.length === 1 ? "item" : "items"}
+          </button>
+          {showLower && (
+            <ul id="lower-priority" className="decision-list">
+              {lower.map(row)}
+            </ul>
+          )}
+        </div>
       )}
       {closed.length > 0 && (
-        <div className="closed-gaps">
-          <button type="button" className="btn btn-ghost btn-small" aria-expanded={showClosed} onClick={() => setShowClosed((v) => !v)}>
-            {showClosed ? "Hide" : "Show"} resolved ({closed.length})
+        <div className="disclosure">
+          <button type="button" className="disclosure-btn" aria-expanded={showClosed} onClick={() => setShowClosed((v) => !v)}>
+            <ChevronDown size={16} aria-hidden="true" className="chev" />
+            {showClosed ? "Hide" : "Show"} {closed.length} resolved
           </button>
           {showClosed && (
             <ul className="decision-list">
@@ -93,7 +147,7 @@ function DecisionRow({
   return (
     <li className={`decision gap-card-${gap.severity} gap-status-${gap.status}`}>
       <button type="button" className="decision-main" onClick={onFocus} title="Show this on the form">
-        <GapSeverityBadge severity={gap.severity} />
+        <GapSeverityBadge severity={gap.severity} iconOnly />
         <span className="decision-text">
           {gap.message}
           {gap.status !== "open" && (
@@ -109,10 +163,10 @@ function DecisionRow({
         <div className="decision-actions">
           {onDecide && (
             <>
-              <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("not_present")}>
+              <button type="button" className="btn btn-secondary btn-small" disabled={busy} onClick={() => onDecide("not_present")}>
                 Not applicable
               </button>
-              <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("present")}>
+              <button type="button" className="btn btn-secondary btn-small" disabled={busy} onClick={() => onDecide("present")}>
                 Confirm present
               </button>
             </>
@@ -138,7 +192,7 @@ function DismissDialog({ gap, sessionId, onClose }: { gap: Gap; sessionId: strin
       qc.setQueryData<SessionDetail>(qk.session(sessionId), (d) =>
         d ? { ...d, gaps: d.gaps.map((g) => (g.id === updated.id ? updated : g)) } : d,
       );
-      toast.push("success", "Gap dismissed");
+      toast.push("success", "Dismissed");
       onClose();
     },
     onError: (err) => toast.error(err, "Could not dismiss the gap"),
@@ -151,7 +205,7 @@ function DismissDialog({ gap, sessionId, onClose }: { gap: Gap; sessionId: strin
 
   return (
     <Modal
-      title="Dismiss gap"
+      title="Dismiss item"
       onClose={onClose}
       footer={
         <>
@@ -159,17 +213,18 @@ function DismissDialog({ gap, sessionId, onClose }: { gap: Gap; sessionId: strin
             Cancel
           </button>
           <button type="submit" form="dismiss-gap" className="btn btn-primary" disabled={!reason.trim() || dismiss.isPending}>
-            Dismiss gap
+            Dismiss
           </button>
         </>
       }
     >
-      <p>
-        <GapSeverityBadge severity={gap.severity} /> {gap.message}
+      <p className="dialog-subject">
+        <GapSeverityBadge severity={gap.severity} iconOnly /> {gap.message}
       </p>
+      <p className="muted small">The reason is kept in the audit log.</p>
       <form id="dismiss-gap" onSubmit={submit}>
         <label className="field">
-          <span>Reason (recorded in the audit log) *</span>
+          <span>Reason</span>
           <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} required autoFocus maxLength={500} />
         </label>
       </form>
