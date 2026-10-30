@@ -1,102 +1,31 @@
-import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronDown, CircleAlert, CircleCheck, OctagonAlert } from "lucide-react";
-import { createContext, useContext, useState, type ReactNode } from "react";
-import { api } from "../api/endpoints";
+import { Check, ChevronDown, CircleCheck, Pencil } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { pointer } from "../api/jsonPointer";
-import { qk, useLibraryIndex, useUserDirectory } from "../api/queries";
-import type { ControlEntry, Gap, HazardEntry, HazardStatus, Provenance } from "../api/types";
+import { useLibraryIndex, useUserDirectory } from "../api/queries";
+import type { ControlEntry, FieldValue, HazardEntry, HazardStatus } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { Drawer } from "../components/Drawer";
-import { InlineError, Skeleton } from "../components/Feedback";
 import { config } from "../config";
 import { formatDateTime, formatTime, humanize, STATE_LABEL } from "../format";
 import { ActionButton, SignOffDialog, SubmitDialog, useSessionUpdate } from "./Actions";
-import { DismissDialog } from "./Decisions";
-import { FieldRow } from "./FieldRow";
-import { CONTROL_TYPE_RANK, HazardEditor } from "./Hazards";
+import { useEditors, type SectionKey } from "./Editors";
+import { CONTROL_TYPE_RANK } from "./Hazards";
 import { actionPermissions, isLead } from "./permissions";
-import { QuietProvenance } from "./Provenance";
 import { RiskChip, RiskLegend } from "./Risk";
-import { flash, useSessionUi } from "./SessionContext";
-import { SpeakerRow } from "./Speakers";
-
-// ---------------------------------------------------------------- gaps on the document
-
-const isOpen = (g: Gap) => g.status === "open";
-const under = (path: string, prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
-/** Sections that show their own flags; open gaps elsewhere are listed in the summary. */
-const SHOWN_PREFIXES = ["/hazards", "/job", "/emergency", "/crew", "/permits", "/ppe", "/tasks", "/notes"];
-
-interface DocActions {
-  requestDismiss: (gap: Gap) => void;
-  openHazard: (code: string) => void;
-}
-const DocCtx = createContext<DocActions | null>(null);
-function useDoc(): DocActions {
-  const ctx = useContext(DocCtx);
-  if (!ctx) throw new Error("useDoc outside the JSEA document");
-  return ctx;
-}
-
-/** One open item as an inline flag with the actions that settle it. */
-function GapFlag({ gap, actions }: { gap: Gap; actions?: ReactNode }) {
-  const { detail } = useSessionUi();
-  const { user } = useAuth();
-  const { requestDismiss } = useDoc();
-  const canDismiss = actionPermissions(user, detail.session).dismissGap.allowed;
-  const Icon = gap.severity === "blocking" ? OctagonAlert : CircleAlert;
-  return (
-    <div className={`doc-flag doc-flag-${gap.severity}`} data-flag={gap.severity}>
-      <span className="doc-flag-text">
-        <Icon size={16} aria-hidden="true" />
-        <span>
-          <span className="sr-only">{gap.severity === "blocking" ? "Blocks sign-off: " : "Check: "}</span>
-          {gap.message}
-        </span>
-      </span>
-      {(actions || canDismiss) && (
-        <span className="doc-flag-actions no-print" onClick={(e) => e.stopPropagation()}>
-          {actions}
-          {canDismiss && (
-            <button type="button" className="btn btn-ghost btn-small" onClick={() => requestDismiss(gap)}>
-              Dismiss
-            </button>
-          )}
-        </span>
-      )}
-    </div>
-  );
-}
-
-/** Flags for every open gap at or under `prefix`. */
-function PathFlags({ prefix, exact }: { prefix: string; exact?: boolean }) {
-  const { detail } = useSessionUi();
-  const gaps = detail.gaps.filter((g) => isOpen(g) && (exact ? g.path === prefix : under(g.path, prefix)));
-  if (!gaps.length) return null;
-  return (
-    <div className="doc-flags">
-      {gaps.map((g) => (
-        <GapFlag key={g.id} gap={g} />
-      ))}
-    </div>
-  );
-}
+import { useSessionUi } from "./SessionContext";
 
 // ---------------------------------------------------------------- the document
 
 /**
- * The JSEA as the crew lead signs it: a prefilled company form, top to bottom. AI details
- * (quotes, confidence, model) sit behind the small quote buttons and the hazard side panel.
+ * The JSEA as the crew lead signs it: the finished form, read-only, laid out like the company paper
+ * form. Each section has an Edit link that opens a side panel; the evidence behind a value lives
+ * only in that panel. Sign-off and submit sit in the declaration at the end.
  */
 export function JseaDocument() {
   const { detail } = useSessionUi();
-  const [hazardCode, setHazardCode] = useState<string | null>(null);
-  const [dismissing, setDismissing] = useState<Gap | null>(null);
-  const hazard = hazardCode ? detail.draft.form.hazards[hazardCode] : undefined;
-
+  const [dialog, setDialog] = useState<"sign-off" | "submit" | null>(null);
+  const onSession = useSessionUpdate(detail.session.id, () => setDialog(null));
   return (
-    <DocCtx.Provider value={{ requestDismiss: setDismissing, openHazard: setHazardCode }}>
-      <DecisionSummary />
+    <>
       <article className="jsea-doc" aria-label="Job Safety and Environmental Analysis form">
         <FormHeader />
         <PermitsSection />
@@ -105,70 +34,21 @@ export function JseaDocument() {
         <EmergencySection />
         <StepsSection />
         <CrewSection />
-        <Declaration />
+        <Declaration onAction={setDialog} />
       </article>
-      {hazard && (
-        <Drawer title={hazard.name} onClose={() => setHazardCode(null)}>
-          <HazardEditor hazard={hazard} risk={detail.risk?.[hazard.code]} />
-        </Drawer>
-      )}
-      {dismissing && <DismissDialog gap={dismissing} sessionId={detail.session.id} onClose={() => setDismissing(null)} />}
-    </DocCtx.Provider>
+      {/* Dialogs sit outside the paper so they keep the app's colour scheme. */}
+      {dialog === "sign-off" && <SignOffDialog detail={detail} onDone={onSession()} onClose={() => setDialog(null)} />}
+      {dialog === "submit" && <SubmitDialog session={detail.session} onDone={onSession()} onClose={() => setDialog(null)} />}
+    </>
   );
 }
 
-function DecisionSummary() {
-  const { detail } = useSessionUi();
-  const { user } = useAuth();
-  const open = detail.gaps.filter(isOpen);
-  if (detail.session.state !== "REVIEW" || !isLead(user, detail.session)) return null;
-  const blocking = open.filter((g) => g.severity === "blocking");
-  const orphans = open.filter((g) => !SHOWN_PREFIXES.some((p) => under(g.path, p)));
-
-  const goToFirst = () => {
-    const el =
-      document.querySelector<HTMLElement>('.jsea-doc [data-flag="blocking"]') ??
-      document.querySelector<HTMLElement>(".jsea-doc [data-flag]");
-    const target = el?.closest<HTMLElement>("[data-flag-host]") ?? el;
-    if (!target) return;
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
-    flash(target);
-  };
-
-  const n = blocking.length;
+function EditLink({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <section className={`doc-summary${n ? " doc-summary-attn" : ""} no-print`} aria-label="Items that need your decision">
-      <div className="doc-summary-main">
-        {n ? <OctagonAlert size={20} aria-hidden="true" /> : <CircleCheck size={20} aria-hidden="true" />}
-        <p>
-          {n ? (
-            <>
-              <strong>
-                {n} {n === 1 ? "item needs" : "items need"} your decision
-              </strong>{" "}
-              before you can sign off. They are flagged on the form.
-            </>
-          ) : (
-            <>
-              <strong>Nothing blocks sign-off.</strong>{" "}
-              {open.length ? `${open.length} lower-priority ${open.length === 1 ? "note is" : "notes are"} flagged on the form.` : "Read the form through, then sign the declaration at the end."}
-            </>
-          )}
-        </p>
-        {open.length > 0 && (
-          <button type="button" className="btn btn-secondary btn-small" onClick={goToFirst}>
-            Show {n ? "first item" : "first note"}
-          </button>
-        )}
-      </div>
-      {orphans.length > 0 && (
-        <div className="doc-flags">
-          {orphans.map((g) => (
-            <GapFlag key={g.id} gap={g} />
-          ))}
-        </div>
-      )}
-    </section>
+    <button type="button" className="doc-edit no-print" aria-label={label} onClick={onClick}>
+      <Pencil size={14} aria-hidden="true" />
+      Edit
+    </button>
   );
 }
 
@@ -182,24 +62,39 @@ function OrgMark() {
   );
 }
 
-function StaticCell({ label, children }: { label: string; children: ReactNode }) {
+const fieldText = (f: FieldValue | null | undefined): string | null => {
+  const v = f?.value;
+  if (v === null || v === undefined || v === "") return null;
+  return typeof v === "string" ? v : JSON.stringify(v);
+};
+
+/** A read-only form cell: label and value, or a muted "Not captured". */
+function Cell({ label, value, path, stacked }: { label: string; value: ReactNode; path?: string; stacked?: boolean }) {
   return (
-    <div className="field-row field-row-stacked">
+    <div className={`field-row${stacked ? " field-row-stacked" : ""}`} data-path={path} tabIndex={path ? -1 : undefined}>
       <span className="field-label">{label}</span>
       <div className="field-value">
-        <span>{children}</span>
+        {value === null || value === undefined ? <span className="placeholder">Not captured</span> : <span>{value}</span>}
       </div>
     </div>
   );
 }
 
+/** Edit link for a section, shown only to people who may edit the draft. */
+function useSectionEdit(section: SectionKey, label: string) {
+  const { edit } = useSessionUi();
+  const { openSection } = useEditors();
+  return edit.allowed ? <EditLink label={`Edit ${label}`} onClick={() => openSection(section)} /> : undefined;
+}
+
 function FormHeader() {
   const { detail } = useSessionUi();
   const users = useUserDirectory();
-  const { library, taskTypeName } = useLibraryIndex();
+  const { taskTypeName } = useLibraryIndex();
+  const editLink = useSectionEdit("job", "job details");
   const s = detail.session;
   const job = detail.draft.form.job;
-  const taskOptions = (library?.task_types ?? []).map((t) => ({ value: t.code, label: t.name }));
+  const task = fieldText(job.task_type);
   const date = new Date(s.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
   return (
     <header className="doc-header" data-path="/job" tabIndex={-1}>
@@ -213,43 +108,31 @@ function FormHeader() {
         </span>
         <span className="doc-formid">{config.formId}</span>
       </div>
-      <h2 className="doc-title">Job Safety &amp; Environmental Analysis (JSEA)</h2>
+      <div className="doc-title-row">
+        <h2 className="doc-title">Job Safety &amp; Environmental Analysis (JSEA)</h2>
+        {editLink}
+      </div>
       <div className="doc-meta">
-        <FieldRow label="Work order" path="/job/work_order_id" field={job.work_order_id} stacked>
-          <PathFlags prefix="/job/work_order_id" />
-        </FieldRow>
-        <StaticCell label="Date">{date}</StaticCell>
-        <FieldRow label="Location / asset" path="/job/location" field={job.location} stacked>
-          <PathFlags prefix="/job/location" />
-        </FieldRow>
-        <FieldRow
-          label="Task type"
-          path="/job/task_type"
-          field={job.task_type}
-          options={taskOptions}
-          display={(v) => taskTypeName(String(v))}
-          stacked
-        >
-          <PathFlags prefix="/job/task_type" />
-        </FieldRow>
-        <StaticCell label="Crew leader">{users.get(s.created_by)?.name ?? s.created_by}</StaticCell>
-        <StaticCell label="Status">{STATE_LABEL[s.state]}</StaticCell>
+        <Cell label="Work order" path="/job/work_order_id" value={fieldText(job.work_order_id)} stacked />
+        <Cell label="Date" value={date} stacked />
+        <Cell label="Location / asset" path="/job/location" value={fieldText(job.location)} stacked />
+        <Cell label="Task type" path="/job/task_type" value={task ? taskTypeName(task) : null} stacked />
+        <Cell label="Crew leader" value={users.get(s.created_by)?.name ?? s.created_by} stacked />
+        <Cell label="Status" value={STATE_LABEL[s.state]} stacked />
       </div>
       <div className="doc-scope">
-        <FieldRow label="Scope of work" path="/job/description" field={job.description} multiline>
-          <PathFlags prefix="/job/description" />
-        </FieldRow>
+        <Cell label="Scope of work" path="/job/description" value={fieldText(job.description)} />
       </div>
-      <PathFlags prefix="/job" exact />
     </header>
   );
 }
 
-function DocSection({ n, title, path, note, children }: {
+function DocSection({ n, title, path, note, action, children }: {
   n?: number;
   title: string;
   path: string;
   note?: ReactNode;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   const id = `doc-sec-${path.replace(/\W/g, "")}`;
@@ -260,7 +143,12 @@ function DocSection({ n, title, path, note, children }: {
           {n !== undefined && <span className="doc-num">{n}</span>}
           {title}
         </h3>
-        {note && <span className="doc-section-note">{note}</span>}
+        {(note || action) && (
+          <span className="doc-section-side">
+            {note && <span className="doc-section-note">{note}</span>}
+            {action}
+          </span>
+        )}
       </header>
       {children}
     </section>
@@ -275,7 +163,6 @@ const confirmed = (c: ControlEntry) => CONFIRMED.has(c.status);
 interface Found {
   text: string;
   path: string;
-  provenance: Provenance;
 }
 
 /** The first confirmed control with one of these codes on a hazard that applies. */
@@ -287,7 +174,6 @@ function findControl(hazards: HazardEntry[], codes: string[]): Found | null {
         return {
           text: `${c.name} · ${c.status === "in_place" ? "in place" : "planned"}`,
           path: `${pointer("hazards", h.code)}/controls/${pointer(c.code).slice(1)}`,
-          provenance: c.provenance,
         };
       }
     }
@@ -323,28 +209,22 @@ function PermitsSection() {
   const hazards = Object.values(form.hazards);
   const permits = Object.values(form.permits);
   return (
-    <DocSection n={1} title="Permits & isolations" path="/permits">
+    <DocSection n={1} title="Permits & isolations" path="/permits" note="From the controls in section 2">
       <ul className="check-rows">
         {PERMIT_CHECKS.map((chk) => {
           const permit = chk.permit ? permits.find((p) => chk.permit!.test(p.type.toLowerCase())) : undefined;
           const found: Found | null =
             findControl(hazards, chk.controls) ??
-            (permit
-              ? { text: `${humanize(permit.type)}${permit.reference ? ` ${permit.reference}` : ""}`, path: pointer("permits", permit.id), provenance: permit.provenance }
-              : null);
+            (permit ? { text: `${humanize(permit.type)}${permit.reference ? ` ${permit.reference}` : ""}`, path: pointer("permits", permit.id) } : null);
           return (
             <li key={chk.label} className={found ? "is-on" : undefined} data-path={found?.path} tabIndex={-1}>
               <CheckMark on={!!found} />
               <span className="check-label">{chk.label}</span>
-              <span className="check-detail">
-                {found ? found.text : <span className="muted">Not recorded</span>}
-              </span>
-              <span className="check-ev">{found && <QuietProvenance provenance={found.provenance} />}</span>
+              <span className="check-detail">{found ? found.text : <span className="muted">Not recorded</span>}</span>
             </li>
           );
         })}
       </ul>
-      <PathFlags prefix="/permits" />
     </DocSection>
   );
 }
@@ -366,27 +246,20 @@ function HazardsSection() {
   const [showTypical, setShowTypical] = useState(false);
   const [showNa, setShowNa] = useState(false);
   const risk = detail.risk ?? {};
-  const open = detail.gaps.filter(isOpen);
-  const gapsFor = (h: HazardEntry) => open.filter((g) => under(g.path, pointer("hazards", h.code)));
-  const blocks = (h: HazardEntry) => gapsFor(h).some((g) => g.severity === "blocking");
   const byRisk = (a: HazardEntry, b: HazardEntry) =>
     (risk[b.code]?.before.score ?? 0) - (risk[a.code]?.before.score ?? 0) || a.name.localeCompare(b.name);
 
   const all = Object.values(detail.draft.form.hazards);
   const na = all.filter((h) => h.status === "not_present").sort(byRisk);
-  const typical = all.filter((h) => h.status === "unconfirmed" && !blocks(h)).sort(byRisk);
-  const main = all.filter((h) => !na.includes(h) && !typical.includes(h)).sort(byRisk);
+  const typical = all.filter((h) => h.status === "unconfirmed").sort(byRisk);
+  const main = all.filter((h) => h.status === "present").sort(byRisk);
+  const cols = edit.allowed ? 7 : 6;
 
   let n = 0;
-  const rows = (list: HazardEntry[]) => list.map((h) => <HazardRow key={h.code} n={++n} hazard={h} gaps={gapsFor(h)} />);
+  const rows = (list: HazardEntry[]) => list.map((h) => <HazardRow key={h.code} n={++n} hazard={h} />);
 
   return (
-    <DocSection
-      n={2}
-      title="Hazards, risks and controls"
-      path="/hazards"
-      note={edit.allowed ? "Select a hazard to edit it or see the evidence" : undefined}
-    >
+    <DocSection n={2} title="Hazards, risks and controls" path="/hazards">
       <table className="hz-table">
         <thead>
           <tr>
@@ -396,22 +269,27 @@ function HazardsSection() {
             <th scope="col">Controls the crew stated</th>
             <th scope="col" className="hz-risk">Risk after</th>
             <th scope="col" className="hz-status">Status</th>
+            {edit.allowed && (
+              <th scope="col" className="hz-edit no-print">
+                <span className="sr-only">Edit</span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {main.length ? rows(main) : (
             <tr>
-              <td colSpan={6} className="muted">No hazards confirmed yet.</td>
+              <td colSpan={cols} className="muted">No hazards confirmed yet.</td>
             </tr>
           )}
         </tbody>
         {typical.length > 0 && (
-          <GroupBody label="Also typical for this task" count={typical.length} open={showTypical} onToggle={() => setShowTypical((v) => !v)}>
+          <GroupBody label="Typical for this task, not confirmed" count={typical.length} cols={cols} open={showTypical} onToggle={() => setShowTypical((v) => !v)}>
             {rows(typical)}
           </GroupBody>
         )}
         {na.length > 0 && (
-          <GroupBody label="Ruled out as not applicable" count={na.length} open={showNa} onToggle={() => setShowNa((v) => !v)}>
+          <GroupBody label="Ruled out as not applicable" count={na.length} cols={cols} open={showNa} onToggle={() => setShowNa((v) => !v)}>
             {rows(na)}
           </GroupBody>
         )}
@@ -422,9 +300,10 @@ function HazardsSection() {
 }
 
 /** A collapsed group of rows. The rows stay rendered (hidden) so the print view can show them. */
-function GroupBody({ label, count, open, onToggle, children }: {
+function GroupBody({ label, count, cols, open, onToggle, children }: {
   label: string;
   count: number;
+  cols: number;
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
@@ -433,7 +312,7 @@ function GroupBody({ label, count, open, onToggle, children }: {
     <>
       <tbody className="hz-group-head">
         <tr>
-          <td colSpan={6}>
+          <td colSpan={cols}>
             <button type="button" className="disclosure-btn" aria-expanded={open} onClick={onToggle}>
               <ChevronDown size={16} aria-hidden="true" className="chev" />
               {label} ({count})
@@ -446,99 +325,56 @@ function GroupBody({ label, count, open, onToggle, children }: {
   );
 }
 
-function HazardRow({ n, hazard, gaps }: { n: number; hazard: HazardEntry; gaps: Gap[] }) {
-  const { detail, edit, applyEdit, editing, humanProvenance } = useSessionUi();
-  const { openHazard } = useDoc();
+function HazardRow({ n, hazard }: { n: number; hazard: HazardEntry }) {
+  const { detail, edit } = useSessionUi();
+  const { openHazard } = useEditors();
   const r = detail.risk?.[hazard.code];
-  const base = pointer("hazards", hazard.code);
   const na = hazard.status === "not_present";
   const stated = Object.values(hazard.controls)
     .filter(confirmed)
     .sort((a, b) => CONTROL_TYPE_RANK[a.type] - CONTROL_TYPE_RANK[b.type] || a.name.localeCompare(b.name));
-  const severity = gaps.some((g) => g.severity === "blocking") ? "blocking" : gaps.length ? "warning" : null;
-
-  const decide = (status: HazardStatus) =>
-    void applyEdit([
-      { op: "replace", path: `${base}/status`, value: status, provenance: humanProvenance() },
-      { op: "replace", path: `${base}/provenance`, value: humanProvenance(hazard.provenance), provenance: humanProvenance() },
-    ]);
-
-  const actionsFor = (g: Gap) => {
-    if (!edit.allowed) return undefined;
-    if (g.kind === "unconfirmed_hazard") {
-      return (
-        <>
-          <button type="button" className="btn btn-secondary btn-small" disabled={editing} onClick={() => decide("not_present")}>
-            Not applicable
-          </button>
-          <button type="button" className="btn btn-secondary btn-small" disabled={editing} onClick={() => decide("present")}>
-            Confirm present
-          </button>
-        </>
-      );
-    }
-    if (g.kind === "high_risk_without_control" || g.kind === "hazard_without_control") {
-      return (
-        <button type="button" className="btn btn-secondary btn-small" onClick={() => openHazard(hazard.code)}>
-          Add control
-        </button>
-      );
-    }
-    return undefined;
-  };
 
   return (
-    <>
-      <tr
-        className={`hz-row${na ? " is-na" : ""}${severity ? ` has-flag flag-${severity}` : ""}`}
-        data-path={base}
-        data-flag-host=""
-        tabIndex={-1}
-        onClick={() => openHazard(hazard.code)}
-      >
-        <td className="hz-n" data-label="#">{n}</td>
-        <td className="hz-name" data-label="Hazard">
-          <button type="button" className="hz-open" onClick={(e) => { e.stopPropagation(); openHazard(hazard.code); }}>
-            {hazard.name}
-          </button>
-          <span className="hz-cat muted small">{humanize(hazard.category)}</span>
-        </td>
-        <td className="hz-risk" data-label="Risk before">
-          <RiskChip risk={r?.before} />
-        </td>
-        <td className="hz-controls" data-label="Controls">
-          {na ? (
-            <span className="muted">—</span>
-          ) : stated.length ? (
-            <ul>
-              {stated.map((c) => (
-                <li key={c.code}>
-                  <span className={`htag htag-${c.type}`}>{TYPE_TAG[c.type]}</span>
-                  <span>{c.name}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <span className="warn-text">None stated</span>
-          )}
-        </td>
-        <td className="hz-risk" data-label="Risk after">
-          {na ? <span className="muted">—</span> : <RiskChip risk={r?.after} />}
-        </td>
-        <td className="hz-status" data-label="Status">
-          <span className={`hz-st hz-st-${hazard.status}`}>{STATUS_TEXT[hazard.status]}</span>
-        </td>
-      </tr>
-      {gaps.length > 0 && (
-        <tr className={`hz-flag-row flag-${severity}`}>
-          <td colSpan={6}>
-            {gaps.map((g) => (
-              <GapFlag key={g.id} gap={g} actions={actionsFor(g)} />
+    <tr className={`hz-row${na ? " is-na" : ""}`} data-path={pointer("hazards", hazard.code)} tabIndex={-1} onClick={() => openHazard(hazard.code)}>
+      <td className="hz-n" data-label="#">{n}</td>
+      <td className="hz-name" data-label="Hazard">
+        <span className="hz-title">{hazard.name}</span>
+        <span className="hz-cat muted small">{humanize(hazard.category)}</span>
+      </td>
+      <td className="hz-risk" data-label="Risk before">
+        <RiskChip risk={r?.before} />
+      </td>
+      <td className="hz-controls" data-label="Controls">
+        {na ? (
+          <span className="muted">—</span>
+        ) : stated.length ? (
+          <ul>
+            {stated.map((c) => (
+              <li key={c.code}>
+                <span className={`htag htag-${c.type}`}>{TYPE_TAG[c.type]}</span>
+                <span>{c.name}</span>
+              </li>
             ))}
-          </td>
-        </tr>
+          </ul>
+        ) : (
+          <span className="warn-text">None stated</span>
+        )}
+      </td>
+      <td className="hz-risk" data-label="Risk after">
+        {na ? <span className="muted">—</span> : <RiskChip risk={r?.after} />}
+      </td>
+      <td className="hz-status" data-label="Status">
+        <span className={`hz-st hz-st-${hazard.status}`}>{STATUS_TEXT[hazard.status]}</span>
+      </td>
+      {edit.allowed && (
+        <td className="hz-edit no-print">
+          <EditLink
+            label={`Edit ${hazard.name}`}
+            onClick={() => openHazard(hazard.code)}
+          />
+        </td>
       )}
-    </>
+    </tr>
   );
 }
 
@@ -548,32 +384,30 @@ function PpeSection() {
   const { detail } = useSessionUi();
   const { library } = useLibraryIndex();
   const form = detail.draft.form;
-  const recorded = new Map<string, { name: string; provenance: Provenance }>();
-  for (const p of Object.values(form.ppe)) recorded.set(p.code, { name: p.name, provenance: p.provenance });
+  const recorded = new Map<string, string>();
+  for (const p of Object.values(form.ppe)) recorded.set(p.code, p.name);
   for (const h of Object.values(form.hazards)) {
     if (h.status === "not_present") continue;
     for (const c of Object.values(h.controls)) {
-      if (c.type === "ppe" && confirmed(c) && !recorded.has(c.code)) recorded.set(c.code, { name: c.name, provenance: c.provenance });
+      if (c.type === "ppe" && confirmed(c) && !recorded.has(c.code)) recorded.set(c.code, c.name);
     }
   }
   const listed = (library?.controls ?? []).filter((c) => c.type === "ppe").map((c) => ({ code: c.code, name: c.name }));
-  for (const [code, v] of recorded) if (!listed.some((l) => l.code === code)) listed.push({ code, name: v.name });
+  for (const [code, name] of recorded) if (!listed.some((l) => l.code === code)) listed.push({ code, name });
 
   return (
     <DocSection n={3} title="Personal protective equipment" path="/ppe" note={`${recorded.size} required`}>
       <ul className="ppe-grid">
         {listed.map((p) => {
-          const on = recorded.get(p.code);
+          const on = recorded.has(p.code);
           return (
             <li key={p.code} className={on ? "is-on" : undefined} data-path={on ? pointer("ppe", p.code) : undefined}>
-              <CheckMark on={!!on} />
+              <CheckMark on={on} />
               <span>{p.name}</span>
-              {on && <QuietProvenance provenance={on.provenance} />}
             </li>
           );
         })}
       </ul>
-      <PathFlags prefix="/ppe" />
     </DocSection>
   );
 }
@@ -582,23 +416,16 @@ function PpeSection() {
 
 function EmergencySection() {
   const { detail } = useSessionUi();
+  const editLink = useSectionEdit("emergency", "emergency plan");
   const e = detail.draft.form.emergency;
-  const rows: [string, string, typeof e.muster_point][] = [
-    ["Muster point", "/emergency/muster_point", e.muster_point],
-    ["Nearest hospital", "/emergency/nearest_hospital", e.nearest_hospital],
-    ["First aider", "/emergency/first_aider", e.first_aider],
-    ["Communications", "/emergency/communications", e.communications],
-  ];
   return (
-    <DocSection n={4} title="Emergency plan" path="/emergency">
+    <DocSection n={4} title="Emergency plan" path="/emergency" action={editLink}>
       <div className="doc-fields">
-        {rows.map(([label, path, field]) => (
-          <FieldRow key={path} label={label} path={path} field={field}>
-            <PathFlags prefix={path} />
-          </FieldRow>
-        ))}
+        <Cell label="Muster point" path="/emergency/muster_point" value={fieldText(e.muster_point)} />
+        <Cell label="Nearest hospital" path="/emergency/nearest_hospital" value={fieldText(e.nearest_hospital)} />
+        <Cell label="First aider" path="/emergency/first_aider" value={fieldText(e.first_aider)} />
+        <Cell label="Communications" path="/emergency/communications" value={fieldText(e.communications)} />
       </div>
-      <PathFlags prefix="/emergency" exact />
     </DocSection>
   );
 }
@@ -607,17 +434,17 @@ function EmergencySection() {
 
 function StepsSection() {
   const { detail } = useSessionUi();
+  const editLink = useSectionEdit("notes", "notes");
   const form = detail.draft.form;
   const tasks = Object.values(form.tasks).sort((a, b) => a.order - b.order);
   const conditions = Object.values(form.site_conditions);
   return (
-    <DocSection n={5} title="Job steps & site conditions" path="/tasks">
+    <DocSection n={5} title="Job steps & site conditions" path="/tasks" action={editLink}>
       {tasks.length > 0 ? (
         <ol className="doc-steps">
           {tasks.map((t) => (
             <li key={t.id} data-path={pointer("tasks", t.id)} tabIndex={-1}>
               <span>{t.description}</span>
-              <QuietProvenance provenance={t.provenance} />
             </li>
           ))}
         </ol>
@@ -629,19 +456,14 @@ function StepsSection() {
           <span className="field-label">Site conditions</span>
           <ul>
             {conditions.map((c) => (
-              <li key={c.id}>
-                {c.description} <QuietProvenance provenance={c.provenance} />
-              </li>
+              <li key={c.id}>{c.description}</li>
             ))}
           </ul>
         </div>
       )}
       <div className="doc-fields">
-        <FieldRow label="Notes" path="/notes" field={detail.draft.form.notes} multiline>
-          <PathFlags prefix="/notes" />
-        </FieldRow>
+        <Cell label="Notes" path="/notes" value={fieldText(form.notes)} />
       </div>
-      <PathFlags prefix="/tasks" />
     </DocSection>
   );
 }
@@ -650,10 +472,10 @@ function StepsSection() {
 
 function CrewSection() {
   const { detail, edit } = useSessionUi();
+  const editLink = useSectionEdit("crew", "crew sign-on");
   const crew = Object.values(detail.draft.form.crew);
-  const speakers = useQuery({ queryKey: qk.speakers(detail.session.id), queryFn: () => api.speakers(detail.session.id) });
   return (
-    <DocSection n={6} title="Crew sign-on" path="/crew">
+    <DocSection n={6} title="Crew sign-on" path="/crew" action={editLink}>
       <table className="doc-table crew-table">
         <thead>
           <tr>
@@ -666,7 +488,9 @@ function CrewSection() {
         <tbody>
           {crew.length === 0 ? (
             <tr>
-              <td colSpan={4} className="muted">No one has signed on yet. Name a voice below to add them.</td>
+              <td colSpan={4} className="muted">
+                No one has signed on yet.{edit.allowed && " Use Edit to name the voices in the recording."}
+              </td>
             </tr>
           ) : (
             crew.map((c) => (
@@ -688,32 +512,16 @@ function CrewSection() {
           )}
         </tbody>
       </table>
-      <PathFlags prefix="/crew" />
-      <div className="doc-voices no-print">
-        <h4 className="doc-subhead">Voices in the recording</h4>
-        {speakers.isPending && <Skeleton lines={2} height={32} />}
-        {speakers.isError && <InlineError error={speakers.error} onRetry={() => void speakers.refetch()} />}
-        {speakers.data?.length === 0 && <p className="muted small">No voices were separated in this briefing.</p>}
-        {speakers.data && speakers.data.length > 0 && (
-          <ul className="speaker-rows">
-            {speakers.data.map((sp) => (
-              <SpeakerRow key={sp.speaker_id} sessionId={detail.session.id} speaker={sp} canEdit={edit.allowed} />
-            ))}
-          </ul>
-        )}
-      </div>
     </DocSection>
   );
 }
 
 // ---------------------------------------------------------------- declaration
 
-function Declaration() {
+function Declaration({ onAction }: { onAction: (dialog: "sign-off" | "submit") => void }) {
   const { detail } = useSessionUi();
   const { user } = useAuth();
   const users = useUserDirectory();
-  const [dialog, setDialog] = useState<"sign-off" | "submit" | null>(null);
-  const onSession = useSessionUpdate(detail.session.id, () => setDialog(null));
   const s = detail.session;
   const perms = actionPermissions(user, s);
   const leadName = users.get(s.created_by)?.name ?? s.created_by;
@@ -752,20 +560,17 @@ function Declaration() {
       {lead && (s.state === "REVIEW" || s.state === "SIGNED") && (
         <div className="decl-actions no-print">
           {s.state === "REVIEW" ? (
-            <ActionButton perm={perms.signOff} primary onClick={() => setDialog("sign-off")}>
+            <ActionButton perm={perms.signOff} primary onClick={() => onAction("sign-off")}>
               Sign off as crew leader
             </ActionButton>
           ) : (
-            <ActionButton perm={perms.submit} primary onClick={() => setDialog("submit")}>
+            <ActionButton perm={perms.submit} primary onClick={() => onAction("submit")}>
               Submit to safety system
             </ActionButton>
           )}
           {s.state === "REVIEW" && <span className="muted small">You can still edit the form until you sign.</span>}
         </div>
       )}
-      {dialog === "sign-off" && <SignOffDialog detail={detail} onDone={onSession()} onClose={() => setDialog(null)} />}
-      {dialog === "submit" && <SubmitDialog session={s} onDone={onSession()} onClose={() => setDialog(null)} />}
     </section>
   );
 }
-
