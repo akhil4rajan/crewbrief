@@ -32,8 +32,9 @@ TIMEOUT_S = 300.0
 
 
 def fast_transcription_url(settings: Settings) -> str:
-    base = (settings.azure_speech_endpoint or
-            f"https://{settings.azure_speech_region}.api.cognitive.microsoft.com").rstrip("/")
+    # The committed .env carries a dummy endpoint; with only a key + region configured, use the region.
+    endpoint = "" if Settings.is_dummy(settings.azure_speech_endpoint) else settings.azure_speech_endpoint
+    base = (endpoint or f"https://{settings.azure_speech_region}.api.cognitive.microsoft.com").rstrip("/")
     return f"{base}/speechtotext/transcriptions:transcribe?api-version={API_VERSION}"
 
 
