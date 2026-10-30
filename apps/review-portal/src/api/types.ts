@@ -287,6 +287,23 @@ export interface SessionDetail {
   draft: Draft;
   gaps: Gap[];
   transcript_count: number;
+  /** 5x5 risk matrix per hazard code, computed by the form API (packages/rules/risk.py). */
+  risk?: Record<string, HazardRisk>;
+}
+
+export type RiskLevel = "low" | "medium" | "high" | "extreme";
+
+export interface RiskScore {
+  likelihood: number;
+  consequence: number;
+  score: number;
+  level: RiskLevel;
+}
+
+export interface HazardRisk {
+  before: RiskScore;
+  after: RiskScore;
+  basis: string;
 }
 
 /** A diarized voice ("Guest-1" → "Speaker 1"), optionally mapped to a person. */

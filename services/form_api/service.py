@@ -19,6 +19,7 @@ from typing import Any
 
 from packages.common.errors import AppError, Conflict, Forbidden, NotFound, UnprocessableEntity, UpstreamError
 from packages.rules import apply_patches, can_sign_off, evaluate_draft, is_crew_lead
+from packages.rules.risk import assess_form
 from packages.schemas import (
     LIVE_STATES,
     TERMINAL_STATES,
@@ -251,9 +252,11 @@ class FormService:
 
     async def detail(self, session_id: str) -> SessionDetail:
         session = await self.get_session(session_id)
-        return SessionDetail(session=session, draft=await self._load_draft(session_id),
+        draft = await self._load_draft(session_id)
+        return SessionDetail(session=session, draft=draft,
                              gaps=await self.repo.list_gaps(session_id),
-                             transcript_count=await self.repo.count_segments(session_id))
+                             transcript_count=await self.repo.count_segments(session_id),
+                             risk=assess_form(draft.form))
 
     async def context(self, session_id: str, transcript_limit: int) -> SessionContext:
         session = await self.get_session(session_id)
@@ -682,6 +685,7 @@ class FormService:
             draft = await self._load_draft(session_id)
             payload = {"session": session.model_dump(mode="json"), "revision": draft.revision,
                        "form": draft.form.model_dump(mode="json"),
+                       "risk": {code: r.model_dump(mode="json") for code, r in assess_form(draft.form).items()},
                        "gaps": _dump(await self.repo.list_gaps(session_id)), "submitted_by": user.id}
             try:
                 ref = await self._submitter.submit(session_id, payload)

@@ -1,7 +1,7 @@
 import { Pencil } from "lucide-react";
-import { useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
 import type { FieldValue } from "../api/types";
-import { ProvenanceMeta } from "./Provenance";
+import { QuietProvenance } from "./Provenance";
 import { useSessionUi } from "./SessionContext";
 
 export interface Option {
@@ -17,6 +17,10 @@ interface Props {
   options?: Option[];
   /** Render the stored value (e.g. code → name). */
   display?: (value: unknown) => string;
+  /** Label above the value (form header cells) instead of beside it. */
+  stacked?: boolean;
+  /** Extra content after the value, e.g. a decision flag. */
+  children?: ReactNode;
 }
 
 function asText(v: unknown): string {
@@ -25,7 +29,7 @@ function asText(v: unknown): string {
 }
 
 /** A scalar form field with provenance and inline editing (PATCH replace of the FieldValue). */
-export function FieldRow({ label, path, field, multiline, options, display }: Props) {
+export function FieldRow({ label, path, field, multiline, options, display, stacked, children }: Props) {
   const { edit, applyEdit, editing, humanProvenance } = useSessionUi();
   const [draft, setDraft] = useState<string | null>(null);
   const text = asText(field?.value);
@@ -52,7 +56,7 @@ export function FieldRow({ label, path, field, multiline, options, display }: Pr
 
   const inputId = `f-${path.replace(/\W/g, "-")}`;
   return (
-    <div className="field-row" data-path={path} tabIndex={-1}>
+    <div className={`field-row${stacked ? " field-row-stacked" : ""}`} data-path={path} tabIndex={-1}>
       <label className="field-label" htmlFor={draft !== null ? inputId : undefined}>
         {label}
       </label>
@@ -60,7 +64,7 @@ export function FieldRow({ label, path, field, multiline, options, display }: Pr
         <div className="field-value">
           <span className={shown ? "" : "placeholder"}>{shown ?? "Not captured"}</span>
           <span className="field-meta">
-            {field && (text !== "" || field.provenance.source === "human") && <ProvenanceMeta provenance={field.provenance} compact />}
+            {field && (text !== "" || field.provenance.source === "human") && <QuietProvenance provenance={field.provenance} />}
             {edit.allowed && (
               <button
                 type="button"
@@ -100,6 +104,7 @@ export function FieldRow({ label, path, field, multiline, options, display }: Pr
           </div>
         </div>
       )}
+      {children}
     </div>
   );
 }

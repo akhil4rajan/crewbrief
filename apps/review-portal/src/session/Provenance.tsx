@@ -24,8 +24,34 @@ export function ConfidenceMeter({ value }: { value: number }) {
   );
 }
 
+/** One line naming who or what produced a value: the AI model and its confidence, or the person who edited it. */
+export function ProvenanceLine({ provenance }: { provenance: Provenance }) {
+  const users = useUserDirectory();
+  if (provenance.source === "human") {
+    const who = provenance.updated_by ? (users.get(provenance.updated_by)?.name ?? provenance.updated_by) : "a person";
+    return (
+      <span className="prov-line">
+        Set by {who} · {formatDateTime(provenance.updated_at)}
+      </span>
+    );
+  }
+  if (provenance.source === "system") return <span className="prov-line">Set by the system</span>;
+  return (
+    <span className="prov-line">
+      AI · {formatPercent(provenance.confidence)} confidence
+      {provenance.model && (
+        <>
+          {" "}
+          · <span className="mono">{provenance.model}</span>
+        </>
+      )}
+      {provenance.prompt_version && <> · prompt {provenance.prompt_version}</>}
+    </span>
+  );
+}
+
 /** "n quotes" button that opens the supporting transcript evidence; each quote jumps to its segment. */
-export function EvidencePopover({ evidence }: { evidence: EvidenceRef[] }) {
+export function EvidencePopover({ evidence, provenance }: { evidence: EvidenceRef[]; provenance?: Provenance }) {
   const { speakerName, highlightSegment } = useSessionUi();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
@@ -69,6 +95,7 @@ export function EvidencePopover({ evidence }: { evidence: EvidenceRef[] }) {
       </button>
       {open && (
         <div id={popId} className="popover" role="dialog" aria-label="Supporting evidence">
+          {provenance && <ProvenanceLine provenance={provenance} />}
           <ul>
             {quotes.map((q, i) => (
               <li key={`${q.segment_id}-${i}`}>
@@ -118,5 +145,50 @@ export function ProvenanceMeta({ provenance, compact }: { provenance: Provenance
       <ConfidenceMeter value={provenance.confidence} />
       <EvidencePopover evidence={provenance.evidence} />
     </span>
+  );
+}
+
+/**
+ * Form-document variant: a quiet quote button that holds the evidence, confidence and model behind
+ * a click. Values with no transcript evidence show nothing (or a small "Edited" mark for people).
+ */
+export function QuietProvenance({ provenance }: { provenance: Provenance | null | undefined }) {
+  if (!provenance) return null;
+  const quotes = provenance.evidence.filter((e) => e.segment_id);
+  if (quotes.length > 0) return <EvidencePopover evidence={provenance.evidence} provenance={provenance} />;
+  if (provenance.source === "human") {
+    return (
+      <span className="human-mark" title="Edited by a person">
+        <Pencil size={12} aria-hidden="true" /> Edited
+      </span>
+    );
+  }
+  return null;
+}
+
+/** Evidence written out in full (side panel): who said what, each quote opening the transcript. */
+export function EvidenceList({ provenance }: { provenance: Provenance }) {
+  const { speakerName, highlightSegment } = useSessionUi();
+  const quotes = provenance.evidence.filter((e) => e.segment_id);
+  return (
+    <div className="evidence-list">
+      <ProvenanceLine provenance={provenance} />
+      {quotes.length === 0 ? (
+        <p className="muted small">No transcript quote supports this.</p>
+      ) : (
+        <ul>
+          {quotes.map((q, i) => (
+            <li key={`${q.segment_id}-${i}`}>
+              <button type="button" className="quote" onClick={() => highlightSegment(q.segment_id)}>
+                <span className="quote-meta">
+                  {speakerName(q.speaker_id)} · {formatOffset(q.start_ms)}
+                </span>
+                <span className="quote-text">“{q.quote || "(no quote captured)"}”</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

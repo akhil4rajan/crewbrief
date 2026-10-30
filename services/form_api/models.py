@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from pydantic import Field
 
+from packages.rules.risk import HazardRisk
 from packages.schemas import (
     Clarification,
     Draft,
@@ -26,6 +27,7 @@ class SessionDetail(Model):
     draft: Draft
     gaps: list[Gap]
     transcript_count: int
+    risk: dict[str, HazardRisk] = Field(default_factory=dict)  # hazard code -> 5x5 matrix before/after controls
 
 
 class SessionContext(Model):
