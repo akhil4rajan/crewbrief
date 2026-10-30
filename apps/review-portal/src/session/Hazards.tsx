@@ -2,11 +2,11 @@ import { Plus, Trash2, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { pointer } from "../api/jsonPointer";
 import { useLibrary } from "../api/queries";
-import type { ControlEntry, ControlStatus, ControlType, HazardEntry, HazardStatus, Severity } from "../api/types";
-import { SeverityBadge } from "../components/Feedback";
+import type { ControlEntry, ControlStatus, ControlType, HazardEntry, HazardRisk, HazardStatus, Severity } from "../api/types";
 import { Modal } from "../components/Modal";
 import { humanize, slugify } from "../format";
-import { ProvenanceMeta } from "./Provenance";
+import { EvidenceList, ProvenanceMeta } from "./Provenance";
+import { RiskChip } from "./Risk";
 import { useSessionUi } from "./SessionContext";
 
 const SEVERITY_ORDER: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -14,7 +14,7 @@ const STATUS_ORDER: Record<HazardStatus, number> = { present: 0, unconfirmed: 1,
 const HAZARD_STATUSES: { value: HazardStatus; label: string }[] = [
   { value: "present", label: "Present" },
   { value: "unconfirmed", label: "Unconfirmed" },
-  { value: "not_present", label: "Not present" },
+  { value: "not_present", label: "Not applicable" },
 ];
 const CONTROL_STATUSES: { value: ControlStatus; label: string }[] = [
   { value: "proposed", label: "Proposed" },
@@ -27,7 +27,8 @@ const ORIGIN_LABEL: Record<HazardEntry["origin"], string> = {
   site_condition: "From site condition",
   human: "Added by reviewer",
 };
-const CONTROL_TYPE_RANK: Record<ControlType, number> = {
+// eslint-disable-next-line react-refresh/only-export-components
+export const CONTROL_TYPE_RANK: Record<ControlType, number> = {
   elimination: 0,
   substitution: 1,
   isolation: 2,
@@ -48,7 +49,8 @@ export function sortHazards(hazards: HazardEntry[]): HazardEntry[] {
   );
 }
 
-export function HazardCard({ hazard }: { hazard: HazardEntry }) {
+/** Everything about one hazard, for the side panel: status, risk, controls and the evidence behind it. */
+export function HazardEditor({ hazard, risk }: { hazard: HazardEntry; risk?: HazardRisk }) {
   const { edit, applyEdit, editing, humanProvenance } = useSessionUi();
   const [adding, setAdding] = useState(false);
   const base = pointer("hazards", hazard.code);
@@ -115,25 +117,14 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
   const removeHazard = () => applyEdit([{ op: "remove", path: base, provenance: humanProvenance() }]);
 
   return (
-    <article
-      className={`hazard sev-border-${hazard.severity} hazard-${hazard.status}`}
-      data-path={base}
-      tabIndex={-1}
-      aria-label={`${hazard.name}, ${hazard.severity} severity, ${hazard.status.replace("_", " ")}`}
-    >
-      <header className="hazard-head">
-        <div className="hazard-title">
-          <h4>{hazard.name}</h4>
-          <span className="muted small">{humanize(hazard.category)}</span>
-        </div>
-        <div className="hazard-badges">
-          <SeverityBadge severity={hazard.severity} />
-          <span className="muted small">{ORIGIN_LABEL[hazard.origin]}</span>
-        </div>
-      </header>
+    <div className="hazard-editor" data-path={base}>
+      <p className="muted small">
+        {humanize(hazard.category)} · {SEVERITY_LABEL_SHORT[hazard.severity]} severity · {ORIGIN_LABEL[hazard.origin]}
+      </p>
       {hazard.description && <p className="hazard-desc">{hazard.description}</p>}
-      <div className="hazard-row">
-        <label className="inline-select">
+
+      <div className="he-grid">
+        <label className="field">
           <span>Status</span>
           <select
             value={hazard.status}
@@ -149,11 +140,19 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
             ))}
           </select>
         </label>
-        <ProvenanceMeta provenance={hazard.provenance} />
+        <div className="he-risk">
+          <span className="he-label">Risk before</span>
+          <RiskChip risk={risk?.before} />
+        </div>
+        <div className="he-risk">
+          <span className="he-label">Risk after</span>
+          <RiskChip risk={risk?.after} />
+        </div>
       </div>
+      {risk && <p className="muted small">{risk.basis}.</p>}
 
       <div className="controls" data-path={`${base}/controls`}>
-        <h5>Controls</h5>
+        <h3 className="he-head">Controls</h3>
         {stated.length === 0 ? (
           hazard.status !== "not_present" && <p className="warn-text small">No control stated</p>
         ) : (
@@ -182,10 +181,17 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
           </div>
         )}
       </div>
+
+      <div className="he-evidence">
+        <h3 className="he-head">Why it is on the form</h3>
+        <EvidenceList provenance={hazard.provenance} />
+      </div>
       {adding && <AddControlDialog hazard={hazard} onClose={() => setAdding(false)} />}
-    </article>
+    </div>
   );
 }
+
+const SEVERITY_LABEL_SHORT: Record<Severity, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 
 function AddControlDialog({ hazard, onClose }: { hazard: HazardEntry; onClose: () => void }) {
   const { applyEdit, editing, humanProvenance } = useSessionUi();

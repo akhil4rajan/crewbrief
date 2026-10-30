@@ -60,7 +60,22 @@ Public (`/api`, bearer token):
 | GET | `/api/library` | → `HazardLibrary` (for pickers) | any |
 | DELETE | `/api/sessions/{id}?reason=` | → `Tombstone` (retention / erasure: purges transcript, drafts, gaps; audit kept) | safety_admin |
 
-`SessionDetail = {session: Session, draft: Draft, gaps: Gap[], transcript_count: int}`
+`SessionDetail = {session: Session, draft: Draft, gaps: Gap[], transcript_count: int, risk: {hazard_code: HazardRisk}}`
+
+### Risk matrix (`risk`)
+
+Computed in code (`packages/rules/risk.py`) on every `GET /api/sessions/{id}` and included in the
+submission payload; the AI never scores risk. 5×5 likelihood × consequence (AS/NZS ISO 31000 style):
+`HazardRisk = {before: RiskScore, after: RiskScore, basis: str}`,
+`RiskScore = {likelihood: 1-5, consequence: 1-5, score: 1-25, level: "low"|"medium"|"high"|"extreme"}`
+(score 1-4 low, 5-9 medium, 10-16 high, 20-25 extreme).
+
+* **Before** (inherent) from library severity → (likelihood, consequence): critical (3, 5), high (3, 4),
+  medium (3, 3), low (2, 2).
+* **After** (residual) applies the single most effective *confirmed* control (`planned`/`in_place`;
+  `proposed` suggestions do not count): elimination → (1, 1); substitution likelihood −2 and
+  consequence −1; isolation / engineering likelihood −2; administrative likelihood −1; PPE
+  consequence −1. Floor 1. No confirmed control → after = before. `basis` names the control used.
 
 **Crew lead** = the user who created the session (`session.created_by`). There is no supervisor step in
 the flow: the crew lead reviews, fixes, signs off and submits (`supervisor_id` is optional and unused).

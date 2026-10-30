@@ -18,6 +18,10 @@ export interface AppConfig {
   gatewayUrl: string;
   authMode: AuthMode;
   entra: EntraConfig;
+  /** Organisation shown on the JSEA form header (a made-up demo company by default). */
+  orgName: string;
+  /** Form number and revision printed on the JSEA header. */
+  formId: string;
 }
 
 interface RawConfig {
@@ -27,6 +31,8 @@ interface RawConfig {
   entraClientId?: string;
   entraAuthority?: string;
   entraScopes?: string[] | string;
+  orgName?: string;
+  formId?: string;
 }
 
 declare global {
@@ -63,6 +69,8 @@ function load(): AppConfig {
         pick(rt.entraAuthority, env.VITE_ENTRA_AUTHORITY) ?? "https://login.microsoftonline.com/common",
       scopes: runtimeScopes.length ? runtimeScopes : splitScopes(env.VITE_ENTRA_SCOPES),
     },
+    orgName: pick(rt.orgName, env.VITE_ORG_NAME) ?? "Southern Energy Networks",
+    formId: pick(rt.formId, env.VITE_FORM_ID) ?? "SEN-HSE-F014 · Rev 3",
   };
 }
 

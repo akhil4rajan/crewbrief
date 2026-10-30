@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Ban, ChevronDown, FileText, GitCompare, History, Play, Workflow } from "lucide-react";
+import { Ban, ChevronDown, FileDown, FileText, GitCompare, History, Play, Workflow } from "lucide-react";
 import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
@@ -23,22 +23,13 @@ const MIN_JUSTIFICATION = 10;
  */
 export function ReviewActions({ detail }: { detail: SessionDetail }) {
   const { user } = useAuth();
-  const qc = useQueryClient();
   const toast = useToast();
   const { openPanel } = useSessionUi();
   const [dialog, setDialog] = useState<Dialog>(null);
   const s = detail.session;
   const perms = actionPermissions(user, s);
   const terminal = s.state === "SUBMITTED" || s.state === "ABANDONED";
-
-  // Sign-off and submit are announced by the live "Briefing is now …" notice, so they pass no label.
-  const onSession = (label?: string) => (session: Session) => {
-    qc.setQueryData<SessionDetail>(qk.session(s.id), (d) => (d ? { ...d, session } : d));
-    void qc.invalidateQueries({ queryKey: qk.session(s.id) });
-    void qc.invalidateQueries({ queryKey: qk.sessions });
-    if (label) toast.push("success", label);
-    setDialog(null);
-  };
+  const onSession = useSessionUpdate(s.id, () => setDialog(null));
 
   const resume = useMutation({
     mutationFn: () => api.resumeBriefing(s.id),
@@ -47,6 +38,7 @@ export function ReviewActions({ detail }: { detail: SessionDetail }) {
   });
 
   const items: MenuItem[] = [
+    { label: "Download PDF", icon: FileDown, onSelect: () => window.print() },
     { label: "How CrewBrief built this form", icon: Workflow, onSelect: () => openPanel("agents") },
     { label: "AI draft vs final", icon: GitCompare, onSelect: () => openPanel("diff") },
     { label: "Audit log", icon: History, onSelect: () => openPanel("audit") },
@@ -91,7 +83,22 @@ export function ReviewActions({ detail }: { detail: SessionDetail }) {
   );
 }
 
-function ActionButton({ perm, primary, onClick, children }: {
+/** Store a session returned by sign-off / submit / abandon and refresh the lists that show it. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useSessionUpdate(sessionId: string, after?: () => void) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  // Sign-off and submit are announced by the live "Briefing is now …" notice, so they pass no label.
+  return (label?: string) => (session: Session) => {
+    qc.setQueryData<SessionDetail>(qk.session(sessionId), (d) => (d ? { ...d, session } : d));
+    void qc.invalidateQueries({ queryKey: qk.session(sessionId) });
+    void qc.invalidateQueries({ queryKey: qk.sessions });
+    if (label) toast.push("success", label);
+    after?.();
+  };
+}
+
+export function ActionButton({ perm, primary, onClick, children }: {
   perm: Permission;
   primary?: boolean;
   onClick: () => void;
@@ -118,7 +125,7 @@ function ActionButton({ perm, primary, onClick, children }: {
   );
 }
 
-function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onDone: (s: Session) => void; onClose: () => void }) {
+export function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onDone: (s: Session) => void; onClose: () => void }) {
   const toast = useToast();
   const openBlocking = detail.gaps
     .filter((g) => g.status === "open" && g.severity === "blocking")
@@ -260,7 +267,7 @@ function AbandonDialog({ session, onDone, onClose }: { session: Session; onDone:
   );
 }
 
-function SubmitDialog({ session, onDone, onClose }: { session: Session; onDone: (s: Session) => void; onClose: () => void }) {
+export function SubmitDialog({ session, onDone, onClose }: { session: Session; onDone: (s: Session) => void; onClose: () => void }) {
   const toast = useToast();
   const submit = useMutation({
     mutationFn: () => api.submit(session.id),

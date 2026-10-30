@@ -22,16 +22,22 @@ The briefing has three steps, shown at the top of the screen: **Record → Clari
    - Otherwise **Clarify** lists up to three questions and reads each one out once. Hold the button to
      answer out loud, or type the answer. Each question turns to **✓ Answered** as the form picks the
      answer up. Tap **Done** when finished; anything unanswered is left for review.
-6. **Review & submit**, top to bottom:
-   - **Needs your decision**: open gaps, with **Not applicable** / **Confirm present** for hazards that
-     are typical for the job, and **Dismiss** (with a reason) for the rest.
-   - **Hazards & controls**: sorted by severity. Controls the crew stated are shown; the hazard library's
-     suggestions are folded away underneath.
-   - **Job & emergency**, then **Crew & speakers**, where you can name each separated voice
-     ("Speaker 2 is Priya").
-   - **Transcript** opens on the right. Click any quote under a field to jump to that line.
-   - **More** has the audit log, the AI draft vs final diff, **Resume briefing** and **Abandon**.
-   - **Sign off** (blocking gaps must be settled, or overridden with a written reason), then **Submit**.
+6. **Review & submit** shows the prefilled **JSEA form** the crew lead signs, laid out like the paper
+   form: header (work order, date, location, task, crew leader, status), then numbered sections.
+   - **N items need your decision** at the top jumps to the first flagged row.
+   - **1 Permits & isolations**: access permit, switching / isolation, test before touch, earthing,
+     Dial Before You Dig and traffic management, ticked when the crew confirmed them.
+   - **2 Hazards, risks and controls**: a table with risk before and after controls (5×5 matrix,
+     computed in code), the controls the crew stated and the status. Flagged rows carry their actions
+     inline (**Not applicable** / **Confirm present** / **Dismiss**). Lower-priority typical hazards are
+     folded under **Also typical for this task**. Click a row to edit it in a side panel, where the
+     evidence quotes, AI confidence and model live.
+   - **3 PPE**, **4 Emergency plan**, **5 Job steps**, **6 Crew sign-on** (name each separated voice
+     here, e.g. "Speaker 2 is Priya").
+   - **Declaration**, then **Sign off** (blocking items must be settled, or overridden with a written
+     reason) and **Submit**.
+   - **Transcript** opens on the right. **More** has the audit log, AI draft vs final,
+     **Download PDF** (prints just the form on A4), **Resume briefing** and **Abandon**.
 
 | Scenario | What it shows |
 |---|---|
