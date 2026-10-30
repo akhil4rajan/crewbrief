@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
       <div className="error-panel" role="alert">
         <h2>{this.props.label ?? "This view failed to load"}</h2>
         <p className="muted">{this.state.error.message}</p>
-        <button type="button" className="btn" onClick={() => this.setState({ error: null })}>
+        <button type="button" className="btn btn-secondary" onClick={() => this.setState({ error: null })}>
           Try again
         </button>
       </div>
