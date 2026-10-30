@@ -52,7 +52,7 @@ function RequireCrew({ children }: { children: ReactNode }) {
     <main className="centered">
       <EmptyState title="This account isn't on a crew">
         CrewBrief is used by field crews.{" "}
-        <button type="button" className="btn btn-small" onClick={() => void logout()}>
+        <button type="button" className="btn btn-secondary btn-small" onClick={() => void logout()}>
           Sign out
         </button>
       </EmptyState>

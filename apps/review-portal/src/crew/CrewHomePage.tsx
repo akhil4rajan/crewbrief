@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, Check, ChevronRight } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/endpoints";
@@ -19,7 +20,7 @@ export function CrewHomePage() {
     <div className="crew-page">
       <header className="crew-hero">
         <h1>G'day{firstName ? `, ${firstName}` : ""}</h1>
-        <p className="muted">Start a pre-job briefing, or pick up one you've already started.</p>
+        <p className="muted">Start a pre-job briefing or pick up where you left off.</p>
       </header>
       <div className="crew-home-grid">
         <NewBriefing />
@@ -38,7 +39,7 @@ function MyBriefings() {
       {sessions.isPending && <Skeleton lines={4} height={48} />}
       {sessions.isError && <InlineError error={sessions.error} onRetry={() => void sessions.refetch()} />}
       {sessions.data?.length === 0 && (
-        <EmptyState title="No briefings yet">Start one with the form, or pick a demo scenario.</EmptyState>
+        <EmptyState title="No briefings yet">Briefings you start or join show up here.</EmptyState>
       )}
       <ul className="briefing-list">
         {sessions.data?.map((s) => (
@@ -52,8 +53,9 @@ function MyBriefings() {
               </span>
               <span className="briefing-item-side">
                 <StateBadge state={s.state} />
-                <span className="muted small">{formatRelative(s.updated_at)}</span>
+                <span className="muted small tnum">{formatRelative(s.updated_at)}</span>
               </span>
+              <ChevronRight size={16} aria-hidden="true" className="briefing-item-chevron" />
             </Link>
           </li>
         ))}
@@ -102,7 +104,7 @@ function NewBriefing() {
 
       <form className="crew-form" onSubmit={submit}>
         <fieldset className="field">
-          <legend>Demo scenario (optional)</legend>
+          <legend>Start from a demo</legend>
           <div className="scenario-grid">
             {SCENARIOS.map((s) => (
               <button
@@ -112,19 +114,20 @@ function NewBriefing() {
                 aria-pressed={scenario?.id === s.id}
                 onClick={() => applyScenario(s)}
               >
-                <strong>{s.title}</strong>
+                <span>{s.title}</span>
+                {scenario?.id === s.id && <Check size={16} aria-hidden="true" />}
               </button>
             ))}
           </div>
         </fieldset>
         <label className="field">
-          <span>Job title *</span>
+          <span>Job title</span>
           <input required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. LV service connection, 14 Banksia St" />
         </label>
         <label className="field">
           <span>Task type</span>
           <select value={taskType} onChange={(e) => setTaskType(e.target.value)} disabled={library.isPending}>
-            <option value="">— Not specified —</option>
+            <option value="">Not specified</option>
             {library.data?.task_types.map((t) => (
               <option key={t.code} value={t.code}>
                 {t.name}
@@ -138,6 +141,7 @@ function NewBriefing() {
         </label>
         <button type="submit" className="btn btn-primary btn-large btn-block" disabled={!title.trim() || create.isPending}>
           {create.isPending ? "Creating…" : "Continue"}
+          {!create.isPending && <ArrowRight size={20} aria-hidden="true" />}
         </button>
       </form>
     </section>

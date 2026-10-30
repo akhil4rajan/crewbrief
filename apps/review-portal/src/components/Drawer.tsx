@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 
 interface Props {
@@ -37,7 +38,7 @@ export function Drawer({ title, onClose, children, actions }: Props) {
           <h2 id={titleId}>{title}</h2>
           {actions}
           <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
-            ×
+            <X size={18} aria-hidden="true" />
           </button>
         </header>
         <div className="drawer-body">{children}</div>

@@ -38,3 +38,9 @@ The briefing has three steps, shown at the top of the screen: **Record → Clari
 | LV service connection, Penrith | Live LV work with PPE only, then the crew states the isolation plan later in the briefing, so the critical gap usually closes before the end and it goes straight to review. Footy chat is ignored. |
 | Pole replacement with crane, Scoresby | A well-run briefing: HV under access permit, crane near live LV with spotter and covers, traffic barriers, wind stop limit. Many hazards with evidence. |
 | Storm restoration at night, Kiama | Conductors down at night with a tired crew. Critical gaps stay open, so **Clarify** asks about them. Type an answer such as "We'll pull the service fuses, test before touch and earth it", then **Done**. |
+
+## Show the AI agents
+
+- **While recording:** the "AI at work" strip under the steps shows the agent pipeline (Analyst → Hazard expert → Form filler → Verifier). The running agent is highlighted, with a one-line summary of what it just found.
+- **After the briefing:** on the review page, open **More → How CrewBrief built this form**. It's a timeline of every agent run: what it did, which model and prompt version it used, and how long it took.
+- **Real LLMs on camera:** put your Azure OpenAI endpoint and key in `.env.local` and set `LLM_PROVIDER=azure`. The timeline then shows "Azure OpenAI · <deployment>". Offline, the same agents run as rule-based stand-ins and are labelled "Rule-based (offline)".

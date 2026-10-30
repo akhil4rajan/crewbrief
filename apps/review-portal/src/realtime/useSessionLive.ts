@@ -4,6 +4,7 @@ import { api } from "../api/endpoints";
 import { applyPatches, classifyRevision } from "../api/jsonPointer";
 import { qk } from "../api/queries";
 import type {
+  AgentActivity,
   CrewEntry,
   EventEnvelope,
   FormPatchedPayload,
@@ -31,11 +32,19 @@ export interface LiveState {
   presence: CrewEntry[] | null;
   prompts: ReceivedPrompt[];
   lastEventAt: string | null;
+  /** Latest `agent.activity` events, oldest first (bounded). */
+  agents: ReceivedActivity[];
+}
+
+export interface ReceivedActivity extends AgentActivity {
+  id: string;
+  ts: string;
 }
 
 const BACKOFF_BASE_MS = 1000;
 const BACKOFF_MAX_MS = 30_000;
 const MAX_PROMPTS = 50;
+const MAX_ACTIVITY = 40;
 const LIVE_STATES = new Set<string>(["BRIEFING", "DRAFTING", "GAP_CHECK"]);
 
 function backoff(attempt: number): number {
@@ -74,6 +83,7 @@ export function useSessionLive(sessionId: string): LiveState {
   const [presence, setPresence] = useState<CrewEntry[] | null>(null);
   const [prompts, setPrompts] = useState<ReceivedPrompt[]>([]);
   const [lastEventAt, setLastEventAt] = useState<string | null>(null);
+  const [agents, setAgents] = useState<ReceivedActivity[]>([]);
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -82,6 +92,7 @@ export function useSessionLive(sessionId: string): LiveState {
     let disposed = false;
     setPresence(null);
     setPrompts([]);
+    setAgents([]);
 
     const resync = () => {
       void qc.invalidateQueries({ queryKey: qk.session(sessionId) });
@@ -156,6 +167,11 @@ export function useSessionLive(sessionId: string): LiveState {
           setPrompts((ps) => [...ps.slice(-(MAX_PROMPTS - 1)), { ...prompt, id: env.id, ts: env.ts }]);
           return;
         }
+        case "agent.activity": {
+          const a = env.payload as unknown as AgentActivity;
+          setAgents((list) => [...list.slice(-(MAX_ACTIVITY - 1)), { ...a, id: env.id, ts: env.ts }]);
+          return;
+        }
         case "presence.updated": {
           setPresence((env.payload as { crew?: CrewEntry[] }).crew ?? []);
           return;
@@ -217,5 +233,5 @@ export function useSessionLive(sessionId: string): LiveState {
     };
   }, [sessionId, qc]);
 
-  return { status, presence, prompts, lastEventAt };
+  return { status, presence, prompts, lastEventAt, agents };
 }

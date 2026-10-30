@@ -1,3 +1,4 @@
+import { Pencil, Quote } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useUserDirectory } from "../api/queries";
 import type { EvidenceRef, Provenance } from "../api/types";
@@ -63,7 +64,8 @@ export function EvidencePopover({ evidence }: { evidence: EvidenceRef[] }) {
         aria-controls={popId}
         onClick={() => setOpen((o) => !o)}
       >
-        <span aria-hidden="true">❝</span> {quotes.length} {quotes.length === 1 ? "quote" : "quotes"}
+        <Quote size={12} aria-hidden="true" /> {quotes.length}
+        <span className="sr-only">{quotes.length === 1 ? " quote" : " quotes"}</span>
       </button>
       {open && (
         <div id={popId} className="popover" role="dialog" aria-label="Supporting evidence">
@@ -101,7 +103,7 @@ export function ProvenanceMeta({ provenance, compact }: { provenance: Provenance
     return (
       <span className="prov">
         <span className="human-mark" title={`Edited by ${who} · ${formatDateTime(provenance.updated_at)}`}>
-          <span aria-hidden="true">✎</span> {compact ? "Edited" : `Edited by ${who}`}
+          <Pencil size={12} aria-hidden="true" /> {compact ? "Edited" : `Edited by ${who}`}
         </span>
         {provenance.evidence.length > 0 && <EvidencePopover evidence={provenance.evidence} />}
       </span>
