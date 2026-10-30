@@ -23,16 +23,25 @@ from packages.schemas import (
     UserRole,
 )
 
-from ..models import CheckInRequest, DiffResponse, DismissGapRequest, EditRateResponse, SessionDetail, Tombstone
+from ..models import (
+    CheckInRequest,
+    DiffResponse,
+    DismissGapRequest,
+    EditRateResponse,
+    SessionDetail,
+    SpeakerInfo,
+    SpeakerUpdate,
+    Tombstone,
+)
 from . import Service, parse_states
 
 router = APIRouter(prefix="/api", tags=["form-api"])
 
 Crew = Annotated[User, Depends(require_roles(UserRole.CREW))]
 CrewOrSupervisor = Annotated[User, Depends(require_roles(UserRole.CREW, UserRole.SUPERVISOR))]
-Supervisor = Annotated[User, Depends(require_roles(UserRole.SUPERVISOR))]
-# can_sign_off also lets a safety admin sign; the rule decides, the route only filters out crew.
-Signer = Annotated[User, Depends(require_roles(UserRole.SUPERVISOR, UserRole.SAFETY_ADMIN))]
+# Review actions (sign-off, submit, dismiss, send back): the crew lead who created the briefing, or a
+# safety admin. The service/rules decide per session; the route only filters out unknown roles.
+Lead = Annotated[User, Depends(require_roles(UserRole.CREW, UserRole.SUPERVISOR, UserRole.SAFETY_ADMIN))]
 Reviewer = Annotated[User, Depends(require_roles(UserRole.SUPERVISOR, UserRole.SAFETY_ADMIN))]
 SafetyAdmin = Annotated[User, Depends(require_roles(UserRole.SAFETY_ADMIN))]
 
@@ -109,8 +118,25 @@ async def end_briefing(session_id: str, user: CrewOrSupervisor, svc: Service) ->
 
 
 @router.post("/sessions/{session_id}/resume-briefing")
-async def resume_briefing(session_id: str, user: Supervisor, svc: Service) -> Session:
+async def resume_briefing(session_id: str, user: Lead, svc: Service) -> Session:
     return await svc.resume_briefing(user, session_id)
+
+
+@router.post("/sessions/{session_id}/finish-clarifications")
+async def finish_clarifications(session_id: str, user: CrewOrSupervisor, svc: Service) -> Session:
+    """Crew tapped "Done" on the end-of-briefing questions: GAP_CHECK → REVIEW."""
+    return await svc.finish_clarifications(user, session_id)
+
+
+@router.get("/sessions/{session_id}/speakers")
+async def speakers(session_id: str, _: CurrentUser, svc: Service) -> list[SpeakerInfo]:
+    return await svc.speakers(session_id)
+
+
+@router.put("/sessions/{session_id}/speakers/{speaker_id}")
+async def update_speaker(session_id: str, speaker_id: str, body: SpeakerUpdate, user: CrewOrSupervisor,
+                         svc: Service) -> list[SpeakerInfo]:
+    return await svc.update_speaker(user, session_id, speaker_id, body)
 
 
 @router.post("/sessions/{session_id}/abandon")
@@ -144,7 +170,7 @@ async def gaps(session_id: str, _: CurrentUser, svc: Service) -> list[Gap]:
 
 
 @router.post("/sessions/{session_id}/gaps/{gap_id}/dismiss")
-async def dismiss_gap(session_id: str, gap_id: str, body: DismissGapRequest, user: Supervisor,
+async def dismiss_gap(session_id: str, gap_id: str, body: DismissGapRequest, user: Lead,
                       svc: Service) -> Gap:
     return await svc.dismiss_gap(user, session_id, gap_id, body.reason)
 
@@ -153,12 +179,12 @@ async def dismiss_gap(session_id: str, gap_id: str, body: DismissGapRequest, use
 
 
 @router.post("/sessions/{session_id}/sign-off")
-async def sign_off(session_id: str, body: SignOffRequest, user: Signer, svc: Service) -> Session:
+async def sign_off(session_id: str, body: SignOffRequest, user: Lead, svc: Service) -> Session:
     return await svc.sign_off(user, session_id, body)
 
 
 @router.post("/sessions/{session_id}/submit")
-async def submit(session_id: str, user: Supervisor, svc: Service) -> Session:
+async def submit(session_id: str, user: Lead, svc: Service) -> Session:
     return await svc.submit(user, session_id)
 
 

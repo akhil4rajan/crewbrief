@@ -8,6 +8,7 @@ from typing import Any, Literal
 from pydantic import Field
 
 from packages.schemas import (
+    Clarification,
     Draft,
     Gap,
     Model,
@@ -64,6 +65,23 @@ class SegmentsStored(Model):
 
 class GapsRequest(Model):
     gaps: list[Gap] = Field(max_length=500)
+
+
+class ClarificationsRequest(Model):
+    clarifications: list[Clarification] = Field(max_length=10)
+
+
+class SpeakerInfo(Model):
+    speaker_id: str  # diarization label ("Guest-1") or whatever the device sent
+    label: str  # "Speaker 1", by order of first appearance
+    user_id: str | None = None
+    name: str | None = None
+    segment_count: int
+
+
+class SpeakerUpdate(Model):
+    user_id: str | None = Field(default=None, max_length=100)
+    name: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class RecordingRequest(Model):

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
 import { applyPatches } from "../api/jsonPointer";
@@ -7,6 +8,7 @@ import { qk, useUserDirectory } from "../api/queries";
 import type { FormPatch, Provenance, SessionDetail, TranscriptSegment, User } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../components/Toasts";
+import { guestLabel } from "../format";
 import { editPermission, type Permission } from "./permissions";
 
 interface SessionUi {
@@ -21,7 +23,14 @@ interface SessionUi {
   highlightedSegmentId: string | null;
   highlightSegment: (segmentId: string) => void;
   focusPath: (path: string) => void;
+  /** Side drawer (transcript, audit log, AI vs final), kept in `?panel=` so it can be linked. */
+  panel: Panel | null;
+  openPanel: (panel: Panel) => void;
+  closePanel: () => void;
 }
+
+export type Panel = "transcript" | "audit" | "diff";
+const PANELS: Panel[] = ["transcript", "audit", "diff"];
 
 const Ctx = createContext<SessionUi | null>(null);
 
@@ -31,7 +40,8 @@ function primaryRole(user: User | null): string {
 }
 
 /** Briefly flash an element so the eye can find what was scrolled to. */
-function flash(el: Element) {
+// eslint-disable-next-line react-refresh/only-export-components
+export function flash(el: Element) {
   el.classList.remove("flash");
   void (el as HTMLElement).offsetWidth; // restart the animation
   el.classList.add("flash");
@@ -52,6 +62,25 @@ export function SessionProvider({
   const qc = useQueryClient();
   const users = useUserDirectory();
   const [highlightedSegmentId, setHighlighted] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const raw = params.get("panel") as Panel | null;
+  const panel = raw && PANELS.includes(raw) ? raw : null;
+  const openPanel = useCallback(
+    (p: Panel) => setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("panel", p);
+      return next;
+    }),
+    [setParams],
+  );
+  const closePanel = useCallback(
+    () => setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("panel");
+      return next;
+    }),
+    [setParams],
+  );
   const sessionId = detail.session.id;
   const edit = useMemo(() => editPermission(user, detail.session), [user, detail.session]);
 
@@ -120,19 +149,19 @@ export function SessionProvider({
       const user = users.get(speakerId);
       if (user) return user.name;
       const seg = segments.find((s) => s.speaker_id === speakerId || s.user_id === speakerId);
-      return seg?.speaker_name ?? (seg?.user_id ? users.get(seg.user_id)?.name : undefined) ?? speakerId;
+      return seg?.speaker_name ?? (seg?.user_id ? users.get(seg.user_id)?.name : undefined) ?? guestLabel(speakerId);
     },
     [users, segments],
   );
 
-  const highlightSegment = useCallback((segmentId: string) => {
-    setHighlighted(segmentId);
-    const el = document.getElementById(`seg-${segmentId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      flash(el);
-    }
-  }, []);
+  // The transcript drawer scrolls the highlighted line into view once it has rendered.
+  const highlightSegment = useCallback(
+    (segmentId: string) => {
+      setHighlighted(segmentId);
+      openPanel("transcript");
+    },
+    [openPanel],
+  );
 
   const focusPath = useCallback((path: string) => {
     const parts = path.split("/");
@@ -162,8 +191,11 @@ export function SessionProvider({
       highlightedSegmentId,
       highlightSegment,
       focusPath,
+      panel,
+      openPanel,
+      closePanel,
     }),
-    [detail, segments, edit, applyEdit, mutation.isPending, humanProvenance, speakerName, highlightedSegmentId, highlightSegment, focusPath],
+    [detail, segments, edit, applyEdit, mutation.isPending, humanProvenance, speakerName, highlightedSegmentId, highlightSegment, focusPath, panel, openPanel, closePanel],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

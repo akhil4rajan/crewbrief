@@ -14,7 +14,7 @@ export const qk = {
   gaps: (id: string) => ["gaps", id] as const,
   audit: (id: string) => ["audit", id] as const,
   diff: (id: string) => ["diff", id] as const,
-  editRate: ["edit-rate"] as const,
+  speakers: (id: string) => ["speakers", id] as const,
 };
 
 const HOUR = 60 * 60 * 1000;

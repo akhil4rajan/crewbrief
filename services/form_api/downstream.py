@@ -108,6 +108,9 @@ class OrchestratorClient:
     async def end(self, session_id: str) -> bool:
         return await self._post(session_id, "end")
 
+    async def finish(self, session_id: str) -> bool:
+        return await self._post(session_id, "finish")
+
     async def resume(self, session_id: str) -> bool:
         return await self._post(session_id, "resume")
 

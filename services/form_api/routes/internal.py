@@ -9,7 +9,14 @@ from fastapi import APIRouter, Depends, Query
 from packages.common.auth import internal_only
 from packages.schemas import ApplyPatchesRequest, ApplyPatchesResult, AuditEntry, Gap, Session, TransitionRequest
 
-from ..models import GapsRequest, RecordingRequest, SegmentsRequest, SegmentsStored, SessionContext
+from ..models import (
+    ClarificationsRequest,
+    GapsRequest,
+    RecordingRequest,
+    SegmentsRequest,
+    SegmentsStored,
+    SessionContext,
+)
 from . import Service, parse_states
 
 router = APIRouter(prefix="/internal", tags=["internal"], dependencies=[Depends(internal_only)])
@@ -41,6 +48,11 @@ async def patches(session_id: str, body: ApplyPatchesRequest, svc: Service) -> A
 @router.put("/sessions/{session_id}/gaps")
 async def put_gaps(session_id: str, body: GapsRequest, svc: Service) -> list[Gap]:
     return await svc.upsert_gaps(session_id, body.gaps)
+
+
+@router.put("/sessions/{session_id}/clarifications")
+async def put_clarifications(session_id: str, body: ClarificationsRequest, svc: Service) -> Session:
+    return await svc.put_clarifications(session_id, body.clarifications)
 
 
 @router.post("/sessions/{session_id}/transition")

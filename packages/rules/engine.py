@@ -274,15 +274,16 @@ def evaluate_draft(form: Form, library: HazardLibrary) -> list[RuleViolation]:
 # ---------------------------------------------------------------------------
 
 
+def is_crew_lead(user: User, session: Session) -> bool:
+    """The person who created the briefing leads it: they review, fix, sign off and submit."""
+    return user.id == session.created_by
+
+
 def can_sign_off(user: User, session: Session) -> tuple[bool, str]:
     if session.state != SessionState.REVIEW:
         return False, f"Session must be in REVIEW to sign off (is {session.state})"
     if user.has_role(UserRole.SAFETY_ADMIN):
         return True, "safety_admin"
-    if not user.has_role(UserRole.SUPERVISOR):
-        return False, "Only a supervisor can sign off"
-    if session.supervisor_id and session.supervisor_id != user.id:
-        return False, "Only the session's assigned supervisor can sign off"
-    if user.id in session.crew_member_ids:
-        return False, "A crew member on the job cannot sign off their own form"
-    return True, "supervisor"
+    if is_crew_lead(user, session):
+        return True, "crew_lead"
+    return False, "Only the crew lead who started this briefing (or a safety admin) can sign off"

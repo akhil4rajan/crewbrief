@@ -8,16 +8,18 @@ import type {
   CreateSessionRequest,
   DevTokenResponse,
   DraftDiff,
-  EditRateMetrics,
   Gap,
   HazardLibrary,
   HealthResponse,
   NegotiateResponse,
+  RecordingUploadResult,
   Session,
   SessionDetail,
   SignOffRequest,
+  SpeakerInfo,
   TranscriptSegment,
   User,
+  UpdateSpeakerRequest,
   UserRole,
 } from "./types";
 
@@ -51,16 +53,24 @@ export const api = {
   submit: (id: string) => request<Session>(`${s(id)}/submit`, { method: "POST" }),
   abandon: (id: string, body: AbandonRequest) => request<Session>(`${s(id)}/abandon`, { method: "POST", body }),
 
-  // Crew-side calls (crew view).
-  checkIn: (id: string, userId: string) =>
-    request<SessionDetail>(`${s(id)}/check-in`, { method: "POST", body: { user_id: userId } }),
+  finishClarifications: (id: string) => request<Session>(`${s(id)}/finish-clarifications`, { method: "POST" }),
+
   consent: (id: string) => request<Session>(`${s(id)}/consent`, { method: "POST" }),
   start: (id: string) => request<Session>(`${s(id)}/start`, { method: "POST" }),
   acknowledge: (id: string) => request<SessionDetail>(`${s(id)}/acknowledge`, { method: "POST" }),
 
   audit: (id: string) => request<AuditEntry[]>(`${s(id)}/audit`),
   diff: (id: string) => request<DraftDiff>(`${s(id)}/diff`),
-  editRate: () => request<EditRateMetrics>("/api/metrics/edit-rate"),
+
+  speakers: (id: string) => request<SpeakerInfo[]>(`${s(id)}/speakers`),
+  updateSpeaker: (id: string, speakerId: string, body: UpdateSpeakerRequest) =>
+    request<SpeakerInfo>(`${s(id)}/speakers/${enc(speakerId)}`, { method: "PUT", body }),
 
   negotiate: (id: string) => request<NegotiateResponse>(`${s(id)}/negotiate`, { baseUrl: config.gatewayUrl }),
+  /** Upload a recorded briefing (gateway, Azure only; 501 `stt_unavailable_local` in local mode). */
+  uploadRecording: (id: string, file: File) => {
+    const body = new FormData();
+    body.append("file", file, file.name);
+    return request<RecordingUploadResult>(`${s(id)}/recording`, { method: "POST", body, baseUrl: config.gatewayUrl });
+  },
 };

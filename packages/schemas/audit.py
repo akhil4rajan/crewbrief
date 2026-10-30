@@ -34,6 +34,8 @@ class AuditAction(StrEnum):
     SUBMITTED = "session.submitted"
     ABANDONED = "session.abandoned"
     CONSENT_ACKNOWLEDGED = "session.consent_acknowledged"
+    CLARIFICATIONS_UPDATED = "session.clarifications_updated"
+    SPEAKER_LABELLED = "transcript.speaker_labelled"
     SESSION_DELETED = "session.deleted"  # retention deletion; the audit log itself is kept
 
 

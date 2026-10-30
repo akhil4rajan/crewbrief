@@ -4,16 +4,17 @@ import { api } from "../api/endpoints";
 import { qk } from "../api/queries";
 import type { Gap, GapSeverity, SessionDetail } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { EmptyState, GapSeverityBadge } from "../components/Feedback";
+import { GapSeverityBadge } from "../components/Feedback";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toasts";
-import { formatTime, humanize } from "../format";
+import { humanize } from "../format";
 import { actionPermissions } from "./permissions";
 import { useSessionUi } from "./SessionContext";
 
 const ORDER: Record<GapSeverity, number> = { blocking: 0, warning: 1, info: 2 };
 
-export function GapsPane() {
+/** "Needs your decision": open gaps as compact rows, blocking first, each with its actions. */
+export function DecisionsSection() {
   const { detail, focusPath, edit, applyEdit, humanProvenance, editing } = useSessionUi();
   const { user } = useAuth();
   const [showClosed, setShowClosed] = useState(false);
@@ -22,28 +23,22 @@ export function GapsPane() {
 
   const open = detail.gaps.filter((g) => g.status === "open").sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
   const closed = detail.gaps.filter((g) => g.status !== "open");
-  const counts = (["blocking", "warning", "info"] as const).map((s) => [s, open.filter((g) => g.severity === s).length] as const);
+  const blocking = open.filter((g) => g.severity === "blocking").length;
 
   return (
-    <section className="pane gaps-pane" aria-labelledby="gaps-title">
-      <header className="pane-head">
-        <h2 id="gaps-title">
-          Gaps <span className="count">{open.length}</span>
+    <section className="review-section" aria-labelledby="decide-title" data-path="/gaps" tabIndex={-1}>
+      <header className="review-section-head">
+        <h2 id="decide-title">
+          Needs your decision <span className="count">{open.length}</span>
         </h2>
-        <div className="gap-summary" aria-label="Open gaps by severity">
-          {counts.map(([s, n]) => (
-            <span key={s} className={`gap-pill gap-${s}${n ? "" : " is-zero"}`}>
-              {n} {s}
-            </span>
-          ))}
-        </div>
+        {blocking > 0 && <span className="muted small">{blocking} must be settled before sign-off</span>}
       </header>
       {open.length === 0 ? (
-        <EmptyState title="No open gaps">The verifier has not raised anything that needs attention.</EmptyState>
+        <p className="ok-text">✓ Nothing to decide. Every gap is resolved.</p>
       ) : (
-        <ul className="gap-list">
+        <ul className="decision-list">
           {open.map((g) => (
-            <GapCard
+            <DecisionRow
               key={g.id}
               gap={g}
               onFocus={() => focusPath(g.path)}
@@ -64,12 +59,12 @@ export function GapsPane() {
       {closed.length > 0 && (
         <div className="closed-gaps">
           <button type="button" className="btn btn-ghost btn-small" aria-expanded={showClosed} onClick={() => setShowClosed((v) => !v)}>
-            {showClosed ? "Hide" : "Show"} resolved & dismissed ({closed.length})
+            {showClosed ? "Hide" : "Show"} resolved ({closed.length})
           </button>
           {showClosed && (
-            <ul className="gap-list">
+            <ul className="decision-list">
               {closed.map((g) => (
-                <GapCard key={g.id} gap={g} onFocus={() => focusPath(g.path)} />
+                <DecisionRow key={g.id} gap={g} onFocus={() => focusPath(g.path)} />
               ))}
             </ul>
           )}
@@ -82,7 +77,7 @@ export function GapsPane() {
 
 type HazardDecision = "not_present" | "present";
 
-function GapCard({
+function DecisionRow({
   gap,
   onFocus,
   onDismiss,
@@ -96,42 +91,38 @@ function GapCard({
   busy?: boolean;
 }) {
   return (
-    <li className={`gap gap-card-${gap.severity} gap-status-${gap.status}`}>
-      <button type="button" className="gap-main" onClick={onFocus} title="Show this field on the form">
-        <span className="gap-top">
-          <GapSeverityBadge severity={gap.severity} />
-          <span className="muted small">{humanize(gap.kind)}</span>
+    <li className={`decision gap-card-${gap.severity} gap-status-${gap.status}`}>
+      <button type="button" className="decision-main" onClick={onFocus} title="Show this on the form">
+        <GapSeverityBadge severity={gap.severity} />
+        <span className="decision-text">
+          {gap.message}
+          {gap.status !== "open" && (
+            <span className="muted small">
+              {" "}
+              · {humanize(gap.status)}
+              {gap.resolution && `: ${gap.resolution}`}
+            </span>
+          )}
         </span>
-        <span className="gap-message">{gap.message}</span>
-        {gap.question && (
-          <span className="gap-question">
-            <span aria-hidden="true">🗣</span> “{gap.question}”
-            {gap.asked_at && <span className="muted small"> · asked {formatTime(gap.asked_at)}</span>}
-          </span>
-        )}
-        {gap.status !== "open" && (
-          <span className="small">
-            {humanize(gap.status)}
-            {gap.resolution && `: ${gap.resolution}`}
-          </span>
-        )}
       </button>
-      <div className="gap-actions">
-        {onDecide && (
-          <>
-            <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("not_present")}>
-              Not applicable
+      {(onDecide || onDismiss) && (
+        <div className="decision-actions">
+          {onDecide && (
+            <>
+              <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("not_present")}>
+                Not applicable
+              </button>
+              <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("present")}>
+                Confirm present
+              </button>
+            </>
+          )}
+          {onDismiss && (
+            <button type="button" className="btn btn-ghost btn-small" onClick={onDismiss}>
+              Dismiss
             </button>
-            <button type="button" className="btn btn-small" disabled={busy} onClick={() => onDecide("present")}>
-              Confirm present
-            </button>
-          </>
-        )}
-      </div>
-      {onDismiss && (
-        <button type="button" className="btn btn-ghost btn-small gap-dismiss" onClick={onDismiss}>
-          Dismiss
-        </button>
+          )}
+        </div>
       )}
     </li>
   );

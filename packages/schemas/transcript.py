@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from enum import StrEnum
 
@@ -33,3 +34,16 @@ class TranscriptSegment(Model):
     filter_reason: str | None = None  # "low_confidence" | "off_topic" | "non_crew" | ...
     redacted: bool = False  # PII redaction applied
     received_at: datetime = Field(default_factory=utcnow)
+
+
+_DIARIZED = re.compile(r"^Guest-\d+$")
+
+
+def is_diarized_speaker(speaker_id: str) -> bool:
+    """Azure diarization labels ("Guest-1"), as opposed to user ids or device-sent labels."""
+    return bool(_DIARIZED.match(speaker_id))
+
+
+def speaker_label(order: int) -> str:
+    """Display label for the n-th diarized voice, by first appearance: "Speaker 1", "Speaker 2"..."""
+    return f"Speaker {order}"

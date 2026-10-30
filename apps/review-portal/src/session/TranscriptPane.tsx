@@ -1,115 +1,55 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TranscriptSegment } from "../api/types";
 import { EmptyState, Skeleton } from "../components/Feedback";
 import { formatOffset, formatTime, humanize } from "../format";
-import type { ReceivedPrompt } from "../realtime/useSessionLive";
-import { useSessionUi } from "./SessionContext";
+import { flash, useSessionUi } from "./SessionContext";
 
-type Item =
-  | { kind: "segment"; key: string; at: string; seg: TranscriptSegment }
-  | { kind: "prompt"; key: string; at: string; prompt: ReceivedPrompt };
-
-const NEAR_BOTTOM_PX = 80;
-
-export function TranscriptPane({ loading, prompts }: { loading: boolean; prompts: ReceivedPrompt[] }) {
+/** The full transcript, shown in the side drawer. Evidence links open it on the quoted line. */
+export function TranscriptPane({ loading }: { loading: boolean }) {
   const { segments, speakerName, highlightedSegmentId } = useSessionUi();
-  const listRef = useRef<HTMLOListElement>(null);
-  const stick = useRef(true);
-  const [unseen, setUnseen] = useState(0);
   const [showFiltered, setShowFiltered] = useState(true);
-
-  // Live voice prompts are shown inline unless the store already holds them as voice_prompt segments.
-  const items = useMemo<Item[]>(() => {
-    const promptTexts = new Set(segments.filter((s) => s.source === "voice_prompt").map((s) => s.text.trim()));
-    const segItems: Item[] = segments
-      .filter((s) => showFiltered || !s.filtered)
-      .map((seg) => ({ kind: "segment", key: seg.id, at: seg.received_at, seg }));
-    const promptItems: Item[] = prompts
-      .filter((p) => !promptTexts.has(p.text.trim()))
-      .map((prompt) => ({ kind: "prompt", key: prompt.id, at: prompt.ts, prompt }));
-    if (promptItems.length === 0) return segItems;
-    return [...segItems, ...promptItems].sort((a, b) => a.at.localeCompare(b.at));
-  }, [segments, prompts, showFiltered]);
-
+  const visible = useMemo(() => segments.filter((s) => showFiltered || !s.filtered), [segments, showFiltered]);
   const filteredCount = segments.filter((s) => s.filtered).length;
 
-  useLayoutEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    if (stick.current) {
-      el.scrollTop = el.scrollHeight;
-      setUnseen(0);
-    } else {
-      setUnseen((n) => n + 1);
-    }
-  }, [items.length]);
-
+  // Bring the highlighted line into view once it is on screen.
   useEffect(() => {
-    if (highlightedSegmentId) stick.current = false;
-  }, [highlightedSegmentId]);
-
-  const onScroll = () => {
-    const el = listRef.current;
-    if (!el) return;
-    stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
-    if (stick.current) setUnseen(0);
-  };
-
-  const jumpToLatest = () => {
-    const el = listRef.current;
-    if (!el) return;
-    stick.current = true;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    setUnseen(0);
-  };
+    if (!highlightedSegmentId) return;
+    // Wait a frame: the drawer opens (showModal) after this child effect runs.
+    const raf = window.requestAnimationFrame(() => {
+      const el = document.getElementById(`seg-${highlightedSegmentId}`);
+      if (!el) return;
+      el.scrollIntoView({ block: "center" });
+      el.focus({ preventScroll: true });
+      flash(el);
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [highlightedSegmentId, visible.length]);
 
   return (
-    <section className="pane transcript-pane" aria-labelledby="transcript-title">
-      <header className="pane-head">
-        <h2 id="transcript-title">
-          Transcript <span className="count">{segments.length}</span>
-        </h2>
-        {filteredCount > 0 && (
-          <label className="check small">
-            <input type="checkbox" checked={showFiltered} onChange={(e) => setShowFiltered(e.target.checked)} />
-            Show filtered ({filteredCount})
-          </label>
-        )}
-      </header>
+    <div className="transcript-pane">
+      {filteredCount > 0 && (
+        <label className="check small">
+          <input type="checkbox" checked={showFiltered} onChange={(e) => setShowFiltered(e.target.checked)} />
+          Show lines CrewBrief ignored ({filteredCount})
+        </label>
+      )}
       {loading && segments.length === 0 ? (
         <Skeleton lines={6} />
-      ) : items.length === 0 ? (
-        <EmptyState title="Nothing said yet">Speech appears here live as the crew briefs.</EmptyState>
+      ) : visible.length === 0 ? (
+        <EmptyState title="Nothing said yet">Speech appears here as the crew briefs.</EmptyState>
       ) : (
-        <ol className="transcript" ref={listRef} onScroll={onScroll} aria-live="polite" aria-relevant="additions">
-          {items.map((item) =>
-            item.kind === "prompt" ? (
-              <li key={item.key} className="seg seg-prompt">
-                <div className="seg-head">
-                  <span className="speaker">
-                    <span aria-hidden="true">🔊</span> CrewBrief asked
-                  </span>
-                  <span className="muted small">{formatTime(item.at)}</span>
-                </div>
-                <p>{item.prompt.text}</p>
-              </li>
-            ) : (
-              <SegmentRow
-                key={item.key}
-                seg={item.seg}
-                speaker={item.seg.speaker_name ?? speakerName(item.seg.user_id ?? item.seg.speaker_id)}
-                highlighted={item.seg.id === highlightedSegmentId}
-              />
-            ),
-          )}
+        <ol className="transcript">
+          {visible.map((seg) => (
+            <SegmentRow
+              key={seg.id}
+              seg={seg}
+              speaker={seg.speaker_name ?? speakerName(seg.user_id ?? seg.speaker_id)}
+              highlighted={seg.id === highlightedSegmentId}
+            />
+          ))}
         </ol>
       )}
-      {unseen > 0 && (
-        <button type="button" className="btn btn-small jump-latest" onClick={jumpToLatest}>
-          ↓ {unseen} new
-        </button>
-      )}
-    </section>
+    </div>
   );
 }
 
