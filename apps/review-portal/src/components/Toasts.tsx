@@ -1,3 +1,4 @@
+import { CircleAlert, CircleCheck, Info, OctagonAlert, X, type LucideIcon } from "lucide-react";
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { ApiError } from "../api/client";
 
@@ -18,6 +19,8 @@ interface ToastApi {
 }
 
 const ToastContext = createContext<ToastApi | null>(null);
+
+const TOAST_ICON: Record<ToastKind, LucideIcon> = { info: Info, success: CircleCheck, warning: CircleAlert, error: OctagonAlert };
 
 const TTL_MS: Record<ToastKind, number> = { info: 4000, success: 4000, warning: 7000, error: 9000 };
 
@@ -59,18 +62,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
       <div className="toasts" role="region" aria-label="Notifications" aria-live="polite">
-        {toasts.map((t) => (
+        {toasts.map((t) => {
+          const Icon = TOAST_ICON[t.kind];
+          return (
           <div key={t.id} className={`toast toast-${t.kind}`} role={t.kind === "error" ? "alert" : "status"}>
+            <Icon size={20} className="toast-icon" aria-hidden="true" />
             <div className="toast-body">
               <strong>{t.title}</strong>
               {t.detail && <p>{t.detail}</p>}
               {t.correlationId && <p className="muted mono small">Ref {t.correlationId}</p>}
             </div>
             <button type="button" className="icon-btn" aria-label="Dismiss notification" onClick={() => dismiss(t.id)}>
-              ×
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );
