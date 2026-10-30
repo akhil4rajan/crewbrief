@@ -22,22 +22,23 @@ The briefing has three steps, shown at the top of the screen: **Record → Clari
    - Otherwise **Clarify** lists up to three questions and reads each one out once. Hold the button to
      answer out loud, or type the answer. Each question turns to **✓ Answered** as the form picks the
      answer up. Tap **Done** when finished; anything unanswered is left for review.
-6. **Review & submit** shows the prefilled **JSEA form** the crew lead signs, laid out like the paper
-   form: header (work order, date, location, task, crew leader, status), then numbered sections.
-   - **N items need your decision** at the top jumps to the first flagged row.
-   - **1 Permits & isolations**: access permit, switching / isolation, test before touch, earthing,
-     Dial Before You Dig and traffic management, ticked when the crew confirmed them.
-   - **2 Hazards, risks and controls**: a table with risk before and after controls (5×5 matrix,
-     computed in code), the controls the crew stated and the status. Flagged rows carry their actions
-     inline (**Not applicable** / **Confirm present** / **Dismiss**). Lower-priority typical hazards are
-     folded under **Also typical for this task**. Click a row to edit it in a side panel, where the
-     evidence quotes, AI confidence and model live.
-   - **3 PPE**, **4 Emergency plan**, **5 Job steps**, **6 Crew sign-on** (name each separated voice
-     here, e.g. "Speaker 2 is Priya").
+6. **Review & submit** has two parts, shown as **Check (n) → Sign** at the top.
+   - **Check** (only while something needs a decision): one large card at a time ("1 of 6") with the
+     item in plain words, its risk, why CrewBrief is asking and what was said. Answer with
+     **Not applicable** / **Confirm present** (a typical hazard nobody mentioned), **Add a control**
+     (opens the hazard panel) or **Dismiss with reason**; it moves to the next card by itself. Items
+     that block sign-off come first; the rest are marked **Optional** and **Skip optional items**
+     goes straight to Sign. **Back** / **Skip** move around.
+   - **Sign**: the finished JSEA as a read-only paper form: header, **1 Permits & isolations**,
+     **2 Hazards, risks and controls** (risk before and after controls on a 5×5 matrix), **3 PPE**,
+     **4 Emergency plan**, **5 Job steps**, **6 Crew sign-on**. **Edit** on a section or hazard opens a
+     side panel, where the evidence quotes live (name each voice under Crew sign-on → Edit).
+     **Review decisions again** returns to Check.
    - **Declaration**, then **Sign off** (blocking items must be settled, or overridden with a written
-     reason) and **Submit**.
-   - **Transcript** opens on the right. **More** has the audit log, AI draft vs final,
-     **Download PDF** (prints just the form on A4), **Resume briefing** and **Abandon**.
+     reason) and **Submit**. Other crew members see only the form and tap **I've read the form**.
+   - **Transcript** opens on the right (only what the crew said; ignored lines are kept in the audit
+     log). **More** has the audit log, AI draft vs final, **Download PDF** (prints just the form on
+     A4), **Resume briefing** and **Abandon**.
 
 | Scenario | What it shows |
 |---|---|

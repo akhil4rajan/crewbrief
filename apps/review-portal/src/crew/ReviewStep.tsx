@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, FileText } from "lucide-react";
+import { ChevronRight, CircleCheck, FileText } from "lucide-react";
+import { useState } from "react";
 import { api } from "../api/endpoints";
 import { qk, useUserDirectory } from "../api/queries";
 import type { SessionDetail, TranscriptSegment } from "../api/types";
@@ -14,9 +15,11 @@ import { AgentTimeline } from "../session/AgentTimeline";
 import { AuditTab } from "../session/AuditTab";
 import { DiffTab } from "../session/DiffTab";
 import { isLead } from "../session/permissions";
+import { EditorsProvider } from "../session/Editors";
 import { JseaDocument } from "../session/JseaForm";
 import { SessionProvider, useSessionUi } from "../session/SessionContext";
 import { TranscriptPane } from "../session/TranscriptPane";
+import { CheckStep, useCheckQueue } from "./CheckStep";
 
 interface Props {
   detail: SessionDetail;
@@ -25,27 +28,117 @@ interface Props {
 }
 
 /**
- * Step 3, Review & submit: the prefilled JSEA form, laid out like the company paper form. The crew
- * lead settles the flagged items in place, then signs the declaration and submits. Everyone else on
- * the crew sees the same form read-only and confirms they've read it.
+ * Step 3, Review & submit, in two parts like checking a paper form. Check: the crew lead settles
+ * CrewBrief's flagged items one card at a time. Sign: the finished JSEA, read-only, with the
+ * declaration to sign and then submit. Everyone else on the crew sees the Sign view and confirms
+ * they've read it.
  */
 export function ReviewStep({ detail, segments, transcriptLoading }: Props) {
   return (
     <SessionProvider detail={detail} segments={segments}>
-      <ReviewHeader detail={detail} />
-      <div className="review-col">
-        <StatusNote detail={detail} />
-        <ErrorBoundary label="The form failed to render">
-          <JseaDocument />
-        </ErrorBoundary>
-        <Acknowledge detail={detail} />
-      </div>
+      <EditorsProvider>
+        <Review detail={detail} />
+      </EditorsProvider>
       <Panels sessionId={detail.session.id} transcriptLoading={transcriptLoading} />
     </SessionProvider>
   );
 }
 
-function ReviewHeader({ detail }: { detail: SessionDetail }) {
+type View = "check" | "sign";
+
+function Review({ detail }: { detail: SessionDetail }) {
+  const { user } = useAuth();
+  const queue = useCheckQueue(detail);
+  const reviewing = detail.session.state === "REVIEW" && isLead(user, detail.session);
+  const [view, setView] = useState<View>(() => (queue.remaining > 0 ? "check" : "sign"));
+  const shown: View = reviewing ? view : "sign";
+
+  const go = (next: View) => {
+    if (next === "check") queue.restart();
+    setView(next);
+    window.scrollTo({ top: 0 });
+  };
+
+  return (
+    <>
+      <ReviewHeader detail={detail} signing={shown === "sign"} />
+      <div className="review-col">
+        {reviewing && queue.ids.length > 0 && <SubSteps view={shown} remaining={queue.remaining} onGo={go} />}
+        {shown === "check" ? (
+          <ErrorBoundary label="The check failed to render">
+            <CheckStep queue={queue} onFinish={() => go("sign")} />
+          </ErrorBoundary>
+        ) : (
+          <>
+            <StatusNote detail={detail} />
+            {reviewing && <BlockingNote detail={detail} onCheck={() => go("check")} />}
+            <ErrorBoundary label="The form failed to render">
+              <JseaDocument />
+            </ErrorBoundary>
+            <Acknowledge detail={detail} />
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** "Check (n) → Sign": where the crew lead is inside step 3. */
+function SubSteps({ view, remaining, onGo }: { view: View; remaining: number; onGo: (v: View) => void }) {
+  return (
+    <nav className="substeps no-print" aria-label="Review steps">
+      <ol>
+        <li>
+          <button
+            type="button"
+            className={`substep${view === "check" ? " is-current" : ""}${remaining === 0 ? " is-done" : ""}`}
+            aria-current={view === "check" ? "step" : undefined}
+            onClick={() => onGo("check")}
+          >
+            {remaining === 0 ? <CircleCheck size={16} aria-hidden="true" /> : <span className="substep-count">{remaining}</span>}
+            Check
+          </button>
+        </li>
+        <li aria-hidden="true" className="substep-sep">
+          <ChevronRight size={16} />
+        </li>
+        <li>
+          <button
+            type="button"
+            className={`substep${view === "sign" ? " is-current" : ""}`}
+            aria-current={view === "sign" ? "step" : undefined}
+            onClick={() => onGo("sign")}
+          >
+            Sign
+          </button>
+        </li>
+      </ol>
+      {view === "sign" && (
+        <button type="button" className="link-btn" onClick={() => onGo("check")}>
+          Review decisions again
+        </button>
+      )}
+    </nav>
+  );
+}
+
+/** On the Sign view: items that still block sign-off, with a way back to Check. */
+function BlockingNote({ detail, onCheck }: { detail: SessionDetail; onCheck: () => void }) {
+  const n = detail.gaps.filter((g) => g.status === "open" && g.severity === "blocking").length;
+  if (!n) return null;
+  return (
+    <p className="status-note status-note-attn no-print" role="status">
+      <span>
+        {n} {n === 1 ? "item still needs" : "items still need"} a decision before you can sign off.
+      </span>
+      <button type="button" className="btn btn-secondary btn-small" onClick={onCheck}>
+        Go to Check
+      </button>
+    </p>
+  );
+}
+
+function ReviewHeader({ detail, signing }: { detail: SessionDetail; signing: boolean }) {
   const { user } = useAuth();
   const { openPanel } = useSessionUi();
   const lead = isLead(user, detail.session);
@@ -56,7 +149,7 @@ function ReviewHeader({ detail }: { detail: SessionDetail }) {
         <StateBadge state={detail.session.state} />
       </div>
       {lead ? (
-        <ReviewActions detail={detail} />
+        <ReviewActions detail={detail} showPrimary={signing} />
       ) : (
         <button type="button" className="btn btn-secondary" onClick={() => openPanel("transcript")}>
           <FileText size={16} aria-hidden="true" />
@@ -74,7 +167,7 @@ function StatusNote({ detail }: { detail: SessionDetail }) {
   const lead = isLead(user, s);
   const leadName = users.get(s.created_by)?.name ?? "The crew lead";
 
-  if (s.state === "REVIEW" && lead) return null; // the decision summary on the form says what's left
+  if (s.state === "REVIEW" && lead) return null; // the sub-steps and the declaration say what's next
   let text: string;
   if (s.state === "REVIEW") {
     text = `${leadName} is reviewing this form. Read it, then confirm at the bottom.`;
