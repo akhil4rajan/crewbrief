@@ -1,16 +1,17 @@
-import { Volume2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import type { TranscriptSegment } from "../api/types";
 import { EmptyState, Skeleton } from "../components/Feedback";
-import { formatOffset, formatTime, humanize } from "../format";
+import { formatOffset, formatTime } from "../format";
 import { flash, useSessionUi } from "./SessionContext";
 
-/** The full transcript, shown in the side drawer. Evidence links open it on the quoted line. */
+/**
+ * What the crew said, shown in the side drawer. Evidence links open it on the quoted line. Lines
+ * CrewBrief ignored (off-topic, low confidence, its own spoken prompts) stay in the API and audit
+ * log but are never shown here.
+ */
 export function TranscriptPane({ loading }: { loading: boolean }) {
   const { segments, speakerName, highlightedSegmentId } = useSessionUi();
-  const [showFiltered, setShowFiltered] = useState(true);
-  const visible = useMemo(() => segments.filter((s) => showFiltered || !s.filtered), [segments, showFiltered]);
-  const filteredCount = segments.filter((s) => s.filtered).length;
+  const visible = useMemo(() => segments.filter((s) => !s.filtered && s.source !== "voice_prompt"), [segments]);
 
   // Bring the highlighted line into view once it is on screen.
   useEffect(() => {
@@ -28,12 +29,6 @@ export function TranscriptPane({ loading }: { loading: boolean }) {
 
   return (
     <div className="transcript-pane">
-      {filteredCount > 0 && (
-        <label className="check small">
-          <input type="checkbox" checked={showFiltered} onChange={(e) => setShowFiltered(e.target.checked)} />
-          Show lines CrewBrief ignored ({filteredCount})
-        </label>
-      )}
       {loading && segments.length === 0 ? (
         <Skeleton lines={6} />
       ) : visible.length === 0 ? (
@@ -55,36 +50,17 @@ export function TranscriptPane({ loading }: { loading: boolean }) {
 }
 
 function SegmentRow({ seg, speaker, highlighted }: { seg: TranscriptSegment; speaker: string; highlighted: boolean }) {
-  const isPrompt = seg.source === "voice_prompt";
-  const cls = ["seg", isPrompt && "seg-prompt", seg.filtered && "seg-filtered", highlighted && "seg-highlight", !seg.is_final && "seg-partial"]
-    .filter(Boolean)
-    .join(" ");
+  const cls = ["seg", highlighted && "seg-highlight", !seg.is_final && "seg-partial"].filter(Boolean).join(" ");
   return (
     <li id={`seg-${seg.id}`} className={cls} tabIndex={-1}>
       <div className="seg-head">
-        <span className="speaker">
-          {isPrompt ? (
-            <>
-              <Volume2 size={14} aria-hidden="true" /> CrewBrief asked
-            </>
-          ) : (
-            speaker
-          )}
-        </span>
+        <span className="speaker">{speaker}</span>
         <span className="muted small mono" title={`Received ${formatTime(seg.received_at)}`}>
           {formatOffset(seg.start_ms)}
         </span>
-        {seg.confidence < 0.7 && !isPrompt && (
-          <span className="badge badge-outline small" title="Speech recognition confidence">
-            {Math.round(seg.confidence * 100)}% STT
-          </span>
-        )}
         {seg.redacted && <span className="badge badge-outline small">PII redacted</span>}
       </div>
       <p>{seg.text}</p>
-      {seg.filtered && (
-        <p className="filter-reason small">Filtered: {humanize(seg.filter_reason ?? "excluded from extraction")}</p>
-      )}
     </li>
   );
 }

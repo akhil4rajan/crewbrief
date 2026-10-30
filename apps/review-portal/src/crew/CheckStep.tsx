@@ -39,6 +39,7 @@ export interface CheckQueue {
  * optional ones. Items that appear while deciding (e.g. "add a control" after confirming a hazard)
  * slot in next if they block sign-off, or at the end if they don't.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCheckQueue(detail: SessionDetail): CheckQueue {
   const gaps = detail.gaps;
   const risk = detail.risk;
@@ -143,7 +144,7 @@ export function CheckStep({ queue, onFinish }: { queue: CheckQueue; onFinish: ()
   const optional = gap.severity !== "blocking";
   const pct = Math.round((settledCount / ids.length) * 100);
   return (
-    <section className="check" aria-label="Check the flagged items">
+    <section className="check-step" aria-label="Check the flagged items">
       <div className="check-progress">
         <div className="check-progress-text">
           <span className="check-count">

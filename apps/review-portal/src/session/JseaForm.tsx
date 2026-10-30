@@ -242,7 +242,7 @@ const TYPE_TAG: Record<ControlEntry["type"], string> = {
 };
 
 function HazardsSection() {
-  const { detail, edit } = useSessionUi();
+  const { detail } = useSessionUi();
   const [showTypical, setShowTypical] = useState(false);
   const [showNa, setShowNa] = useState(false);
   const risk = detail.risk ?? {};
@@ -253,7 +253,6 @@ function HazardsSection() {
   const na = all.filter((h) => h.status === "not_present").sort(byRisk);
   const typical = all.filter((h) => h.status === "unconfirmed").sort(byRisk);
   const main = all.filter((h) => h.status === "present").sort(byRisk);
-  const cols = edit.allowed ? 7 : 6;
 
   let n = 0;
   const rows = (list: HazardEntry[]) => list.map((h) => <HazardRow key={h.code} n={++n} hazard={h} />);
@@ -269,27 +268,22 @@ function HazardsSection() {
             <th scope="col">Controls the crew stated</th>
             <th scope="col" className="hz-risk">Risk after</th>
             <th scope="col" className="hz-status">Status</th>
-            {edit.allowed && (
-              <th scope="col" className="hz-edit no-print">
-                <span className="sr-only">Edit</span>
-              </th>
-            )}
           </tr>
         </thead>
         <tbody>
           {main.length ? rows(main) : (
             <tr>
-              <td colSpan={cols} className="muted">No hazards confirmed yet.</td>
+              <td colSpan={6} className="muted">No hazards confirmed yet.</td>
             </tr>
           )}
         </tbody>
         {typical.length > 0 && (
-          <GroupBody label="Typical for this task, not confirmed" count={typical.length} cols={cols} open={showTypical} onToggle={() => setShowTypical((v) => !v)}>
+          <GroupBody label="Typical for this task, not confirmed" count={typical.length} open={showTypical} onToggle={() => setShowTypical((v) => !v)}>
             {rows(typical)}
           </GroupBody>
         )}
         {na.length > 0 && (
-          <GroupBody label="Ruled out as not applicable" count={na.length} cols={cols} open={showNa} onToggle={() => setShowNa((v) => !v)}>
+          <GroupBody label="Ruled out as not applicable" count={na.length} open={showNa} onToggle={() => setShowNa((v) => !v)}>
             {rows(na)}
           </GroupBody>
         )}
@@ -300,10 +294,9 @@ function HazardsSection() {
 }
 
 /** A collapsed group of rows. The rows stay rendered (hidden) so the print view can show them. */
-function GroupBody({ label, count, cols, open, onToggle, children }: {
+function GroupBody({ label, count, open, onToggle, children }: {
   label: string;
   count: number;
-  cols: number;
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
@@ -312,7 +305,7 @@ function GroupBody({ label, count, cols, open, onToggle, children }: {
     <>
       <tbody className="hz-group-head">
         <tr>
-          <td colSpan={cols}>
+          <td colSpan={6}>
             <button type="button" className="disclosure-btn" aria-expanded={open} onClick={onToggle}>
               <ChevronDown size={16} aria-hidden="true" className="chev" />
               {label} ({count})
@@ -340,6 +333,7 @@ function HazardRow({ n, hazard }: { n: number; hazard: HazardEntry }) {
       <td className="hz-name" data-label="Hazard">
         <span className="hz-title">{hazard.name}</span>
         <span className="hz-cat muted small">{humanize(hazard.category)}</span>
+        {edit.allowed && <EditLink label={`Edit ${hazard.name}`} onClick={() => openHazard(hazard.code)} />}
       </td>
       <td className="hz-risk" data-label="Risk before">
         <RiskChip risk={r?.before} />
@@ -366,14 +360,6 @@ function HazardRow({ n, hazard }: { n: number; hazard: HazardEntry }) {
       <td className="hz-status" data-label="Status">
         <span className={`hz-st hz-st-${hazard.status}`}>{STATUS_TEXT[hazard.status]}</span>
       </td>
-      {edit.allowed && (
-        <td className="hz-edit no-print">
-          <EditLink
-            label={`Edit ${hazard.name}`}
-            onClick={() => openHazard(hazard.code)}
-          />
-        </td>
-      )}
     </tr>
   );
 }

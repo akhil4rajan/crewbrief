@@ -19,9 +19,10 @@ const MIN_JUSTIFICATION = 10;
 
 /**
  * The review header's actions: one primary action for the current state (Sign off, then Submit)
- * and a "More" menu for everything else. Disabled actions stay visible and say why.
+ * and a "More" menu for everything else. Disabled actions stay visible and say why. The primary
+ * action is hidden while the crew lead is on the Check sub-step.
  */
-export function ReviewActions({ detail }: { detail: SessionDetail }) {
+export function ReviewActions({ detail, showPrimary = true }: { detail: SessionDetail; showPrimary?: boolean }) {
   const { user } = useAuth();
   const toast = useToast();
   const { openPanel } = useSessionUi();
@@ -64,7 +65,7 @@ export function ReviewActions({ detail }: { detail: SessionDetail }) {
           </>
         }
       />
-      {s.state === "SIGNED" ? (
+      {!showPrimary ? null : s.state === "SIGNED" ? (
         <ActionButton perm={perms.submit} primary onClick={() => setDialog("submit")}>
           Submit
         </ActionButton>
