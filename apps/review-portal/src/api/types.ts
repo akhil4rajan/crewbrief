@@ -462,6 +462,7 @@ export type EventType =
   | "gaps.updated"
   | "voice.prompt"
   | "presence.updated"
+  | "agent.activity"
   | "error";
 
 export interface EventEnvelope<P = Record<string, unknown>> {
@@ -503,4 +504,24 @@ export interface Problem {
   instance?: string;
   correlation_id?: string;
   [extra: string]: unknown;
+}
+
+// --- agent activity (orchestrator → portal, and ROLE_INVOKED audit details) --------------
+
+export type AgentRole = "conversation-analyst" | "hazard-expert" | "form-filler" | "verifier" | "voice-prompter";
+export type AgentStatus = "started" | "done" | "failed";
+export type AgentStep = "live" | "final" | "answers" | "verify" | "clarify";
+export type AgentProvider = "azure-openai" | "heuristic" | "heuristic-fallback";
+
+export interface AgentActivity {
+  role: AgentRole;
+  status: AgentStatus;
+  step: AgentStep;
+  tick: number;
+  summary: string;
+  provider?: AgentProvider | string;
+  model?: string;
+  prompt_version?: string;
+  latency_ms?: number;
+  counts?: Record<string, number>;
 }

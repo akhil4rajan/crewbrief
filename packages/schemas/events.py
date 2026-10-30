@@ -26,6 +26,9 @@ class EventType(StrEnum):
     FORM_SNAPSHOT = "form.snapshot"  # payload: Draft
     GAPS_UPDATED = "gaps.updated"  # payload: {"gaps": [Gap]}
     VOICE_PROMPT = "voice.prompt"  # payload: VoicePrompt
+    # payload: {"role", "status": started|done|failed, "step", "tick", "summary", "provider", "model",
+    #           "prompt_version", "latency_ms", "counts"} — one per role invocation (orchestrator)
+    AGENT_ACTIVITY = "agent.activity"
     PRESENCE_UPDATED = "presence.updated"  # payload: {"crew": [CrewEntry]}
     ERROR = "error"  # payload: {"code", "message"}
 

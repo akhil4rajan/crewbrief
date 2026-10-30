@@ -1,3 +1,4 @@
+import { Volume2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { TranscriptSegment } from "../api/types";
 import { EmptyState, Skeleton } from "../components/Feedback";
@@ -64,7 +65,7 @@ function SegmentRow({ seg, speaker, highlighted }: { seg: TranscriptSegment; spe
         <span className="speaker">
           {isPrompt ? (
             <>
-              <span aria-hidden="true">🔊</span> CrewBrief asked
+              <Volume2 size={14} aria-hidden="true" /> CrewBrief asked
             </>
           ) : (
             speaker

@@ -116,6 +116,27 @@ The form API publishes these events after each commit: `session.state_changed`,
 The orchestrator publishes `voice.prompt` events (payload `VoicePrompt`) directly, only when the
 clarification round starts (one per question, in order).
 
+It also publishes an `agent.activity` event (best-effort) around every role call: `started` just
+before the call, then `done` or `failed`. Payload:
+
+```jsonc
+{"role": "conversation-analyst" | "hazard-expert" | "form-filler" | "verifier" | "voice-prompter",
+ "status": "started" | "done" | "failed",
+ "step": "live" | "final" | "answers" | "verify" | "clarify",   // why it ran
+ "tick": 3, "summary": "Heard 4 lines, found 3 hazards and 2 controls; ignored 1 off-topic line",
+ "provider": "azure-openai" | "heuristic" | "heuristic-fallback" | null,   // null on started/failed
+ "model": "...", "prompt_version": "...", "latency_ms": 412,
+ "counts": {"lines": 4, "observations": 5, "dropped": 1}}   // empty on started/failed
+```
+
+`counts` per role on `done`: analyst `{lines, observations, dropped}`; hazard expert
+`{hazards, task_typical, controls}`; form filler `{patches, rejected}` (rejected = stopped by the
+safety rules); verifier `{open, blocking, resolved}`; voice prompter `{questions}`.
+
+Each `done`/`failed` call is also audited as `role.invoked` with details `{role, status, step, tick,
+summary, counts, provider, latency_ms, tokens_in, tokens_out}` (+ `error` when failed), so
+`GET /api/sessions/{id}/audit` filtered on `action == "role.invoked"` is the full agent timeline.
+
 ## Roles (port 8003) — internal only
 
 `POST /roles/conversation-analyst`, `/roles/hazard-expert`, `/roles/form-filler`,

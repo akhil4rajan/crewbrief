@@ -70,8 +70,9 @@ from packages.schemas import (
     utcnow,
 )
 
+from .activity import done_summary, failed_summary, started_summary
 from .clients import FormApi, RolesClient, SessionContext
-from .pipeline import RoleInvocationError, invoke_role, run_extraction
+from .pipeline import RoleHook, RoleInvocationError, invoke_role, run_extraction
 from .speakers import SpeakerLinker
 
 log = logging.getLogger(__name__)
@@ -434,19 +435,17 @@ class SessionRunner:
                 form.job.task_type.value if form.job.task_type else None)
             open_gaps = [g for g in ctx.gaps if g.status == GapStatus.OPEN]
             try:
+                step = "answers" if self._clarifying else ("final" if kind == "final" else "live")
                 result = await run_extraction(
                     self._roles, self.session_id, form, self._overlap + batch, self._crew(ctx), open_gaps,
-                    list(self._recent_obs), task_type, library=self._library)
-            except RoleInvocationError as exc:
-                await self._audit_roles(exc.metas, kind)
-                await self._audit_role_failure(exc)
+                    list(self._recent_obs), task_type, library=self._library, hook=self._role_hook(step))
+            except RoleInvocationError:
                 self._batch_failures += 1
                 if self._batch_failures >= MAX_BATCH_FAILURES:
                     log.error("extraction_batch_skipped", extra={"session_id": self.session_id,
                                                                  "segments": [s.id for s in batch]})
                     self._consume(batch)
                 raise
-            await self._audit_roles(result.metas, kind, rejected_by_rules=len(result.rejected))
             record.patches_rejected = len(result.rejected)
             if result.patches:
                 applied = await self._form_api.apply_patches(self.session_id,
@@ -487,14 +486,9 @@ class SessionRunner:
             if not live and self.state != SessionState.GAP_CHECK:
                 await self._transition(SessionState.GAP_CHECK, "briefing ended")
             ctx = await self._form_api.context(self.session_id, transcript_limit=VERIFY_TRANSCRIPT_LIMIT)
-            try:
-                verdict = await invoke_role(self._roles, RoleName.VERIFIER, VerifierRequest(
-                    session_id=self.session_id, draft=ctx.draft.form, transcript=ctx.transcript,
-                    existing_gaps=ctx.gaps), VerifierResponse)
-            except RoleInvocationError as exc:
-                await self._audit_role_failure(exc)
-                raise
-            await self._audit_roles([verdict.meta], kind)
+            verdict = await invoke_role(self._roles, RoleName.VERIFIER, VerifierRequest(
+                session_id=self.session_id, draft=ctx.draft.form, transcript=ctx.transcript,
+                existing_gaps=ctx.gaps), VerifierResponse, self._role_hook("verify"))
             gaps = await self._form_api.put_gaps(self.session_id, verdict.gaps)
             record.open_gaps = sum(g.status == GapStatus.OPEN for g in gaps)
             self.verifications += 1
@@ -519,11 +513,10 @@ class SessionRunner:
         try:
             response = await invoke_role(self._roles, RoleName.VOICE_PROMPTER, VoicePrompterRequest(
                 session_id=self.session_id, gaps=[g.model_copy(update={"asked_at": None}) for g in critical],
-                max_prompts=len(critical)), VoicePrompterResponse)
-            await self._audit_roles([response.meta], "voice_prompt")
+                max_prompts=len(critical)), VoicePrompterResponse, self._role_hook("clarify"))
             prompts, meta = {p.gap_id: p for p in response.prompts}, response.meta
-        except RoleInvocationError as exc:  # fall back to the verifier's own wording, text only
-            await self._audit_role_failure(exc)
+        except RoleInvocationError:  # fall back to the verifier's own wording, text only (already audited)
+            pass
         now = utcnow()
         ordered = [prompts.get(g.id) or VoicePrompt(gap_id=g.id, text=g.question or g.message) for g in critical]
         await self._form_api.put_clarifications(self.session_id, [
@@ -581,20 +574,38 @@ class SessionRunner:
     # Audit
     # ------------------------------------------------------------------------------------
 
-    async def _audit_roles(self, metas: list[RoleMeta], step: str, **details: Any) -> None:
-        entries = [AuditEntry(
-            session_id=self.session_id, actor_id=ACTOR, actor_type=ActorType.SERVICE, action=AuditAction.ROLE_INVOKED,
-            model=m.model, prompt_version=m.prompt_version,
-            details={"role": m.role, "provider": m.provider, "latency_ms": m.latency_ms, "tokens_in": m.tokens_in,
-                     "tokens_out": m.tokens_out, "step": step, "tick": self.ticks, **details},
-        ) for m in metas]
-        await asyncio.gather(*(self._form_api.audit(self.session_id, e) for e in entries))
-
-    async def _audit_role_failure(self, exc: RoleInvocationError) -> None:
-        await self._form_api.audit(self.session_id, AuditEntry(
-            session_id=self.session_id, actor_id=ACTOR, actor_type=ActorType.SERVICE, action=AuditAction.ROLE_INVOKED,
-            details={"role": exc.role.value, "error": str(exc)[:500], "latency_ms": exc.latency_ms,
-                     "tick": self.ticks}))
+    def _role_hook(self, step: str) -> RoleHook:
+        """Publish an ``agent.activity`` event around each role call and audit how it ended (``role.invoked``)."""
+        async def hook(status: str, role: RoleName, request: Any, response: Any = None,
+                       error: RoleInvocationError | None = None, **extra: int) -> None:
+            meta: RoleMeta | None = response.meta if response is not None else None
+            counts: dict[str, int] = {}
+            if status == "started":
+                summary = started_summary(role, request)
+            elif error is not None:
+                summary = failed_summary(role)
+            else:
+                summary, counts = done_summary(request, response, **extra)
+            latency = meta.latency_ms if meta else (error.latency_ms if error else None)
+            await self._publisher.publish(EventEnvelope(
+                type=EventType.AGENT_ACTIVITY, session_id=self.session_id, payload={
+                    "role": role.value, "status": status, "step": step, "tick": self.ticks, "summary": summary,
+                    "provider": meta.provider if meta else None, "model": meta.model if meta else None,
+                    "prompt_version": meta.prompt_version if meta else None, "latency_ms": latency,
+                    "counts": counts}))
+            if status == "started":
+                return
+            details: dict[str, Any] = {
+                "role": role.value, "status": status, "step": step, "tick": self.ticks, "summary": summary,
+                "counts": counts, "provider": meta.provider if meta else None, "latency_ms": latency,
+                "tokens_in": meta.tokens_in if meta else None, "tokens_out": meta.tokens_out if meta else None}
+            if error is not None:
+                details["error"] = str(error)[:500]
+            await self._form_api.audit(self.session_id, AuditEntry(
+                session_id=self.session_id, actor_id=ACTOR, actor_type=ActorType.SERVICE,
+                action=AuditAction.ROLE_INVOKED, model=meta.model if meta else None,
+                prompt_version=meta.prompt_version if meta else None, details=details))
+        return hook
 
     # ------------------------------------------------------------------------------------
     # Ops

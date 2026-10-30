@@ -1,4 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
+import { Check, Keyboard, Minus, Pause, Play, RotateCcw, Send, Square, Upload, Volume2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
 import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
@@ -7,7 +8,8 @@ import type { Clarification, Session, SessionDetail, TranscriptSegment } from ".
 import { useAuth } from "../auth/AuthProvider";
 import { useToast } from "../components/Toasts";
 import { guestLabel } from "../format";
-import type { ReceivedPrompt } from "../realtime/useSessionLive";
+import type { ReceivedActivity, ReceivedPrompt } from "../realtime/useSessionLive";
+import { AgentStrip } from "./AgentStrip";
 import { CrewForm, TranscriptTail } from "./CrewForm";
 import { AudioCapture, audioUnsupportedReason } from "./device/audioCapture";
 import { DeviceSocket, type ConnectionState, type DeviceError } from "./device/deviceSocket";
@@ -40,19 +42,20 @@ interface Props {
   detail: SessionDetail;
   segments: TranscriptSegment[];
   prompts: ReceivedPrompt[];
+  agents: ReceivedActivity[];
 }
 
 /**
  * The crew device while the briefing is live: steps 1 (Record) and 2 (Clarify). One device
  * connection serves both, so answers to the closing questions stream like the briefing did.
  */
-export function LiveBriefing({ detail, segments, prompts }: Props) {
+export function LiveBriefing({ detail, segments, prompts, agents }: Props) {
   const device = useCrewDevice(detail.session.id);
   const clarifications = detail.session.clarifications ?? [];
   if (detail.session.state === "GAP_CHECK" && clarifications.length > 0) {
     return <ClarifyView session={detail.session} clarifications={clarifications} device={device} prompts={prompts} />;
   }
-  return <RecordView detail={detail} segments={segments} device={device} />;
+  return <RecordView detail={detail} segments={segments} device={device} agents={agents} />;
 }
 
 // --- device ------------------------------------------------------------------------------------
@@ -263,7 +266,7 @@ function useCrewDevice(sessionId: string): CrewDevice {
 
 // --- step 1: record ----------------------------------------------------------------------------
 
-function RecordView({ detail, segments, device }: { detail: SessionDetail; segments: TranscriptSegment[]; device: CrewDevice }) {
+function RecordView({ detail, segments, device, agents }: { detail: SessionDetail; segments: TranscriptSegment[]; device: CrewDevice; agents: ReceivedActivity[] }) {
   const toast = useToast();
   const qc = useQueryClient();
   const users = useUserDirectory();
@@ -348,8 +351,9 @@ function RecordView({ detail, segments, device }: { detail: SessionDetail; segme
       {ending && (
         <div className="finalising" role="status">
           <span className="spinner spinner-lg" aria-hidden="true" />
-          <h2>Checking the form…</h2>
-          <p className="muted">CrewBrief is looking for anything critical that wasn't covered.</p>
+          <h2>Checking the form</h2>
+          <p className="muted">Looking for anything critical that wasn't covered.</p>
+          <AgentStrip activity={agents} idle="Starting the final pass…" />
         </div>
       )}
 
@@ -362,7 +366,9 @@ function RecordView({ detail, segments, device }: { detail: SessionDetail; segme
                   <span className="rec-dot" aria-hidden="true" /> Recording
                 </>
               ) : paused ? (
-                "❚❚ Paused. Nothing is being captured"
+                <>
+                  <Pause size={16} aria-hidden="true" /> Paused. Nothing is being captured
+                </>
               ) : (
                 "Connecting…"
               )}
@@ -391,7 +397,7 @@ function RecordView({ detail, segments, device }: { detail: SessionDetail; segme
                 ? "Starting the microphone…"
                 : device.listening
                   ? "Listening. Talk through the job as normal."
-                  : "Tap to start listening. Put the device where everyone can be heard."}
+                  : "Tap to listen. Put the device where everyone can be heard."}
           </p>
           <span className="level" aria-hidden="true">
             <span ref={device.levelRef} />
@@ -424,24 +430,28 @@ function RecordView({ detail, segments, device }: { detail: SessionDetail; segme
                 disabled={paused || ending}
                 maxLength={2000}
               />
-              <button type="submit" className="btn btn-large" disabled={!line.trim() || paused || ending}>
+              <button type="submit" className="btn btn-secondary btn-large" disabled={!line.trim() || paused || ending}>
+                <Send size={20} aria-hidden="true" />
                 Send
               </button>
             </form>
           )}
 
           <div className="record-actions">
-            <button type="button" className="btn btn-large" onClick={togglePause} disabled={ending}>
-              {paused ? "▶ Resume" : "❚❚ Pause"}
+            <button type="button" className="btn btn-secondary btn-xl" onClick={togglePause} disabled={ending}>
+              {paused ? <Play size={20} aria-hidden="true" /> : <Pause size={20} aria-hidden="true" />}
+              {paused ? "Resume" : "Pause"}
             </button>
-            <button type="button" className="btn btn-large btn-primary" onClick={() => void endBriefing()} disabled={ending}>
+            <button type="button" className="btn btn-xl btn-primary" onClick={() => void endBriefing()} disabled={ending}>
+              <Square size={18} aria-hidden="true" fill="currentColor" />
               End briefing
             </button>
           </div>
 
           <div className="record-alt">
             {!device.typingOnly && (
-              <button type="button" className="link-btn" aria-expanded={typing} onClick={() => setTyping((t) => !t)}>
+              <button type="button" className="btn btn-ghost" aria-expanded={typing} onClick={() => setTyping((t) => !t)}>
+                <Keyboard size={16} aria-hidden="true" />
                 {typing ? "Hide typing" : "Type instead"}
               </button>
             )}
@@ -450,9 +460,9 @@ function RecordView({ detail, segments, device }: { detail: SessionDetail; segme
         </section>
 
         <details className="card crew-card demo-panel">
-          <summary>Demo</summary>
+          <summary>Demo script</summary>
           <label className="field">
-            <span>Scripted briefing</span>
+            <span className="sr-only">Scripted briefing</span>
             <select
               value={scenarioId}
               onChange={(e) => {
@@ -461,7 +471,7 @@ function RecordView({ detail, segments, device }: { detail: SessionDetail; segme
               }}
               disabled={player.status === "playing"}
             >
-              <option value="">— Choose a scenario —</option>
+              <option value="">Choose a scenario</option>
               {SCENARIOS.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.title}
@@ -478,21 +488,24 @@ function RecordView({ detail, segments, device }: { detail: SessionDetail; segme
               ))}
             </div>
             {player.status === "playing" ? (
-              <button type="button" className="btn" onClick={player.pause}>
-                ❚❚ Pause script
+              <button type="button" className="btn btn-secondary" onClick={player.pause}>
+                <Pause size={16} aria-hidden="true" />
+                Pause script
               </button>
             ) : player.status === "done" ? (
-              <button type="button" className="btn" onClick={player.restart}>
-                ↺ Restart
+              <button type="button" className="btn btn-secondary" onClick={player.restart}>
+                <RotateCcw size={16} aria-hidden="true" />
+                Restart
               </button>
             ) : (
-              <button type="button" className="btn" onClick={player.play} disabled={!lines.length || paused || ending || device.conn === "closed"}>
-                ▶ {player.status === "paused" ? "Resume script" : "Play script"}
+              <button type="button" className="btn btn-secondary" onClick={player.play} disabled={!lines.length || paused || ending || device.conn === "closed"}>
+                <Play size={16} aria-hidden="true" />
+                {player.status === "paused" ? "Resume script" : "Play script"}
               </button>
             )}
             {lines.length > 0 && (
-              <span className="muted small">
-                {player.next}/{lines.length} lines
+              <span className="muted small tnum">
+                {player.next} of {lines.length} lines
               </span>
             )}
           </div>
@@ -547,8 +560,9 @@ function UploadRecording({ sessionId, disabled }: { sessionId: string; disabled:
 
   return (
     <>
-      <button type="button" className="link-btn" disabled={disabled || state?.kind === "busy"} onClick={() => input.current?.click()}>
-        Upload a recording instead
+      <button type="button" className="btn btn-ghost" disabled={disabled || state?.kind === "busy"} onClick={() => input.current?.click()}>
+        <Upload size={16} aria-hidden="true" />
+        Upload a recording
       </button>
       <input
         ref={input}
@@ -677,8 +691,10 @@ function ClarifyView({
 
   return (
     <section className="card crew-card clarify" aria-labelledby="clarify-title">
-      <h2 id="clarify-title">A few things to check before work starts</h2>
-      <p className="muted">Answer each question out loud or by typing. CrewBrief adds your answers to the form.</p>
+      <header className="clarify-head">
+        <h2 id="clarify-title">A few things to check before work starts</h2>
+        <p className="muted">Answer out loud or type. Answers go straight into the form.</p>
+      </header>
 
       <ol className="clar-list">
         {clarifications.map((c, i) => {
@@ -686,7 +702,7 @@ function ClarifyView({
           return (
             <li key={c.gap_id} className={`clar clar-${c.status}${active ? " clar-active" : ""}`} aria-current={active ? "step" : undefined}>
               <span className="clar-mark" aria-hidden="true">
-                {c.status === "answered" ? "✓" : c.status === "skipped" ? "–" : i + 1}
+                {c.status === "answered" ? <Check size={16} strokeWidth={3} /> : c.status === "skipped" ? <Minus size={16} /> : i + 1}
               </span>
               <span className="clar-q">{c.question}</span>
               <span className="clar-status">
@@ -697,12 +713,13 @@ function ClarifyView({
                     : speakingId === c.gap_id
                       ? "Asking…"
                       : active
-                        ? "Waiting for your answer"
-                        : "Next"}
+                        ? "Waiting for an answer"
+                        : "Up next"}
               </span>
               {active && speakingId !== c.gap_id && (
-                <button type="button" className="link-btn clar-repeat" onClick={() => say(c)} disabled={!!speakingId}>
-                  Repeat question
+                <button type="button" className="btn btn-ghost btn-small clar-repeat" onClick={() => say(c)} disabled={!!speakingId}>
+                  <Volume2 size={16} aria-hidden="true" />
+                  Repeat
                 </button>
               )}
             </li>
@@ -741,17 +758,18 @@ function ClarifyView({
               Type your answer
             </label>
             <input id="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Or type your answer…" maxLength={2000} disabled={finishing} />
-            <button type="submit" className="btn btn-large" disabled={!answer.trim() || finishing}>
+            <button type="submit" className="btn btn-secondary btn-large" disabled={!answer.trim() || finishing}>
+              <Send size={20} aria-hidden="true" />
               Send
             </button>
           </form>
-          {sent && <p className="muted small" role="status">Got it. Checking your answer against the form…</p>}
+          {sent && <p className="muted small" role="status">Got it. Checking your answer…</p>}
         </div>
       )}
 
       <div className="clarify-foot">
         {open.length > 0 && <p className="muted small">Anything you don't answer is left for the review step.</p>}
-        <button type="button" className="btn btn-primary btn-large btn-block" onClick={() => void finish()} disabled={finishing}>
+        <button type="button" className="btn btn-primary btn-xl btn-block" onClick={() => void finish()} disabled={finishing}>
           {finishing ? "Finishing…" : "Done"}
         </button>
       </div>

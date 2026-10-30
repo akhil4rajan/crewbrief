@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Iterator
+from collections.abc import Awaitable, Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -37,6 +37,11 @@ from .clients import RolesClient
 
 log = logging.getLogger(__name__)
 
+# Called around each role call: ``hook(status, role, request, response=None, error=None, **extra)`` with status
+# "started" | "done" | "failed". Lets the orchestrator publish live agent activity; the eval harness passes none.
+RoleHook = Callable[..., Awaitable[None]]
+
+
 class RoleInvocationError(RuntimeError):
     """A role call failed. ``metas`` holds the roles that completed before it (for the audit log)."""
 
@@ -48,19 +53,29 @@ class RoleInvocationError(RuntimeError):
         self.metas: list[RoleMeta] = []
 
 
-async def invoke_role[R: Model](roles: RolesClient, role: RoleName, request: Model, response_type: type[R]) -> R:
-    """Call one role; the response's ``meta.latency_ms`` is filled from wall clock if the role left it 0."""
+async def invoke_role[R: Model](roles: RolesClient, role: RoleName, request: Model, response_type: type[R],
+                                hook: RoleHook | None = None, *, defer_done: bool = False) -> R:
+    """Call one role; the response's ``meta.latency_ms`` is filled from wall clock if the role left it 0.
+
+    ``hook`` is told when the call starts and how it ended (``defer_done``: the caller reports "done" itself)."""
+    if hook:
+        await hook("started", role, request)
     started = time.perf_counter()
     try:
         response: Any = await roles.invoke(role, request)
         if not isinstance(response, response_type):
             response = response_type.model_validate(response)
     except Exception as exc:  # noqa: BLE001 - wrapped so callers can audit and retry
-        raise RoleInvocationError(role, exc, int((time.perf_counter() - started) * 1000)) from exc
+        error = RoleInvocationError(role, exc, int((time.perf_counter() - started) * 1000))
+        if hook:
+            await hook("failed", role, request, error=error)
+        raise error from exc
     meta: RoleMeta = response.meta  # type: ignore[attr-defined]
     if not meta.latency_ms:
         elapsed = int((time.perf_counter() - started) * 1000)
         response = response.model_copy(update={"meta": meta.model_copy(update={"latency_ms": elapsed})})
+    if hook and not defer_done:
+        await hook("done", role, request, response)
     return response
 
 
@@ -97,6 +112,7 @@ async def run_extraction(
     task_type: str | None,
     *,
     library: HazardLibrary | None = None,
+    hook: RoleHook | None = None,
 ) -> Extraction:
     lib = library or get_library()
     metas: list[RoleMeta] = []
@@ -104,7 +120,7 @@ async def run_extraction(
         analyst = await invoke_role(roles_client, RoleName.CONVERSATION_ANALYST, ConversationAnalystRequest(
             session_id=session_id, window=window, crew=crew, open_gaps=open_gaps,
             recent_observations=recent_observations, task_type=task_type,
-        ), ConversationAnalystResponse)
+        ), ConversationAnalystResponse, hook)
         metas.append(analyst.meta)
         task_type = task_type or analyst.task_type_hint
         if not analyst.observations:
@@ -114,13 +130,14 @@ async def run_extraction(
         expert = await invoke_role(roles_client, RoleName.HAZARD_EXPERT, HazardExpertRequest(
             session_id=session_id, observations=analyst.observations, task_type=task_type,
             existing_hazard_codes=sorted(form.hazards), include_task_typical=True,
-        ), HazardExpertResponse)
+        ), HazardExpertResponse, hook)
         metas.append(expert.meta)
         task_type = expert.task_type or task_type
 
-        filler = await invoke_role(roles_client, RoleName.FORM_FILLER, FormFillerRequest(
-            session_id=session_id, draft=form, observations=analyst.observations, assessments=expert.assessments,
-        ), FormFillerResponse)
+        filler_request = FormFillerRequest(
+            session_id=session_id, draft=form, observations=analyst.observations, assessments=expert.assessments)
+        filler = await invoke_role(roles_client, RoleName.FORM_FILLER, filler_request, FormFillerResponse, hook,
+                                   defer_done=True)
         metas.append(filler.meta)
     except RoleInvocationError as exc:
         exc.metas = metas
@@ -130,5 +147,7 @@ async def run_extraction(
     for patch, violation in rejected:
         log.info("patch_rejected_by_rules", extra={"session_id": session_id, "path": patch.path,
                                                    "rule": violation.rule, "reason": violation.message})
+    if hook:  # reported after the safety rules so the activity says how many patches they stopped
+        await hook("done", RoleName.FORM_FILLER, filler_request, filler, rejected=len(rejected))
     return Extraction(applied, analyst.observations, metas, rejected=rejected, form=new_form, task_type=task_type,
                       dropped_segment_ids=analyst.dropped_segment_ids)
