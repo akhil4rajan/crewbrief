@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from packages.common.errors import AppError, Conflict, Forbidden, NotFound, UnprocessableEntity, UpstreamError
-from packages.rules import apply_patches, can_sign_off, evaluate_draft
+from packages.rules import apply_patches, can_sign_off, evaluate_draft, is_crew_lead
 from packages.schemas import (
     LIVE_STATES,
     TERMINAL_STATES,
@@ -28,6 +28,8 @@ from packages.schemas import (
     ApplyPatchesResult,
     AuditAction,
     AuditEntry,
+    Clarification,
+    ClarificationStatus,
     CreateSessionRequest,
     CrewEntry,
     Draft,
@@ -44,15 +46,19 @@ from packages.schemas import (
     Provenance,
     RecordingState,
     RejectedPatch,
+    SegmentSource,
     Session,
     SessionState,
     SignOffRequest,
     Source,
+    SpeakerAssignment,
     TranscriptSegment,
     TransitionRequest,
     User,
     UserRole,
     assert_transition,
+    is_diarized_speaker,
+    speaker_label,
     utcnow,
 )
 
@@ -61,7 +67,15 @@ from .directory import UserDirectory
 from .downstream import OrchestratorClient, SubmissionAdapter
 from .events import EventBus
 from .gaps import RULE_GAP_KINDS, gaps_from_rules, merge_gaps
-from .models import DiffResponse, EditRateResponse, SessionContext, SessionDetail, Tombstone
+from .models import (
+    DiffResponse,
+    EditRateResponse,
+    SessionContext,
+    SessionDetail,
+    SpeakerInfo,
+    SpeakerUpdate,
+    Tombstone,
+)
 from .store import Repository, RevisionConflict
 
 log = logging.getLogger(__name__)
@@ -69,6 +83,7 @@ log = logging.getLogger(__name__)
 S = SessionState
 PRE_REVIEW = frozenset({S.CREATED, S.BRIEFING, S.DRAFTING, S.GAP_CHECK})
 SUPERVISOR_EDITABLE = PRE_REVIEW | {S.REVIEW}
+LEAD_EDITABLE = SUPERVISOR_EDITABLE  # the crew lead reviews and fixes the draft until it is signed
 SEGMENT_STATES = LIVE_STATES | {S.REVIEW}  # late segments after end-briefing are still kept
 SCALAR_FIELD_SECTIONS = ("job", "emergency")
 SERVICE_NAME = "form_api"
@@ -107,6 +122,12 @@ def primary_role(user: User) -> str:
 
 def _crew_only(user: User) -> bool:
     return not user.has_role(UserRole.SUPERVISOR, UserRole.SAFETY_ADMIN)
+
+
+def _ensure_lead_or_admin(user: User, session: Session, what: str) -> None:
+    """Review actions: the crew lead (session creator), or a supervisor/safety admin."""
+    if not (is_crew_lead(user, session) or user.has_role(UserRole.SUPERVISOR, UserRole.SAFETY_ADMIN)):
+        raise Forbidden(f"Only the crew lead who started this briefing can {what}")
 
 
 def _unescape(part: str) -> str:
@@ -176,6 +197,10 @@ class FormService:
     def _emit_gaps(self, session_id: str, gaps: list[Gap]) -> None:
         self._events.emit(EventType.GAPS_UPDATED, session_id, {"gaps": _dump(gaps)})
 
+    async def ensure_viewer(self, user: User, session_id: str) -> None:
+        """Audit log and AI-vs-final are visible to the crew on the job, supervisors and admins."""
+        self._ensure_participant(user, await self.get_session(session_id))
+
     @staticmethod
     def _ensure_participant(user: User, session: Session) -> None:
         """Crew may only act on briefings they are part of; supervisors and admins on any."""
@@ -201,6 +226,11 @@ class FormService:
         changes: dict[str, Any] = {"state": to, "updated_at": utcnow(), **(updates or {})}
         if to == S.REVIEW:
             changes["ai_draft_revision"] = (await self._load_draft(session.id)).revision
+            if any(c.status == ClarificationStatus.OPEN for c in session.clarifications):
+                # Unanswered questions stay as open gaps for the reviewer.
+                changes["clarifications"] = [
+                    c.model_copy(update={"status": ClarificationStatus.SKIPPED})
+                    if c.status == ClarificationStatus.OPEN else c for c in session.clarifications]
         recording_stopped = to not in LIVE_STATES and session.recording != RecordingState.IDLE
         if recording_stopped:
             changes["recording"] = RecordingState.IDLE
@@ -253,15 +283,18 @@ class FormService:
 
     async def create_session(self, user: User, req: CreateSessionRequest) -> SessionDetail:
         crew_ids = list(dict.fromkeys(req.crew_member_ids))
-        if _crew_only(user) and user.id not in crew_ids:
-            crew_ids.insert(0, user.id)  # the crew member starting the briefing is on it
+        if user.has_role(UserRole.CREW) and user.id not in crew_ids:
+            crew_ids.insert(0, user.id)  # the crew member starting the briefing leads it and is on it
         crew: dict[str, CrewEntry] = {}
+        now = utcnow()
         for uid in crew_ids:
             member = self.directory.get(uid) or (user if uid == user.id else None)
             if member is None:
                 raise UnprocessableEntity(f"Unknown crew member {uid}", code="unknown_user")
-            crew[uid] = CrewEntry(user_id=uid, name=member.name)
-        supervisor_id = req.supervisor_id or (user.id if user.has_role(UserRole.SUPERVISOR) else None)
+            crew[uid] = (CrewEntry(user_id=uid, name=member.name, role="leading_hand", checked_in_at=now)
+                         if uid == user.id else CrewEntry(user_id=uid, name=member.name))
+        supervisor_id = req.supervisor_id or (
+            user.id if user.has_role(UserRole.SUPERVISOR) and user.id not in crew else None)
         if supervisor_id:
             sup = self.directory.get(supervisor_id) or (user if supervisor_id == user.id else None)
             if sup is None or not sup.has_role(UserRole.SUPERVISOR):
@@ -375,6 +408,8 @@ class FormService:
             return session
         if session.state not in LIVE_STATES:
             raise Conflict(f"Cannot end a briefing in {session.state}", code="invalid_state")
+        if session.state == S.GAP_CHECK and any(c.status == ClarificationStatus.OPEN for c in session.clarifications):
+            return session  # already ended; the clarification round is running
         reached = await self._orchestrator.end(session_id)
         session = await self.get_session(session_id)
         if not reached and session.state in LIVE_STATES:
@@ -383,8 +418,9 @@ class FormService:
             session = await self._finish_locally(session_id)
         return session
 
-    async def _finish_locally(self, session_id: str) -> Session:
-        actor, reason = Actor.system(), "orchestrator unavailable; rules evaluated locally"
+    async def _finish_locally(self, session_id: str, reason: str = "orchestrator unavailable; rules evaluated locally"
+                              ) -> Session:
+        actor = Actor.system()
         async with self._lock(session_id):
             session = await self.get_session(session_id)
             if session.state not in LIVE_STATES:
@@ -394,10 +430,42 @@ class FormService:
             await self._refresh_rule_gaps(session_id, draft.form, actor)
             return await self._transition(session, S.REVIEW, actor, reason)
 
+    async def finish_clarifications(self, user: User, session_id: str) -> Session:
+        """Crew tapped "Done": GAP_CHECK → REVIEW; unanswered questions are marked skipped."""
+        session = await self.get_session(session_id)
+        self._ensure_participant(user, session)
+        if session.state == S.REVIEW:
+            return session
+        if session.state != S.GAP_CHECK:
+            raise Conflict(f"There is no clarification round in {session.state}", code="invalid_state")
+        reached = await self._orchestrator.finish(session_id)
+        session = await self.get_session(session_id)
+        if session.state == S.GAP_CHECK:
+            if reached:
+                log.warning("orchestrator_did_not_finish", extra={"session_id": session_id})
+            session = await self._finish_locally(session_id, reason="clarifications finished by crew")
+        return session
+
+    async def put_clarifications(self, session_id: str, clarifications: list[Clarification]) -> Session:
+        """Internal (orchestrator): replace the clarification round's questions and statuses."""
+        async with self._lock(session_id):
+            session = await self.get_session(session_id)
+            if session.clarifications == clarifications:
+                return session
+            if session.state not in LIVE_STATES:
+                raise Conflict(f"Clarifications cannot change in {session.state}", code="invalid_state")
+            session = session.model_copy(update={"clarifications": clarifications, "updated_at": utcnow()})
+            await self.repo.put_session(session)
+            await self._audit(session_id, Actor.service("orchestrator"), AuditAction.CLARIFICATIONS_UPDATED,
+                              after=_dump(clarifications))
+            self._emit_session(session)
+            return session
+
     async def resume_briefing(self, user: User, session_id: str) -> Session:
         async with self._lock(session_id):
             session = await self.get_session(session_id)
-            session = await self._transition(session, S.DRAFTING, Actor.of(user), "returned to crew by supervisor")
+            _ensure_lead_or_admin(user, session, "send the briefing back")
+            session = await self._transition(session, S.DRAFTING, Actor.of(user), "returned to crew for more briefing")
         await self._orchestrator.resume(session_id)
         return session
 
@@ -495,6 +563,10 @@ class FormService:
 
     @staticmethod
     def _check_can_edit(user: User, session: Session) -> None:
+        if is_crew_lead(user, session):
+            if session.state not in LEAD_EDITABLE:
+                raise Conflict(f"The draft cannot be edited in {session.state}", code="invalid_state")
+            return
         if user.has_role(UserRole.SUPERVISOR):
             if session.state not in SUPERVISOR_EDITABLE:
                 raise Conflict(f"The draft cannot be edited in {session.state}", code="invalid_state")
@@ -543,6 +615,7 @@ class FormService:
     async def dismiss_gap(self, user: User, session_id: str, gap_id: str, reason: str) -> Gap:
         async with self._lock(session_id):
             session = await self.get_session(session_id)
+            _ensure_lead_or_admin(user, session, "dismiss gaps")
             if session.state not in SUPERVISOR_EDITABLE:
                 raise Conflict(f"Gaps cannot change in {session.state}", code="invalid_state")
             existing = await self.repo.list_gaps(session_id)
@@ -575,11 +648,12 @@ class FormService:
             blocking: list[dict[str, Any]] = [
                 {"gap_id": g.id, "path": g.path, "message": g.message}
                 for g in gaps if g.status == GapStatus.OPEN and g.severity == GapSeverity.BLOCKING]
-            listed = {b["path"] for b in blocking}
-            # A dismissed gap does not make a broken safety rule go away.
+            # Rule violations count unless their gap is listed above or was dismissed: a dismissal needs a
+            # written reason and is audited, so it is the crew lead's explicit decision on that gap.
+            decided = {b["path"] for b in blocking} | {g.path for g in gaps if g.status == GapStatus.DISMISSED}
             blocking += [{"rule": v.rule, "path": v.path, "message": v.message}
                          for v in evaluate_draft(draft.form, self.library)
-                         if v.severity == GapSeverity.BLOCKING and v.path not in listed]
+                         if v.severity == GapSeverity.BLOCKING and v.path not in decided]
             if blocking:
                 if not req.override_blocking_gaps:
                     raise Conflict("Blocking gaps must be resolved, or overridden with a justification",
@@ -603,6 +677,8 @@ class FormService:
                 return session  # idempotent retry
             if session.state != S.SIGNED:
                 raise Conflict(f"Only a signed form can be submitted (is {session.state})", code="invalid_state")
+            if not (is_crew_lead(user, session) or user.has_role(UserRole.SAFETY_ADMIN)):
+                raise Forbidden("Only the crew lead who started this briefing (or a safety admin) can submit")
             draft = await self._load_draft(session_id)
             payload = {"session": session.model_dump(mode="json"), "revision": draft.revision,
                        "form": draft.form.model_dump(mode="json"),
@@ -649,6 +725,7 @@ class FormService:
         session = await self.get_session(session_id)
         if session.state not in SEGMENT_STATES:
             raise Conflict(f"Transcript is not accepted in {session.state}", code="invalid_state")
+        segments = [self._name_speaker(s, session) for s in segments]
         stored = await self.repo.upsert_segments(segments)
         if stored:
             await self._audit(session_id, Actor.service("orchestrator"), AuditAction.SEGMENTS_RECEIVED,
@@ -657,6 +734,99 @@ class FormService:
         for seg in segments:
             self._events.emit(EventType.TRANSCRIPT_SEGMENT, session_id, seg.model_dump(mode="json"))
         return stored
+
+    def _name_speaker(self, seg: TranscriptSegment, session: Session) -> TranscriptSegment:
+        """Apply a reviewer's speaker assignment, and fill in names for known user ids."""
+        assigned = session.speaker_assignments.get(seg.speaker_id)
+        if assigned is not None and seg.user_id is None:
+            return seg.model_copy(update={"user_id": assigned.user_id, "speaker_name": assigned.name})
+        if seg.user_id and not seg.speaker_name and (member := self.directory.get(seg.user_id)):
+            return seg.model_copy(update={"speaker_name": member.name})
+        return seg
+
+    # ------------------------------------------------------------------ speakers
+
+    async def speakers(self, session_id: str) -> list[SpeakerInfo]:
+        session = await self.get_session(session_id)
+        return self._speakers(session, await self.repo.list_segments(session_id))
+
+    @staticmethod
+    def _speakers(session: Session, segments: list[TranscriptSegment]) -> list[SpeakerInfo]:
+        """Voices in order of first appearance; diarized ones are labelled "Speaker 1", "Speaker 2"..."""
+        info: dict[str, SpeakerInfo] = {}
+        guests = 0
+        for seg in segments:
+            if seg.source == SegmentSource.VOICE_PROMPT:
+                continue
+            sp = info.get(seg.speaker_id)
+            if sp is None:
+                if is_diarized_speaker(seg.speaker_id):
+                    guests += 1
+                    label = speaker_label(guests)
+                else:
+                    label = seg.speaker_id
+                sp = info[seg.speaker_id] = SpeakerInfo(speaker_id=seg.speaker_id, label=label, segment_count=0)
+            sp.segment_count += 1
+            if seg.user_id:
+                sp.user_id = seg.user_id
+            if seg.speaker_name and seg.speaker_name != sp.label:
+                sp.name = seg.speaker_name
+        for speaker_id, assigned in session.speaker_assignments.items():
+            if sp := info.get(speaker_id):
+                sp.user_id, sp.name = assigned.user_id, assigned.name
+        return list(info.values())
+
+    async def update_speaker(self, user: User, session_id: str, speaker_id: str, req: SpeakerUpdate
+                             ) -> list[SpeakerInfo]:
+        """Say who a voice is: relabels its segments and adds the person to the form's crew."""
+        if not req.user_id and not req.name:
+            raise UnprocessableEntity("Give a user_id or a name for this speaker", code="speaker_identity_required")
+        member = None
+        if req.user_id:
+            member = self.directory.get(req.user_id)
+            if member is None:
+                raise UnprocessableEntity(f"Unknown user {req.user_id}", code="unknown_user")
+        name = (req.name or (member.name if member else "")).strip()
+        async with self._lock(session_id):
+            session = await self.get_session(session_id)
+            self._ensure_participant(user, session)
+            if session.state not in LEAD_EDITABLE:
+                raise Conflict(f"Speakers cannot change in {session.state}", code="invalid_state")
+            segments = await self.repo.list_segments(session_id)
+            mine = [s for s in segments if s.speaker_id == speaker_id and s.source != SegmentSource.VOICE_PROMPT]
+            if not mine:
+                raise NotFound(f"Speaker {speaker_id} not found in this transcript")
+            relabelled = [s.model_copy(update={"user_id": req.user_id, "speaker_name": name}) for s in mine]
+            await self.repo.upsert_segments(relabelled)
+
+            assignments = {**session.speaker_assignments,
+                           speaker_id: SpeakerAssignment(user_id=req.user_id, name=name)}
+            crew_ids = session.crew_member_ids
+            if req.user_id and req.user_id not in crew_ids:
+                crew_ids = [*crew_ids, req.user_id]
+            session = session.model_copy(update={"speaker_assignments": assignments, "crew_member_ids": crew_ids,
+                                                 "updated_at": utcnow()})
+            await self.repo.put_session(session)
+
+            draft = await self._load_draft(session_id)
+            crew_key = req.user_id or f"speaker:{speaker_id}"
+            if crew_key not in draft.form.crew:
+                form = draft.form.model_copy(deep=True)
+                entry = CrewEntry(user_id=crew_key, name=name)
+                form.crew[crew_key] = entry
+                draft = await self._save_draft(draft, form, source=Source.HUMAN.value, actor_id=user.id)
+                patch = FormPatch(op=PatchOp.ADD, path=f"/crew/{crew_key}", value=entry.model_dump(mode="json"),
+                                  provenance=self._human_provenance(user))
+                self._events.emit(EventType.FORM_PATCHED, session_id, {"revision": draft.revision,
+                                                                       "patches": _dump([patch]), "source": "human"})
+                self._events.emit(EventType.PRESENCE_UPDATED, session_id, {"crew": _dump(form.crew.values())})
+            await self._audit(session_id, Actor.of(user), AuditAction.SPEAKER_LABELLED, path=f"/crew/{crew_key}",
+                              after={"speaker_id": speaker_id, "user_id": req.user_id, "name": name},
+                              details={"segments": len(relabelled)})
+            for seg in relabelled:
+                self._events.emit(EventType.TRANSCRIPT_SEGMENT, session_id, seg.model_dump(mode="json"))
+            self._emit_session(session)
+            return self._speakers(session, [next((r for r in relabelled if r.id == s.id), s) for s in segments])
 
     async def append_audit(self, session_id: str, entry: AuditEntry) -> None:
         if entry.session_id != session_id:

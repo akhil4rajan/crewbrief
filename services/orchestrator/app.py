@@ -29,7 +29,8 @@ from .runner import SessionRunner
 log = logging.getLogger(__name__)
 
 MAX_SEGMENTS_PER_REQUEST = 200
-# Callers (form API: 60 s timeout) expect /end to return once the draft is in REVIEW; bound the wait.
+# Callers (form API: 60 s timeout) expect /end to return once the final extraction + verifier ran and
+# the session is in REVIEW or the clarification round has started (it never waits for answers).
 END_WAIT_S = 40.0
 
 
@@ -97,8 +98,17 @@ async def segments(session_id: str, body: SegmentsBody, request: Request) -> dic
 
 @router.post("/sessions/{session_id}/end")
 async def end(session_id: str, request: Request) -> dict[str, Any]:
-    await (await _runner(request, session_id)).end(wait_s=END_WAIT_S)
-    return {}
+    runner = await _runner(request, session_id)
+    settled = await runner.end(wait_s=END_WAIT_S)
+    return {"state": runner.state, "settled": settled}
+
+
+@router.post("/sessions/{session_id}/finish")
+async def finish(session_id: str, request: Request) -> dict[str, Any]:
+    """Crew tapped "Done" on the clarification round."""
+    runner = await _runner(request, session_id)
+    settled = await runner.finish(wait_s=END_WAIT_S)
+    return {"state": runner.state, "settled": settled}
 
 
 @router.post("/sessions/{session_id}/recording")

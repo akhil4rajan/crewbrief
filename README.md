@@ -2,7 +2,7 @@
 
 > Real-time voice AI that listens to utility crew pre-job briefings and auto-fills hazard and mitigation forms (JSA / SWMS). Built on Azure.
 
-CrewBrief turns a crew's spoken pre-job briefing into a completed hazard assessment. It transcribes the conversation in real time, works out who said what, ignores background noise and off-topic chatter, maps what it hears to the company's hazard and control library, and asks the crew about anything that's missing. A supervisor reviews and signs off. The form is never submitted without a human.
+CrewBrief turns a crew's spoken pre-job briefing into a completed hazard assessment. It transcribes the conversation in real time, works out who said what, ignores background noise and off-topic chatter, maps what it hears to the company's hazard and control library, and asks the crew about anything that's missing. The crew lead reviews and signs off. The form is never submitted without a human.
 
 ---
 

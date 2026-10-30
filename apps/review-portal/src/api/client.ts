@@ -17,8 +17,10 @@ export class ApiError extends Error {
     return this.problem?.correlation_id;
   }
 
+  /** Machine-readable error code: the problem's `code` extension when present, else its title. */
   get code(): string | undefined {
-    return this.problem?.title;
+    const c = this.problem?.code;
+    return typeof c === "string" ? c : this.problem?.title;
   }
 }
 
@@ -46,7 +48,8 @@ export interface RequestOptions {
 
 export async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: "application/json, application/problem+json" };
-  if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+  const multipart = opts.body instanceof FormData;
+  if (opts.body !== undefined && !multipart) headers["Content-Type"] = "application/json";
   if (!opts.anonymous) {
     const token = opts.token !== undefined ? opts.token : await tokenProvider();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -57,7 +60,7 @@ export async function request<T>(path: string, opts: RequestOptions = {}): Promi
     response = await fetch(`${opts.baseUrl ?? config.apiBaseUrl}${path}`, {
       method: opts.method ?? "GET",
       headers,
-      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      body: opts.body === undefined ? undefined : multipart ? (opts.body as FormData) : JSON.stringify(opts.body),
       signal: opts.signal,
     });
   } catch (err) {

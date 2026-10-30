@@ -19,7 +19,7 @@ export function CrewHomePage() {
     <div className="crew-page">
       <header className="crew-hero">
         <h1>G'day{firstName ? `, ${firstName}` : ""}</h1>
-        <p className="muted">Start the pre-job briefing here. CrewBrief drafts the hazard assessment while you talk.</p>
+        <p className="muted">Start a pre-job briefing, or pick up one you've already started.</p>
       </header>
       <div className="crew-home-grid">
         <NewBriefing />
@@ -63,28 +63,21 @@ function MyBriefings() {
 }
 
 function NewBriefing() {
-  const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const library = useLibrary();
-  const crew = useQuery({ queryKey: ["users", "crew"], queryFn: () => api.users("crew") });
-  const supervisors = useQuery({ queryKey: ["users", "supervisor"], queryFn: () => api.users("supervisor") });
-  const [supervisorId, setSupervisorId] = useState("");
-  const chosenSupervisor = supervisorId || supervisors.data?.[0]?.id || "";
 
   const [scenario, setScenario] = useState<Scenario | null>(null);
   const [title, setTitle] = useState("");
   const [taskType, setTaskType] = useState("");
   const [location, setLocation] = useState("");
-  const [crewIds, setCrewIds] = useState<string[]>(() => (user ? [user.id] : []));
 
   const applyScenario = (s: Scenario) => {
     setScenario(s);
     setTitle(s.title);
     setTaskType(s.task_type);
     setLocation(s.location);
-    setCrewIds(user && !s.crew.includes(user.id) ? [user.id, ...s.crew] : s.crew);
   };
 
   const create = useMutation({
@@ -95,46 +88,35 @@ function NewBriefing() {
       queryClient.setQueryData(qk.session(detail.session.id), detail);
       navigate(`/crew/briefings/${detail.session.id}`);
     },
-    onError: (err) => toast.error(err, "Could not start the briefing"),
+    onError: (err) => toast.error(err, "Could not create the briefing"),
   });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    create.mutate({
-      title: title.trim(),
-      task_type: taskType || null,
-      location: location.trim() || null,
-      crew_member_ids: crewIds,
-      supervisor_id: chosenSupervisor || null,
-    });
+    create.mutate({ title: title.trim(), task_type: taskType || null, location: location.trim() || null });
   };
-
-  const toggleCrew = (id: string) =>
-    setCrewIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
 
   return (
     <section className="card crew-card" aria-labelledby="new-title">
-      <h2 id="new-title">Start a new briefing</h2>
-
-      <div className="scenario-picker">
-        <p className="field-label-lg">Use a demo scenario</p>
-        <div className="scenario-grid">
-          {SCENARIOS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className="scenario"
-              aria-pressed={scenario?.id === s.id}
-              onClick={() => applyScenario(s)}
-            >
-              <strong>{s.title}</strong>
-              <span className="muted small">{s.summary}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <h2 id="new-title">New briefing</h2>
 
       <form className="crew-form" onSubmit={submit}>
+        <fieldset className="field">
+          <legend>Demo scenario (optional)</legend>
+          <div className="scenario-grid">
+            {SCENARIOS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="scenario"
+                aria-pressed={scenario?.id === s.id}
+                onClick={() => applyScenario(s)}
+              >
+                <strong>{s.title}</strong>
+              </button>
+            ))}
+          </div>
+        </fieldset>
         <label className="field">
           <span>Job title *</span>
           <input required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. LV service connection, 14 Banksia St" />
@@ -154,33 +136,8 @@ function NewBriefing() {
           <span>Location</span>
           <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Address or asset id" />
         </label>
-        <label className="field">
-          <span>Supervisor to sign off</span>
-          <select value={chosenSupervisor} onChange={(e) => setSupervisorId(e.target.value)} disabled={supervisors.isPending}>
-            {supervisors.data?.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <fieldset className="field">
-          <legend>Crew on this job</legend>
-          {crew.isPending && <Skeleton lines={2} />}
-          <div className="crew-chips">
-            {crew.data?.map((u) => (
-              <label key={u.id} className="crew-chip">
-                <input type="checkbox" checked={crewIds.includes(u.id)} onChange={() => toggleCrew(u.id)} />
-                <span className="avatar" aria-hidden="true">
-                  {u.name.charAt(0)}
-                </span>
-                {u.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
         <button type="submit" className="btn btn-primary btn-large btn-block" disabled={!title.trim() || create.isPending}>
-          {create.isPending ? "Creating…" : "Start briefing →"}
+          {create.isPending ? "Creating…" : "Continue"}
         </button>
       </form>
     </section>

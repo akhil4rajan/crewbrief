@@ -68,6 +68,29 @@ class RecordingState(StrEnum):
     PAUSED = "paused"
 
 
+class ClarificationStatus(StrEnum):
+    OPEN = "open"
+    ANSWERED = "answered"
+    SKIPPED = "skipped"
+
+
+class Clarification(Model):
+    """A critical question asked aloud once the crew ends the briefing (standup mode)."""
+
+    gap_id: str
+    question: str
+    status: ClarificationStatus = ClarificationStatus.OPEN
+    asked_at: datetime = Field(default_factory=utcnow)
+    answered_at: datetime | None = None
+
+
+class SpeakerAssignment(Model):
+    """Who a diarized voice is, as set at review (applied to that voice's later segments too)."""
+
+    user_id: str | None = None
+    name: str
+
+
 class Session(Model):
     id: str = Field(default_factory=lambda: new_id("ses"))
     title: str
@@ -89,6 +112,8 @@ class Session(Model):
     submission_ref: str | None = None
     abandon_reason: str | None = None
     ai_draft_revision: int | None = None  # revision snapshotted when REVIEW was entered
+    clarifications: list[Clarification] = Field(default_factory=list)  # end-of-briefing questions
+    speaker_assignments: dict[str, SpeakerAssignment] = Field(default_factory=dict)  # speaker_id → person
 
 
 class CreateSessionRequest(Model):
@@ -97,7 +122,7 @@ class CreateSessionRequest(Model):
     task_type: str | None = None
     location: str | None = None
     supervisor_id: str | None = None
-    crew_member_ids: list[str] = Field(default_factory=list)
+    crew_member_ids: list[str] = Field(default_factory=list)  # optional: the creator is added automatically
 
 
 class TransitionRequest(Model):

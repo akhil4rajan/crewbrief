@@ -124,7 +124,6 @@ export function useSessionLive(sessionId: string): LiveState {
         case "gaps.updated": {
           const gaps = (env.payload as { gaps?: Gap[] }).gaps ?? [];
           updateDetail(qc, sessionId, (d) => ({ ...d, gaps }));
-          qc.setQueryData(qk.gaps(sessionId), gaps);
           return;
         }
         case "session.state_changed": {

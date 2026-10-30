@@ -59,17 +59,20 @@ from .session import (
     LIVE_STATES,
     TERMINAL_STATES,
     AbandonRequest,
+    Clarification,
+    ClarificationStatus,
     CreateSessionRequest,
     InvalidTransition,
     RecordingState,
     Session,
     SessionState,
     SignOffRequest,
+    SpeakerAssignment,
     TransitionRequest,
     assert_transition,
     can_transition,
 )
-from .transcript import SegmentSource, TranscriptSegment
+from .transcript import SegmentSource, TranscriptSegment, is_diarized_speaker, speaker_label
 from .users import User, UserRole
 
 __all__ = [name for name in dir() if not name.startswith("_")]

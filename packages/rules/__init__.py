@@ -16,7 +16,9 @@ from .engine import (
     apply_patches,
     can_sign_off,
     evaluate_draft,
+    is_crew_lead,
     validate_patch,
 )
 
-__all__ = ["RuleViolation", "apply_patch", "apply_patches", "can_sign_off", "evaluate_draft", "validate_patch"]
+__all__ = ["RuleViolation", "apply_patch", "apply_patches", "can_sign_off", "evaluate_draft", "is_crew_lead",
+           "validate_patch"]

@@ -37,10 +37,12 @@ const CONTROL_TYPE_RANK: Record<ControlType, number> = {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function sortHazards(hazards: HazardEntry[]): HazardEntry[] {
+  const ruledOut = (h: HazardEntry) => (h.status === "not_present" ? 1 : 0);
   return [...hazards].sort(
     (a, b) =>
-      STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
+      ruledOut(a) - ruledOut(b) ||
       SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] ||
+      STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
       a.name.localeCompare(b.name),
   );
 }
@@ -70,6 +72,44 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
 
   const removeControl = (c: ControlEntry) =>
     applyEdit([{ op: "remove", path: `${base}/controls/${pointer(c.code).slice(1)}`, provenance: humanProvenance() }]);
+
+  const stated = controls.filter((c) => c.status !== "proposed");
+  const suggested = controls.filter((c) => c.status === "proposed");
+  const controlRow = (c: ControlEntry) => (
+    <li key={c.code} className={`control control-${c.status}`} data-path={`${base}/controls/${pointer(c.code).slice(1)}`} tabIndex={-1}>
+      <div className="control-main">
+        <span className={`ctype ctype-${c.type}`}>{humanize(c.type)}</span>
+        <span className="control-name">{c.name}</span>
+      </div>
+      <div className="control-side">
+        <select
+          aria-label={`Status of ${c.name}`}
+          value={c.status}
+          disabled={!edit.allowed || editing}
+          onChange={(e) => void setControlStatus(c, e.target.value as ControlStatus)}
+        >
+          {CONTROL_STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <ProvenanceMeta provenance={c.provenance} compact />
+        {edit.allowed && (
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={`Remove control ${c.name}`}
+            title="Remove control"
+            disabled={editing}
+            onClick={() => void removeControl(c)}
+          >
+            ×
+          </button>
+        )}
+      </div>
+    </li>
+  );
 
   const removeHazard = () => applyEdit([{ op: "remove", path: base, provenance: humanProvenance() }]);
 
@@ -113,45 +153,20 @@ export function HazardCard({ hazard }: { hazard: HazardEntry }) {
       </div>
 
       <div className="controls" data-path={`${base}/controls`}>
-        <h5>Controls</h5>
-        {controls.length === 0 && <p className="muted small">No controls recorded.</p>}
-        <ul>
-          {controls.map((c) => (
-            <li key={c.code} className={`control control-${c.status}`} data-path={`${base}/controls/${pointer(c.code).slice(1)}`} tabIndex={-1}>
-              <div className="control-main">
-                <span className={`ctype ctype-${c.type}`}>{humanize(c.type)}</span>
-                <span className="control-name">{c.name}</span>
-              </div>
-              <div className="control-side">
-                <select
-                  aria-label={`Status of ${c.name}`}
-                  value={c.status}
-                  disabled={!edit.allowed || editing}
-                  onChange={(e) => void setControlStatus(c, e.target.value as ControlStatus)}
-                >
-                  {CONTROL_STATUSES.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-                <ProvenanceMeta provenance={c.provenance} compact />
-                {edit.allowed && (
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label={`Remove control ${c.name}`}
-                    title="Remove control"
-                    disabled={editing}
-                    onClick={() => void removeControl(c)}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <h5>Controls the crew stated</h5>
+        {stated.length === 0 ? (
+          hazard.status !== "not_present" && <p className="warn-text small">No control stated</p>
+        ) : (
+          <ul>{stated.map(controlRow)}</ul>
+        )}
+        {suggested.length > 0 && (
+          <details className="suggested">
+            <summary>
+              {suggested.length} suggested from the hazard library
+            </summary>
+            <ul>{suggested.map(controlRow)}</ul>
+          </details>
+        )}
         {edit.allowed && (
           <div className="hazard-actions">
             <button type="button" className="btn btn-small" onClick={() => setAdding(true)}>

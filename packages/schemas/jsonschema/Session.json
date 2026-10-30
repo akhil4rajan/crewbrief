@@ -2,6 +2,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://crewbrief.dev/schemas/Session.json",
   "$defs": {
+    "Clarification": {
+      "additionalProperties": false,
+      "description": "A critical question asked aloud once the crew ends the briefing (standup mode).",
+      "properties": {
+        "gap_id": {
+          "title": "Gap Id",
+          "type": "string"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ClarificationStatus",
+          "default": "open"
+        },
+        "asked_at": {
+          "format": "date-time",
+          "title": "Asked At",
+          "type": "string"
+        },
+        "answered_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answered At"
+        }
+      },
+      "required": [
+        "gap_id",
+        "question"
+      ],
+      "title": "Clarification",
+      "type": "object"
+    },
+    "ClarificationStatus": {
+      "enum": [
+        "open",
+        "answered",
+        "skipped"
+      ],
+      "title": "ClarificationStatus",
+      "type": "string"
+    },
     "RecordingState": {
       "enum": [
         "idle",
@@ -24,6 +75,33 @@
       ],
       "title": "SessionState",
       "type": "string"
+    },
+    "SpeakerAssignment": {
+      "additionalProperties": false,
+      "description": "Who a diarized voice is, as set at review (applied to that voice's later segments too).",
+      "properties": {
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Id"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "SpeakerAssignment",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -211,6 +289,20 @@
       ],
       "default": null,
       "title": "Ai Draft Revision"
+    },
+    "clarifications": {
+      "items": {
+        "$ref": "#/$defs/Clarification"
+      },
+      "title": "Clarifications",
+      "type": "array"
+    },
+    "speaker_assignments": {
+      "additionalProperties": {
+        "$ref": "#/$defs/SpeakerAssignment"
+      },
+      "title": "Speaker Assignments",
+      "type": "object"
     }
   },
   "required": [

@@ -75,3 +75,9 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 40);
 }
+
+/** Azure diarization ids ("Guest-2") read as "Speaker 2"; anything else is returned unchanged. */
+export function guestLabel(speakerId: string): string {
+  const m = /^Guest-(\d+)$/i.exec(speakerId);
+  return m ? `Speaker ${m[1]}` : speakerId;
+}

@@ -1,15 +1,14 @@
 import { useEffect, useRef } from "react";
-import { useLibraryIndex } from "../api/queries";
+import { useLibraryIndex, useUserDirectory } from "../api/queries";
 import type {
   ControlStatus,
   FieldValue,
   Form,
-  Gap,
   HazardStatus,
   TranscriptSegment,
 } from "../api/types";
-import { GapSeverityBadge, SeverityBadge } from "../components/Feedback";
-import { formatOffset } from "../format";
+import { SeverityBadge } from "../components/Feedback";
+import { formatOffset, guestLabel } from "../format";
 import { sortHazards } from "../session/Hazards";
 
 const HAZARD_STATUS: Record<HazardStatus, string> = {
@@ -156,48 +155,10 @@ export function CrewForm({ form, live }: { form: Form; live?: boolean }) {
   );
 }
 
-/** Open gaps, blocking first. */
-export function CrewGaps({
-  gaps,
-  title = "Open questions",
-}: {
-  gaps: Gap[];
-  title?: string;
-}) {
-  const rank = { blocking: 0, warning: 1, info: 2 } as const;
-  const open = gaps
-    .filter((g) => g.status === "open")
-    .sort((a, b) => rank[a.severity] - rank[b.severity]);
-  return (
-    <section className="card crew-card" aria-labelledby="gaps-title">
-      <h2 id="gaps-title">
-        {title} <span className="count">{open.length}</span>
-      </h2>
-      {open.length === 0 ? (
-        <p className="ok-text">✓ Nothing outstanding</p>
-      ) : (
-        <ul className="cf-gaps">
-          {open.map((g) => (
-            <li key={g.id} className={`cf-gap gap-card-${g.severity}`}>
-              <GapSeverityBadge severity={g.severity} />
-              <span>{g.question ?? g.message}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
 /** The last few transcript lines; filtered (off-topic, low confidence) lines are greyed. */
-export function TranscriptTail({
-  segments,
-  nameOf,
-}: {
-  segments: TranscriptSegment[];
-  nameOf: (id: string | null) => string;
-}) {
-  const tail = segments.slice(-12);
+export function TranscriptTail({ segments }: { segments: TranscriptSegment[] }) {
+  const users = useUserDirectory();
+  const tail = segments.slice(-8);
   const list = useRef<HTMLOListElement>(null);
   const lastId = tail[tail.length - 1]?.id;
   // Keep the newest line in view inside the list, without scrolling the page.
@@ -220,7 +181,7 @@ export function TranscriptTail({
               <strong>
                 {prompt
                   ? "CrewBrief asked"
-                  : (s.speaker_name ?? nameOf(s.user_id))}
+                  : (s.speaker_name ?? (s.user_id ? users.get(s.user_id)?.name : undefined) ?? guestLabel(s.speaker_id))}
               </strong>
               <span className="muted">{formatOffset(s.start_ms)}</span>
             </span>

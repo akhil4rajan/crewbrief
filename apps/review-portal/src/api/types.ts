@@ -249,6 +249,18 @@ export interface Session {
   submission_ref: string | null;
   abandon_reason: string | null;
   ai_draft_revision: number | null;
+  /** Critical questions asked after the briefing ends (standup mode). Older servers omit it. */
+  clarifications?: Clarification[];
+}
+
+export type ClarificationStatus = "open" | "answered" | "skipped";
+
+export interface Clarification {
+  gap_id: string;
+  question: string;
+  status: ClarificationStatus;
+  asked_at: IsoDateTime;
+  answered_at?: IsoDateTime | null;
 }
 
 export interface CreateSessionRequest {
@@ -275,6 +287,25 @@ export interface SessionDetail {
   draft: Draft;
   gaps: Gap[];
   transcript_count: number;
+}
+
+/** A diarized voice ("Guest-1" → "Speaker 1"), optionally mapped to a person. */
+export interface SpeakerInfo {
+  speaker_id: string;
+  label: string;
+  user_id: string | null;
+  name: string | null;
+  segment_count: number;
+}
+
+export interface UpdateSpeakerRequest {
+  user_id?: string | null;
+  name?: string | null;
+}
+
+export interface RecordingUploadResult {
+  segments: number;
+  duration_ms: number;
 }
 
 // --- gaps.py ----------------------------------------------------------------
@@ -395,7 +426,7 @@ export interface AuditEntry {
   details: Record<string, unknown>;
 }
 
-// --- diff + metrics (form API responses without a named Pydantic model) ----
+// --- diff (form API response without a named Pydantic model) --------------
 
 export interface DiffChange {
   path: string;
@@ -409,28 +440,6 @@ export interface DraftDiff {
   ai_revision: number | null;
   final_revision: number;
   changes: DiffChange[];
-}
-
-export interface FieldEditRate {
-  path_pattern: string;
-  ai_filled: number;
-  edited: number;
-  edit_rate: number;
-  /** Values the AI missed and a person added (a recall signal). */
-  added_by_human?: number;
-}
-
-export interface RoleEditRate {
-  role: string;
-  ai_filled: number;
-  edited: number;
-  edit_rate: number;
-}
-
-export interface EditRateMetrics {
-  sessions: number;
-  fields: FieldEditRate[];
-  roles: RoleEditRate[];
 }
 
 // --- roles.py / events.py ---------------------------------------------------

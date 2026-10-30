@@ -10,6 +10,7 @@ from __future__ import annotations
 from packages.common.config import Provider, Settings, get_settings
 
 from .base import SegmentCallback, Transcriber, TranscriberUnavailable, load_phrase_list
+from .fast import transcribe_recording
 from .filters import apply_filters, filter_reason
 from .pii import PiiRedactor, RegexPiiRedactor, build_redactor, redact_segment, redact_text
 
@@ -26,5 +27,5 @@ def build_transcriber(settings: Settings | None = None, *, sample_rate: int = 16
 __all__ = [
     "PiiRedactor", "RegexPiiRedactor", "SegmentCallback", "Transcriber", "TranscriberUnavailable",
     "apply_filters", "build_redactor", "build_transcriber", "filter_reason", "load_phrase_list",
-    "redact_segment", "redact_text",
+    "redact_segment", "redact_text", "transcribe_recording",
 ]

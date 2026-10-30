@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
 import { qk } from "../api/queries";
 import type { Session, SessionDetail } from "../api/types";
@@ -8,95 +9,166 @@ import { GapSeverityBadge } from "../components/Feedback";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toasts";
 import { actionPermissions, type Permission } from "./permissions";
+import { useSessionUi } from "./SessionContext";
 
 type Dialog = "sign-off" | "abandon" | "submit" | null;
 
 const MIN_JUSTIFICATION = 10;
 
-/** State-dependent session actions. Disabled actions stay visible and say why. */
-export function SessionActions({ detail }: { detail: SessionDetail }) {
+/**
+ * The review header's actions: one primary action for the current state (Sign off, then Submit)
+ * and a "More" menu for everything else. Disabled actions stay visible and say why.
+ */
+export function ReviewActions({ detail }: { detail: SessionDetail }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
+  const { openPanel } = useSessionUi();
   const [dialog, setDialog] = useState<Dialog>(null);
   const s = detail.session;
   const perms = actionPermissions(user, s);
+  const terminal = s.state === "SUBMITTED" || s.state === "ABANDONED";
 
-  const onSession = (label: string) => (session: Session) => {
+  // Sign-off and submit are announced by the live "Briefing is now …" notice, so they pass no label.
+  const onSession = (label?: string) => (session: Session) => {
     qc.setQueryData<SessionDetail>(qk.session(s.id), (d) => (d ? { ...d, session } : d));
     void qc.invalidateQueries({ queryKey: qk.session(s.id) });
     void qc.invalidateQueries({ queryKey: qk.sessions });
-    toast.push("success", label);
+    if (label) toast.push("success", label);
     setDialog(null);
   };
 
-  const end = useMutation({
-    mutationFn: () => api.endBriefing(s.id),
-    onSuccess: onSession("Briefing ended — final checks are running"),
-    onError: (e) => toast.error(e, "Could not end the briefing"),
-  });
   const resume = useMutation({
     mutationFn: () => api.resumeBriefing(s.id),
-    onSuccess: onSession("Briefing resumed"),
+    onSuccess: onSession("Briefing resumed. Record what was missed, then end it again."),
     onError: (e) => toast.error(e, "Could not resume the briefing"),
   });
 
-  const terminal = s.state === "SUBMITTED" || s.state === "ABANDONED";
+  const items: MenuItem[] = [
+    { label: "Audit log", onSelect: () => openPanel("audit") },
+    { label: "AI draft vs final", onSelect: () => openPanel("diff") },
+    ...(s.state === "REVIEW" && perms.resumeBriefing.allowed
+      ? [{ label: "Resume briefing", onSelect: () => resume.mutate() }]
+      : []),
+    ...(!terminal && perms.abandon.allowed ? [{ label: "Abandon briefing…", danger: true, onSelect: () => setDialog("abandon") }] : []),
+  ];
+
   return (
-    <div className="actions" role="group" aria-label="Session actions">
-      {!terminal && s.state !== "REVIEW" && s.state !== "SIGNED" && (
-        <ActionButton perm={perms.endBriefing} busy={end.isPending} onClick={() => end.mutate()}>
-          End briefing
-        </ActionButton>
-      )}
-      {s.state === "REVIEW" && (
-        <ActionButton perm={perms.resumeBriefing} busy={resume.isPending} onClick={() => resume.mutate()}>
-          Resume briefing
-        </ActionButton>
-      )}
-      {!terminal && s.state !== "SIGNED" && (
-        <ActionButton perm={perms.signOff} primary onClick={() => setDialog("sign-off")}>
-          Sign off
-        </ActionButton>
-      )}
-      {s.state === "SIGNED" && (
+    <div className="review-actions" role="group" aria-label="Briefing actions">
+      <button type="button" className="btn" onClick={() => openPanel("transcript")}>
+        Transcript
+      </button>
+      <MoreMenu items={items} busy={resume.isPending} />
+      {s.state === "SIGNED" ? (
         <ActionButton perm={perms.submit} primary onClick={() => setDialog("submit")}>
           Submit
         </ActionButton>
-      )}
-      {!terminal && (
-        <ActionButton perm={perms.abandon} danger onClick={() => setDialog("abandon")}>
-          Abandon
-        </ActionButton>
+      ) : (
+        !terminal && (
+          <ActionButton perm={perms.signOff} primary onClick={() => setDialog("sign-off")}>
+            Sign off
+          </ActionButton>
+        )
       )}
 
-      {dialog === "sign-off" && <SignOffDialog detail={detail} onDone={onSession("Form signed off")} onClose={() => setDialog(null)} />}
-      {dialog === "abandon" && <AbandonDialog session={s} onDone={onSession("Session abandoned")} onClose={() => setDialog(null)} />}
-      {dialog === "submit" && <SubmitDialog session={s} onDone={onSession("Form submitted")} onClose={() => setDialog(null)} />}
+      {dialog === "sign-off" && <SignOffDialog detail={detail} onDone={onSession()} onClose={() => setDialog(null)} />}
+      {dialog === "abandon" && <AbandonDialog session={s} onDone={onSession("Briefing abandoned")} onClose={() => setDialog(null)} />}
+      {dialog === "submit" && <SubmitDialog session={s} onDone={onSession()} onClose={() => setDialog(null)} />}
     </div>
   );
 }
 
-function ActionButton({ perm, busy, primary, danger, onClick, children }: {
-  perm: Permission;
-  busy?: boolean;
-  primary?: boolean;
+interface MenuItem {
+  label: string;
   danger?: boolean;
+  onSelect: () => void;
+}
+
+/** Menu button: arrow keys move, Esc closes and returns focus, a click outside closes. */
+function MoreMenu({ items, busy }: { items: MenuItem[]; busy: boolean }) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    wrap.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus();
+    const onDown = (e: MouseEvent) => {
+      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const entries = Array.from(wrap.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]") ?? []);
+    const i = entries.indexOf(document.activeElement as HTMLButtonElement);
+    if (e.key === "Escape") {
+      setOpen(false);
+      button.current?.focus();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      entries[(i + 1) % entries.length]?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      entries[(i - 1 + entries.length) % entries.length]?.focus();
+    }
+  };
+
+  return (
+    <div className="menu-wrap" ref={wrap} onKeyDown={onKey}>
+      <button
+        ref={button}
+        type="button"
+        className="btn"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        disabled={busy}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {busy ? "Working…" : "More ▾"}
+      </button>
+      {open && (
+        <div id={menuId} role="menu" className="menu">
+          {items.map((it) => (
+            <button
+              key={it.label}
+              type="button"
+              role="menuitem"
+              className={`menu-item${it.danger ? " menu-item-danger" : ""}`}
+              onClick={() => {
+                setOpen(false);
+                it.onSelect();
+              }}
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActionButton({ perm, primary, onClick, children }: {
+  perm: Permission;
+  primary?: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
   const hintId = useId();
-  const cls = ["btn", primary && "btn-primary", danger && "btn-danger"].filter(Boolean).join(" ");
   return (
     <span className="action">
       <button
         type="button"
-        className={cls}
-        aria-disabled={!perm.allowed || busy}
+        className={primary ? "btn btn-primary" : "btn"}
+        aria-disabled={!perm.allowed}
         aria-describedby={perm.allowed ? undefined : hintId}
-        onClick={() => perm.allowed && !busy && onClick()}
+        onClick={() => perm.allowed && onClick()}
       >
-        {busy ? "Working…" : children}
+        {children}
       </button>
       {!perm.allowed && (
         <span id={hintId} role="tooltip" className="hint">
@@ -109,7 +181,13 @@ function ActionButton({ perm, busy, primary, danger, onClick, children }: {
 
 function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onDone: (s: Session) => void; onClose: () => void }) {
   const toast = useToast();
-  const blocking = detail.gaps.filter((g) => g.status === "open" && g.severity === "blocking");
+  const openBlocking = detail.gaps
+    .filter((g) => g.status === "open" && g.severity === "blocking")
+    .map((g) => ({ key: g.id, message: g.message }));
+  // The rules engine can still block (e.g. a dismissed gap whose rule still fails): it answers 409
+  // `blocking_gaps` with the list, and the dialog switches to the override form.
+  const [serverBlocking, setServerBlocking] = useState<{ key: string; message: string }[] | null>(null);
+  const blocking = serverBlocking ?? openBlocking;
   const warnings = detail.gaps.filter((g) => g.status === "open" && g.severity === "warning").length;
   const [comment, setComment] = useState("");
   const [override, setOverride] = useState(false);
@@ -125,7 +203,17 @@ function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onD
         override_justification: needsOverride && override ? justification.trim() : null,
       }),
     onSuccess: onDone,
-    onError: (e) => toast.error(e, "Sign-off was refused"),
+    onError: (e) => {
+      const list = e instanceof ApiError && e.code === "blocking_gaps" ? e.problem?.blocking : undefined;
+      if (Array.isArray(list) && list.length) {
+        setServerBlocking(
+          list.map((b: { path?: string; message?: string }, i: number) => ({ key: `${b.path ?? i}`, message: b.message ?? "Blocking rule" })),
+        );
+        toast.push("warning", "Some safety rules still block sign-off", "Fix them, or override with a written reason.");
+      } else {
+        toast.error(e, "Sign-off was refused");
+      }
+    },
   });
 
   const submit = (e: FormEvent) => {
@@ -158,13 +246,16 @@ function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onD
         {needsOverride ? (
           <div className="callout callout-danger">
             <p>
-              <strong>{blocking.length} blocking gap{blocking.length > 1 ? "s" : ""}</strong> must be fixed, or overridden with a written
+              <strong>
+                {blocking.length} blocking item{blocking.length > 1 ? "s" : ""}
+              </strong>{" "}
+              must be fixed, or overridden with a written
               justification (audited).
             </p>
             <ul className="plain-list">
               {blocking.map((g) => (
-                <li key={g.id}>
-                  <GapSeverityBadge severity={g.severity} /> {g.message}
+                <li key={g.key}>
+                  <GapSeverityBadge severity="blocking" /> {g.message}
                 </li>
               ))}
             </ul>
@@ -197,16 +288,16 @@ function AbandonDialog({ session, onDone, onClose }: { session: Session; onDone:
   const abandon = useMutation({
     mutationFn: () => api.abandon(session.id, { reason: reason.trim() }),
     onSuccess: onDone,
-    onError: (e) => toast.error(e, "Could not abandon the session"),
+    onError: (e) => toast.error(e, "Could not abandon the briefing"),
   });
   return (
     <Modal
-      title="Abandon session"
+      title="Abandon briefing"
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={onClose}>
-            Keep session
+            Keep briefing
           </button>
           <button type="submit" form="abandon" className="btn btn-danger" disabled={!reason.trim() || abandon.isPending}>
             Abandon
