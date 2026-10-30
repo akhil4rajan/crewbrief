@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CircleCheck, FileText, Workflow } from "lucide-react";
+import { CircleCheck, FileText } from "lucide-react";
 import { api } from "../api/endpoints";
 import { qk, useUserDirectory } from "../api/queries";
 import type { SessionDetail, TranscriptSegment } from "../api/types";
@@ -12,10 +12,9 @@ import { formatDateTime } from "../format";
 import { ReviewActions } from "../session/Actions";
 import { AgentTimeline } from "../session/AgentTimeline";
 import { AuditTab } from "../session/AuditTab";
-import { DecisionsSection } from "../session/Decisions";
 import { DiffTab } from "../session/DiffTab";
 import { isLead } from "../session/permissions";
-import { CrewSection, HazardsSection, JobSection } from "../session/ReviewSections";
+import { JseaDocument } from "../session/JseaForm";
 import { SessionProvider, useSessionUi } from "../session/SessionContext";
 import { TranscriptPane } from "../session/TranscriptPane";
 
@@ -26,9 +25,9 @@ interface Props {
 }
 
 /**
- * Step 3, Review & submit: one column, top to bottom. The crew lead settles open gaps, checks
- * hazards and the job details, names the voices, then signs off and submits. Everyone else on
- * the crew sees the same page read-only and confirms they've read it.
+ * Step 3, Review & submit: the prefilled JSEA form, laid out like the company paper form. The crew
+ * lead settles the flagged items in place, then signs the declaration and submits. Everyone else on
+ * the crew sees the same form read-only and confirms they've read it.
  */
 export function ReviewStep({ detail, segments, transcriptLoading }: Props) {
   return (
@@ -36,18 +35,8 @@ export function ReviewStep({ detail, segments, transcriptLoading }: Props) {
       <ReviewHeader detail={detail} />
       <div className="review-col">
         <StatusNote detail={detail} />
-        <AgentsLink />
-        <ErrorBoundary label="This section failed to render">
-          <DecisionsSection />
-        </ErrorBoundary>
-        <ErrorBoundary label="Hazards failed to render">
-          <HazardsSection />
-        </ErrorBoundary>
-        <ErrorBoundary label="Job details failed to render">
-          <JobSection />
-        </ErrorBoundary>
-        <ErrorBoundary label="Crew failed to render">
-          <CrewSection />
+        <ErrorBoundary label="The form failed to render">
+          <JseaDocument />
         </ErrorBoundary>
         <Acknowledge detail={detail} />
       </div>
@@ -61,7 +50,7 @@ function ReviewHeader({ detail }: { detail: SessionDetail }) {
   const { openPanel } = useSessionUi();
   const lead = isLead(user, detail.session);
   return (
-    <header className="review-bar">
+    <header className="review-bar no-print">
       <div className="review-bar-title">
         <h1>{detail.session.title}</h1>
         <StateBadge state={detail.session.state} />
@@ -78,38 +67,24 @@ function ReviewHeader({ detail }: { detail: SessionDetail }) {
   );
 }
 
-function AgentsLink() {
-  const { openPanel } = useSessionUi();
-  return (
-    <button type="button" className="agents-link" onClick={() => openPanel("agents")}>
-      <Workflow size={16} aria-hidden="true" />
-      How CrewBrief built this form
-    </button>
-  );
-}
-
 function StatusNote({ detail }: { detail: SessionDetail }) {
   const { user } = useAuth();
   const users = useUserDirectory();
   const s = detail.session;
   const lead = isLead(user, s);
   const leadName = users.get(s.created_by)?.name ?? "The crew lead";
-  const blocking = detail.gaps.filter((g) => g.status === "open" && g.severity === "blocking").length;
 
+  if (s.state === "REVIEW" && lead) return null; // the decision summary on the form says what's left
   let text: string;
   if (s.state === "REVIEW") {
-    text = lead
-      ? blocking
-        ? `Settle ${blocking === 1 ? "the blocking item" : `the ${blocking} blocking items`}, check the hazards, then sign off.`
-        : "Check the hazards and job details, then sign off."
-      : `${leadName} is reviewing this form. Read it, then confirm at the bottom.`;
+    text = `${leadName} is reviewing this form. Read it, then confirm at the bottom.`;
   } else if (s.state === "SIGNED") {
     text = `Signed off by ${users.get(s.signed_by ?? "")?.name ?? "the crew lead"} on ${formatDateTime(s.signed_at)}.${lead ? " Submit it to send it to the safety system." : ""}`;
   } else {
     text = `Submitted${s.submission_ref ? ` as ${s.submission_ref}` : ""} on ${formatDateTime(s.submitted_at)}.`;
   }
   return (
-    <p className={`status-note status-note-${s.state.toLowerCase()}`} role="status">
+    <p className={`status-note status-note-${s.state.toLowerCase()} no-print`} role="status">
       {text}
     </p>
   );
@@ -132,7 +107,7 @@ function Acknowledge({ detail }: { detail: SessionDetail }) {
   });
   if (!onJob) return null;
   return (
-    <section className="review-section ack-section" aria-label="Confirm you've read the form">
+    <section className="review-section ack-section no-print" aria-label="Confirm you've read the form">
       {me?.acknowledged ? (
         <p className="all-clear">
           <CircleCheck size={20} aria-hidden="true" />
