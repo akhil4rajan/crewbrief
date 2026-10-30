@@ -361,23 +361,28 @@ class FormService:
             session = await self.get_session(session_id)
             if session.state not in (S.REVIEW, S.SIGNED, S.SUBMITTED):
                 raise Conflict(f"Cannot acknowledge a form in {session.state}", code="invalid_state")
-            draft = await self._load_draft(session_id)
-            entry = draft.form.crew.get(user.id)
-            if entry is None:
+            if user.id not in (await self._load_draft(session_id)).form.crew:
                 raise Forbidden("Only crew members on this job can acknowledge the form")
-            if not entry.acknowledged:
-                form = draft.form.model_copy(deep=True)
-                entry = entry.model_copy(update={"acknowledged": True})
-                form.crew[user.id] = entry
-                draft = await self._save_draft(draft, form, source=Source.SYSTEM.value, actor_id=user.id)
-                await self._audit(session_id, Actor.of(user), AuditAction.CREW_ACKNOWLEDGED, path=f"/crew/{user.id}",
-                                  after=True)
-                patch = FormPatch(op=PatchOp.REPLACE, path=f"/crew/{user.id}", value=entry.model_dump(mode="json"),
-                                  provenance=Provenance(source=Source.SYSTEM, updated_by=user.id, confidence=1.0))
-                self._events.emit(EventType.FORM_PATCHED, session_id, {"revision": draft.revision,
-                                                                       "patches": _dump([patch]), "source": "system"})
-                self._events.emit(EventType.PRESENCE_UPDATED, session_id, {"crew": _dump(form.crew.values())})
+            await self._mark_acknowledged(user, session_id)
         return await self.detail(session_id)
+
+    async def _mark_acknowledged(self, user: User, session_id: str) -> None:
+        """Record that a crew member read the form. Caller holds the session lock."""
+        draft = await self._load_draft(session_id)
+        entry = draft.form.crew.get(user.id)
+        if entry is None or entry.acknowledged:
+            return
+        form = draft.form.model_copy(deep=True)
+        entry = entry.model_copy(update={"acknowledged": True})
+        form.crew[user.id] = entry
+        draft = await self._save_draft(draft, form, source=Source.SYSTEM.value, actor_id=user.id)
+        await self._audit(session_id, Actor.of(user), AuditAction.CREW_ACKNOWLEDGED, path=f"/crew/{user.id}",
+                          after=True)
+        patch = FormPatch(op=PatchOp.REPLACE, path=f"/crew/{user.id}", value=entry.model_dump(mode="json"),
+                          provenance=Provenance(source=Source.SYSTEM, updated_by=user.id, confidence=1.0))
+        self._events.emit(EventType.FORM_PATCHED, session_id, {"revision": draft.revision,
+                                                               "patches": _dump([patch]), "source": "system"})
+        self._events.emit(EventType.PRESENCE_UPDATED, session_id, {"crew": _dump(form.crew.values())})
 
     async def acknowledge_consent(self, user: User, session_id: str) -> Session:
         async with self._lock(session_id):
@@ -667,11 +672,14 @@ class FormService:
                                               code="justification_required")
                 await self._audit(session_id, actor, AuditAction.GAP_OVERRIDE,
                                   details={"justification": justification, "blocking": blocking})
-            return await self._transition(
+            signed = await self._transition(
                 session, S.SIGNED, actor, "signed off", action=AuditAction.SIGNED_OFF,
                 updates={"signed_by": user.id, "signed_at": utcnow(), "sign_off_comment": req.comment},
                 details={"revision": draft.revision, "ai_draft_revision": session.ai_draft_revision,
                          "overridden": bool(blocking), "comment": req.comment})
+            # Signing the declaration is the crew lead's confirmation that they read the form.
+            await self._mark_acknowledged(user, session_id)
+            return signed
 
     async def submit(self, user: User, session_id: str) -> Session:
         async with self._lock(session_id):

@@ -105,7 +105,8 @@ function Acknowledge({ detail }: { detail: SessionDetail }) {
     },
     onError: (err) => toast.error(err, "Could not record that you read the form"),
   });
-  if (!onJob) return null;
+  // The crew lead confirms by signing the declaration; this is for everyone else on the job.
+  if (!onJob || isLead(user, s)) return null;
   return (
     <section className="review-section ack-section no-print" aria-label="Confirm you've read the form">
       {me?.acknowledged ? (
