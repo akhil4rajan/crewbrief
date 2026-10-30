@@ -41,7 +41,9 @@ if (-not (Test-Path (Join-Path $root "var\search\index.json"))) {
 $portal = Join-Path $root "apps\review-portal"
 if (-not (Test-Path (Join-Path $portal "node_modules"))) {
     Write-Host "==> Installing web app packages (first run only)" -ForegroundColor Cyan
-    npm --prefix $portal install
+    # npm on Windows does not reliably honour --prefix, so run it from the app folder.
+    Push-Location $portal
+    try { npm install } finally { Pop-Location }
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
@@ -50,14 +52,16 @@ $services = @(
     @{ Name = "gateway";      Port = 8000; Command = "& '$python' -m services.gateway" },
     @{ Name = "orchestrator"; Port = 8002; Command = "& '$python' -m services.orchestrator" },
     @{ Name = "roles";        Port = 8003; Command = "& '$python' -m services.roles" },
-    @{ Name = "web app";      Port = 3000; Command = "npm --prefix '$portal' run dev" }
+    @{ Name = "web app";      Port = 3000; Command = "Set-Location '$portal'; npm run dev" }
 )
 
 $started = @()
 foreach ($svc in $services) {
     $title = "CrewBrief $($svc.Name) :$($svc.Port)"
     $script = "`$Host.UI.RawUI.WindowTitle = '$title'; Set-Location '$root'; $($svc.Command)"
-    $proc = Start-Process powershell -PassThru -ArgumentList @("-NoExit", "-NoProfile", "-Command", $script)
+    # Encoded so folder names with spaces or quotes reach the new window intact.
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
+    $proc = Start-Process powershell -PassThru -ArgumentList @("-NoExit", "-NoProfile", "-EncodedCommand", $encoded)
     $started += $proc
     Write-Host ("  started {0,-13} http://localhost:{1}" -f $svc.Name, $svc.Port)
 }
