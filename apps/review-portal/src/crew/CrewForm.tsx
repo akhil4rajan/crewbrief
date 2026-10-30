@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useLibraryIndex, useUserDirectory } from "../api/queries";
 import type {
@@ -57,20 +58,13 @@ export function CrewForm({ form, live }: { form: Form; live?: boolean }) {
 
   return (
     <div className="crew-form-summary">
-      <div className="form-counters" aria-live="polite">
-        <span>
-          <strong>{hazards.length}</strong> hazards
-        </span>
-        <span>
-          <strong>{controls}</strong> controls
-        </span>
-        <span>
-          <strong>{emergency.filter(([, v]) => v).length}/4</strong> emergency
-        </span>
-      </div>
-
       <section className="cf-section" aria-label="Hazards and controls">
-        <h3>Hazards &amp; controls</h3>
+        <h3>
+          Hazards &amp; controls
+          <span className="cf-count" aria-live="polite">
+            {hazards.length} · {controls} {controls === 1 ? "control" : "controls"}
+          </span>
+        </h3>
         {hazards.length === 0 && (
           <p className="muted placeholder-line">
             {live ? "Listening for hazards…" : "No hazards recorded."}
@@ -86,16 +80,15 @@ export function CrewForm({ form, live }: { form: Form; live?: boolean }) {
                 <strong>{h.name}</strong>
                 <span className="cf-hazard-badges">
                   <SeverityBadge severity={h.severity} />
-                  <span className={`badge badge-outline status-${h.status}`}>
-                    {HAZARD_STATUS[h.status]}
-                  </span>
+                  <span className={`muted small status-${h.status}`}>{HAZARD_STATUS[h.status]}</span>
                 </span>
               </div>
               {stated(h).length ? (
                 <ul className="chip-list">
                   {stated(h).map((c) => (
                     <li key={c.code} className={`chip cf-control control-${c.status}`} title={c.description}>
-                      ✓ {c.name} <span className="muted">· {CONTROL_STATUS[c.status]}</span>
+                      <Check size={14} aria-hidden="true" className="ok-text" />
+                      {c.name} <span className="muted">· {CONTROL_STATUS[c.status]}</span>
                     </li>
                   ))}
                 </ul>
@@ -104,7 +97,7 @@ export function CrewForm({ form, live }: { form: Form; live?: boolean }) {
               )}
               {Object.keys(h.controls).length > stated(h).length && (
                 <p className="muted small">
-                  +{Object.keys(h.controls).length - stated(h).length} suggested from the hazard library
+                  {Object.keys(h.controls).length - stated(h).length} more suggested by the hazard library
                 </p>
               )}
             </li>
@@ -125,13 +118,16 @@ export function CrewForm({ form, live }: { form: Form; live?: boolean }) {
           </dl>
         </section>
         <section className="cf-section" aria-label="Emergency plan">
-          <h3>Emergency</h3>
+          <h3>
+            Emergency
+            <span className="cf-count">{emergency.filter(([, v]) => v).length} of 4</span>
+          </h3>
           <dl className="cf-fields">
             {emergency.map(([label, value]) => (
               <div key={label}>
                 <dt>{label}</dt>
                 <dd className={value ? "" : "placeholder"}>
-                  {value ?? "Not yet heard"}
+                  {value ?? "Not heard yet"}
                 </dd>
               </div>
             ))}
@@ -180,7 +176,7 @@ export function TranscriptTail({ segments }: { segments: TranscriptSegment[] }) 
             <span className="tail-meta">
               <strong>
                 {prompt
-                  ? "CrewBrief asked"
+                  ? "CrewBrief"
                   : (s.speaker_name ?? (s.user_id ? users.get(s.user_id)?.name : undefined) ?? guestLabel(s.speaker_id))}
               </strong>
               <span className="muted">{formatOffset(s.start_ms)}</span>

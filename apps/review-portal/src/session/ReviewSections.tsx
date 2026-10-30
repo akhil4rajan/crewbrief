@@ -1,3 +1,4 @@
+import { Check, Plus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { api } from "../api/endpoints";
@@ -51,8 +52,9 @@ export function HazardsSection() {
       count={hazards.length}
       action={
         edit.allowed && (
-          <button type="button" className="btn btn-small" onClick={() => setAdding(true)}>
-            + Add hazard
+          <button type="button" className="btn btn-secondary btn-small" onClick={() => setAdding(true)}>
+            <Plus size={16} aria-hidden="true" />
+            Add hazard
           </button>
         )
       }
@@ -168,7 +170,7 @@ export function CrewSection() {
   return (
     <ReviewSection id="sec-crew" title="Crew & speakers" path="/crew" count={crew.length}>
       {crew.length === 0 ? (
-        <p className="muted small">No one is on the form yet. Name a speaker below to add them.</p>
+        <p className="muted small">No one is on the form yet. Name a voice below to add them.</p>
       ) : (
         <ul className="crew-rows">
           {crew.map((c) => (
@@ -180,7 +182,10 @@ export function CrewSection() {
                 {c.name}
                 <span className="muted small"> · {humanize(c.role || "crew")}</span>
               </span>
-              <span className={c.acknowledged ? "ok-text small" : "muted small"}>{c.acknowledged ? "✓ Read the form" : "Not read yet"}</span>
+              <span className={c.acknowledged ? "ok-text small inline-icon" : "muted small"}>
+                {c.acknowledged && <Check size={14} aria-hidden="true" />}
+                {c.acknowledged ? "Read the form" : "Not read yet"}
+              </span>
             </li>
           ))}
         </ul>
@@ -246,7 +251,7 @@ function SpeakerRow({ sessionId, speaker, canEdit }: { sessionId: string; speake
             Who is {speaker.label}?
           </label>
           <select id={selectId} value={choice} onChange={(e) => setChoice(e.target.value)}>
-            <option value="">— Who is this? —</option>
+            <option value="">Who is this?</option>
             {crewUsers.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
@@ -262,7 +267,7 @@ function SpeakerRow({ sessionId, speaker, canEdit }: { sessionId: string; speake
               <input id={`${selectId}-name`} value={name} maxLength={100} placeholder="Name" onChange={(e) => setName(e.target.value)} />
             </>
           )}
-          <button type="submit" className="btn btn-small" disabled={!choice || (choice === OTHER && !name.trim()) || unchanged || save.isPending}>
+          <button type="submit" className="btn btn-secondary btn-small" disabled={!choice || (choice === OTHER && !name.trim()) || unchanged || save.isPending}>
             Save
           </button>
         </form>

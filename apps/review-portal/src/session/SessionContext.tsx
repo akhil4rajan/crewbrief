@@ -29,8 +29,8 @@ interface SessionUi {
   closePanel: () => void;
 }
 
-export type Panel = "transcript" | "audit" | "diff";
-const PANELS: Panel[] = ["transcript", "audit", "diff"];
+export type Panel = "transcript" | "audit" | "diff" | "agents";
+const PANELS: Panel[] = ["transcript", "audit", "diff", "agents"];
 
 const Ctx = createContext<SessionUi | null>(null);
 

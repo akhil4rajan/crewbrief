@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { User } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { canOpen, devUsersQuery, HOME, isCrew } from "../auth/roles";
+import { BrandMark } from "../components/Brand";
 import { InlineError, Skeleton } from "../components/Feedback";
 import { useToast } from "../components/Toasts";
 
@@ -29,12 +31,10 @@ export function LandingPage() {
 
   return (
     <main id="main" tabIndex={-1} className="signin">
-      <div className="signin-card">
+      <div className="signin-card card">
         <div className="signin-brand">
-          <span className="brand-mark brand-mark-lg" aria-hidden="true">
-            ✓
-          </span>
-          <h1>CrewBrief</h1>
+          <BrandMark size={48} />
+          <h1>Sign in to CrewBrief</h1>
           <p className="muted">Talk through the pre-job briefing. CrewBrief fills in the hazard assessment.</p>
         </div>
 
@@ -50,7 +50,7 @@ export function LandingPage() {
               Signed in as <strong>{user.name}</strong>
             </p>
             <Link to={HOME} className="btn btn-primary btn-large btn-block">
-              Go to my briefings
+              Continue to my briefings
             </Link>
             <button type="button" className="btn btn-ghost btn-block" onClick={() => void logout()}>
               Sign out
@@ -90,7 +90,7 @@ function DevSignIn() {
   return (
     <section aria-labelledby="signin-title">
       <h2 id="signin-title" className="signin-label">
-        Sign in as
+        Choose your account
       </h2>
       {users.isPending && <Skeleton lines={4} height={44} />}
       {users.isError && <InlineError error={users.error} onRetry={() => void users.refetch()} />}
@@ -105,7 +105,7 @@ function DevSignIn() {
                 <strong>{u.name}</strong>
                 {u.employee_no && <span className="muted small">{u.employee_no}</span>}
               </span>
-              {busy === u.id ? <span className="spinner" aria-label="Signing in" /> : <span aria-hidden="true">→</span>}
+              {busy === u.id ? <span className="spinner" aria-label="Signing in" /> : <ChevronRight size={20} aria-hidden="true" className="muted" />}
             </button>
           </li>
         ))}

@@ -41,7 +41,7 @@ connect="'self' $api_o $gw_o $gw_ws $auth_o $CONNECT_EXTRA"
 # Strip characters that could break out of the nginx directive.
 connect="$(printf '%s' "$connect" | tr -d '";\n')"
 
-printf 'add_header Content-Security-Policy "default-src '"'"'self'"'"'; script-src '"'"'self'"'"'; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"'; img-src '"'"'self'"'"' data:; media-src '"'"'self'"'"' data: blob:; font-src '"'"'self'"'"'; connect-src %s; frame-src %s; frame-ancestors '"'"'none'"'"'; base-uri '"'"'self'"'"'; form-action '"'"'self'"'"'; object-src '"'"'none'"'"'" always;\n' \
+printf 'add_header Content-Security-Policy "default-src '"'"'self'"'"'; script-src '"'"'self'"'"'; style-src '"'"'self'"'"' '"'"'unsafe-inline'"'"' https://fonts.googleapis.com; img-src '"'"'self'"'"' data:; media-src '"'"'self'"'"' data: blob:; font-src '"'"'self'"'"' https://fonts.gstatic.com; connect-src %s; frame-src %s; frame-ancestors '"'"'none'"'"'; base-uri '"'"'self'"'"'; form-action '"'"'self'"'"'; object-src '"'"'none'"'"'" always;\n' \
   "$connect" "$auth_o" > "$OUT/csp.conf"
 
 echo "review-portal: runtime config written (api=$API gateway=$GATEWAY auth=$AUTH_MODE)"

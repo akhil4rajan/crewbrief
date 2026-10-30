@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { Ban, ChevronDown, FileText, GitCompare, History, Play, Workflow } from "lucide-react";
+import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { ApiError } from "../api/client";
 import { api } from "../api/endpoints";
 import { qk } from "../api/queries";
 import type { Session, SessionDetail } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { GapSeverityBadge } from "../components/Feedback";
+import { Menu, type MenuItem } from "../components/Menu";
 import { Modal } from "../components/Modal";
 import { useToast } from "../components/Toasts";
 import { actionPermissions, type Permission } from "./permissions";
@@ -45,20 +47,31 @@ export function ReviewActions({ detail }: { detail: SessionDetail }) {
   });
 
   const items: MenuItem[] = [
-    { label: "Audit log", onSelect: () => openPanel("audit") },
-    { label: "AI draft vs final", onSelect: () => openPanel("diff") },
+    { label: "How CrewBrief built this form", icon: Workflow, onSelect: () => openPanel("agents") },
+    { label: "AI draft vs final", icon: GitCompare, onSelect: () => openPanel("diff") },
+    { label: "Audit log", icon: History, onSelect: () => openPanel("audit") },
     ...(s.state === "REVIEW" && perms.resumeBriefing.allowed
-      ? [{ label: "Resume briefing", onSelect: () => resume.mutate() }]
+      ? [{ label: "Resume briefing", icon: Play, onSelect: () => resume.mutate() }]
       : []),
-    ...(!terminal && perms.abandon.allowed ? [{ label: "Abandon briefing…", danger: true, onSelect: () => setDialog("abandon") }] : []),
+    ...(!terminal && perms.abandon.allowed ? [{ label: "Abandon briefing…", icon: Ban, danger: true, onSelect: () => setDialog("abandon") }] : []),
   ];
 
   return (
     <div className="review-actions" role="group" aria-label="Briefing actions">
-      <button type="button" className="btn" onClick={() => openPanel("transcript")}>
-        Transcript
+      <button type="button" className="btn btn-secondary" aria-label="Transcript" onClick={() => openPanel("transcript")}>
+        <FileText size={16} aria-hidden="true" />
+        <span className="hide-narrow">Transcript</span>
       </button>
-      <MoreMenu items={items} busy={resume.isPending} />
+      <Menu
+        items={items}
+        disabled={resume.isPending}
+        trigger={
+          <>
+            {resume.isPending ? "Working…" : "More"}
+            <ChevronDown size={16} aria-hidden="true" />
+          </>
+        }
+      />
       {s.state === "SIGNED" ? (
         <ActionButton perm={perms.submit} primary onClick={() => setDialog("submit")}>
           Submit
@@ -78,80 +91,6 @@ export function ReviewActions({ detail }: { detail: SessionDetail }) {
   );
 }
 
-interface MenuItem {
-  label: string;
-  danger?: boolean;
-  onSelect: () => void;
-}
-
-/** Menu button: arrow keys move, Esc closes and returns focus, a click outside closes. */
-function MoreMenu({ items, busy }: { items: MenuItem[]; busy: boolean }) {
-  const [open, setOpen] = useState(false);
-  const wrap = useRef<HTMLDivElement>(null);
-  const button = useRef<HTMLButtonElement>(null);
-  const menuId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-    wrap.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus();
-    const onDown = (e: MouseEvent) => {
-      if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
-
-  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const entries = Array.from(wrap.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]") ?? []);
-    const i = entries.indexOf(document.activeElement as HTMLButtonElement);
-    if (e.key === "Escape") {
-      setOpen(false);
-      button.current?.focus();
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      entries[(i + 1) % entries.length]?.focus();
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      entries[(i - 1 + entries.length) % entries.length]?.focus();
-    }
-  };
-
-  return (
-    <div className="menu-wrap" ref={wrap} onKeyDown={onKey}>
-      <button
-        ref={button}
-        type="button"
-        className="btn"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={menuId}
-        disabled={busy}
-        onClick={() => setOpen((o) => !o)}
-      >
-        {busy ? "Working…" : "More ▾"}
-      </button>
-      {open && (
-        <div id={menuId} role="menu" className="menu">
-          {items.map((it) => (
-            <button
-              key={it.label}
-              type="button"
-              role="menuitem"
-              className={`menu-item${it.danger ? " menu-item-danger" : ""}`}
-              onClick={() => {
-                setOpen(false);
-                it.onSelect();
-              }}
-            >
-              {it.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function ActionButton({ perm, primary, onClick, children }: {
   perm: Permission;
   primary?: boolean;
@@ -163,7 +102,7 @@ function ActionButton({ perm, primary, onClick, children }: {
     <span className="action">
       <button
         type="button"
-        className={primary ? "btn btn-primary" : "btn"}
+        className={primary ? "btn btn-primary" : "btn btn-secondary"}
         aria-disabled={!perm.allowed}
         aria-describedby={perm.allowed ? undefined : hintId}
         onClick={() => perm.allowed && onClick()}
@@ -249,8 +188,7 @@ function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onD
               <strong>
                 {blocking.length} blocking item{blocking.length > 1 ? "s" : ""}
               </strong>{" "}
-              must be fixed, or overridden with a written
-              justification (audited).
+              must be fixed, or overridden with a written reason. Overrides are audited.
             </p>
             <ul className="plain-list">
               {blocking.map((g) => (
@@ -271,7 +209,7 @@ function SignOffDialog({ detail, onDone, onClose }: { detail: SessionDetail; onD
             )}
           </div>
         ) : (
-          <p className="callout callout-ok">No blocking gaps are open.</p>
+          <p className="callout callout-ok">No blocking items are open.</p>
         )}
         <label className="field">
           <span>Comment</span>

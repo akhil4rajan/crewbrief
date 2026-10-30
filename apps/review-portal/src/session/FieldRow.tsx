@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import type { FieldValue } from "../api/types";
 import { ProvenanceMeta } from "./Provenance";
@@ -68,7 +69,7 @@ export function FieldRow({ label, path, field, multiline, options, display }: Pr
                 title={`Edit ${label}`}
                 onClick={() => setDraft(text)}
               >
-                ✎
+                <Pencil size={16} aria-hidden="true" />
               </button>
             )}
           </span>
@@ -77,7 +78,7 @@ export function FieldRow({ label, path, field, multiline, options, display }: Pr
         <div className="field-edit">
           {options ? (
             <select id={inputId} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} autoFocus>
-              <option value="">— None —</option>
+              <option value="">None</option>
               {options.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
