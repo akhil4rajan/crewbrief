@@ -288,8 +288,23 @@ function HazardsSection() {
           </GroupBody>
         )}
       </table>
-      <RiskLegend />
+      <RiskHelp />
     </DocSection>
+  );
+}
+
+/** The risk matrix behind a link on screen; always printed, since auditors expect it on the form. */
+function RiskHelp() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="risk-help">
+      <button type="button" className="link-btn no-print" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <ChevronDown size={14} aria-hidden="true" className={open ? "chev is-open" : "chev"} /> How risk is rated
+      </button>
+      <div className={open ? undefined : "print-only"}>
+        <RiskLegend />
+      </div>
+    </div>
   );
 }
 
@@ -367,7 +382,7 @@ function HazardRow({ n, hazard }: { n: number; hazard: HazardEntry }) {
 // ---------------------------------------------------------------- 3. PPE
 
 function PpeSection() {
-  const { detail } = useSessionUi();
+  const { detail, edit, editing, applyEdit, humanProvenance } = useSessionUi();
   const { library } = useLibraryIndex();
   const form = detail.draft.form;
   const recorded = new Map<string, string>();
@@ -378,22 +393,53 @@ function PpeSection() {
       if (c.type === "ppe" && confirmed(c) && !recorded.has(c.code)) recorded.set(c.code, c.name);
     }
   }
-  const listed = (library?.controls ?? []).filter((c) => c.type === "ppe").map((c) => ({ code: c.code, name: c.name }));
-  for (const [code, name] of recorded) if (!listed.some((l) => l.code === code)) listed.push({ code, name });
+  // PPE the hazard library expects for the hazards on this form that nobody mentioned. Shown as suggestions
+  // for the crew lead to confirm, so an empty list never reads as "no PPE needed".
+  const ppeDefs = new Map((library?.controls ?? []).filter((c) => c.type === "ppe").map((c) => [c.code, c.name]));
+  const hazardDefs = new Map((library?.hazards ?? []).map((h) => [h.code, h]));
+  const suggested = new Map<string, string>();
+  for (const h of Object.values(form.hazards)) {
+    if (h.status === "not_present") continue;
+    for (const code of hazardDefs.get(h.code)?.typical_controls ?? []) {
+      const name = ppeDefs.get(code);
+      if (name && !recorded.has(code)) suggested.set(code, name);
+    }
+  }
+  const confirm = (code: string, name: string) =>
+    applyEdit([{ op: "add", path: pointer("ppe", code), value: { code, name }, provenance: humanProvenance() }]);
 
+  const note = `${recorded.size} recorded${suggested.size ? ` · ${suggested.size} suggested` : ""}`;
   return (
-    <DocSection n={3} title="Personal protective equipment" path="/ppe" note={`${recorded.size} required`}>
-      <ul className="ppe-grid">
-        {listed.map((p) => {
-          const on = recorded.has(p.code);
-          return (
-            <li key={p.code} className={on ? "is-on" : undefined} data-path={on ? pointer("ppe", p.code) : undefined}>
-              <CheckMark on={on} />
-              <span>{p.name}</span>
+    <DocSection n={3} title="Personal protective equipment" path="/ppe" note={note}>
+      {recorded.size > 0 ? (
+        <ul className="ppe-grid">
+          {[...recorded].map(([code, name]) => (
+            <li key={code} className="is-on" data-path={pointer("ppe", code)}>
+              <CheckMark on />
+              <span>{name}</span>
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted">No PPE was mentioned in the briefing.</p>
+      )}
+      {suggested.size > 0 && (
+        <div className="ppe-suggested no-print">
+          <p className="ppe-suggested-title">Suggested for this job's hazards</p>
+          <ul className="ppe-suggested-list">
+            {[...suggested].map(([code, name]) => (
+              <li key={code}>
+                <span>{name}</span>
+                {edit.allowed && (
+                  <button type="button" className="btn btn-small" disabled={editing} onClick={() => void confirm(code, name)}>
+                    <Check size={14} aria-hidden="true" /> Confirm
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </DocSection>
   );
 }
