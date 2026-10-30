@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/SpeakerAssignment.json",
+  "additionalProperties": false,
+  "description": "Who a diarized voice is, as set at review (applied to that voice's later segments too).",
+  "properties": {
+    "user_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "User Id"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "SpeakerAssignment",
+  "type": "object"
+}

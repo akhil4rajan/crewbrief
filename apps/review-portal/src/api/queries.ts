@@ -11,7 +11,6 @@ export const qk = {
   mySessions: ["sessions", "mine"] as const,
   session: (id: string) => ["session", id] as const,
   transcript: (id: string) => ["transcript", id] as const,
-  gaps: (id: string) => ["gaps", id] as const,
   audit: (id: string) => ["audit", id] as const,
   diff: (id: string) => ["diff", id] as const,
   speakers: (id: string) => ["speakers", id] as const,

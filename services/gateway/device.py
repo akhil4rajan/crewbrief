@@ -7,6 +7,8 @@ See docs/api/contracts.md "Device WebSocket protocol". Responsibilities:
 * text mode: ``transcript`` messages → ``TranscriptSegment(source=device_text)``
 * every segment is PII-redacted, filtered (kept for audit) and batched to the orchestrator
 * pause / resume / end → orchestrator; ping → pong
+* standup mode: after ``end`` the orchestrator may open a clarification round (GAP_CHECK); the
+  device then keeps streaming the crew's answers on the same socket until the session is in REVIEW
 
 Raw audio only ever lives in memory on its way to the speech service; nothing is written
 to disk (``RETAIN_RAW_AUDIO=false``).
@@ -44,6 +46,7 @@ MAX_TRANSCRIPT_CHARS = 2000
 DEVICE_IDLE_TIMEOUT_S = 90.0
 SUPPORTED_SAMPLE_RATES = (8000, 16000)
 _USER_ID = re.compile(r"^[\w.@:-]{1,64}$")
+_SPEAKER_LABEL = re.compile(r"^[\w .:-]{1,32}$")
 UNKNOWN_SPEAKER = "Unknown"
 
 
@@ -71,6 +74,7 @@ class DeviceSession:
         self.ended = False
         self._transcriber: Transcriber | None = None
         self._stt_unavailable_sent = False
+        self._sample_rate = 16000
         self._warned: set[str] = set()
         self._segment_lock = asyncio.Lock()
         self._forwarder = SegmentForwarder(self.session_id, deps.orchestrator)
@@ -151,6 +155,7 @@ class DeviceSession:
         self.mode = mode
         self.device_id = str(msg.get("device_id") or "")[:64] or None
         if mode == "audio":
+            self._sample_rate = sample_rate
             await self._start_transcriber(sample_rate)
         self.paused = False
         await self._notify_recording(RecordingState.ACTIVE)
@@ -194,11 +199,15 @@ class DeviceSession:
             return
         text = msg.get("text")
         speaker = msg.get("speaker_user_id")
+        label = msg.get("speaker_label")  # e.g. "Speaker 2" from on-device diarization
         if not isinstance(text, str) or not text.strip() or len(text) > MAX_TRANSCRIPT_CHARS:
             self._error("invalid_message", f"transcript.text must be 1..{MAX_TRANSCRIPT_CHARS} characters")
             return
         if speaker is not None and (not isinstance(speaker, str) or not _USER_ID.match(speaker)):
             self._error("invalid_message", "speaker_user_id is not a valid user id")
+            return
+        if label is not None and (not isinstance(label, str) or not _SPEAKER_LABEL.match(label.strip())):
+            self._error("invalid_message", "speaker_label must be a short label such as 'Speaker 2'")
             return
         try:
             confidence = min(1.0, max(0.0, float(msg.get("confidence", 1.0))))
@@ -208,7 +217,8 @@ class DeviceSession:
             self._error("invalid_message", "confidence/start_ms/end_ms must be numbers")
             return
         segment = TranscriptSegment(
-            session_id=self.session_id, speaker_id=speaker or UNKNOWN_SPEAKER, user_id=speaker,
+            session_id=self.session_id, speaker_id=speaker or (label.strip() if label else UNKNOWN_SPEAKER),
+            user_id=speaker, speaker_name=None if speaker or not label else label.strip(),
             text=text.strip(), start_ms=start_ms, end_ms=end_ms, confidence=confidence,
             language=self.deps.settings.speech_language, source=SegmentSource.DEVICE_TEXT,
         )
@@ -240,8 +250,13 @@ class DeviceSession:
 
     async def _request_end(self) -> None:
         try:
-            await self.deps.orchestrator_control.post(f"/internal/sessions/{self.session_id}/end")
+            result = await self.deps.orchestrator_control.post(f"/internal/sessions/{self.session_id}/end")
             log.info("device_ended_briefing", extra={"session_id": self.session_id, "user_id": self.user.id})
+            if isinstance(result, dict) and result.get("state") == "GAP_CHECK":
+                # Clarification round: keep listening on this socket for the crew's answers.
+                self.ended = False
+                if self.mode == "audio" and not self.paused:
+                    await self._start_transcriber(self._sample_rate)
         except Exception as exc:  # noqa: BLE001
             log.warning("end_forward_failed", extra={"session_id": self.session_id, "error": str(exc)})
             self.ended = False

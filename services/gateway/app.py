@@ -14,19 +14,25 @@ import logging
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import quote
 
-from fastapi import Depends, FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, Request, UploadFile, WebSocket, WebSocketDisconnect
 
 from packages.common.app import create_app
-from packages.common.auth import CurrentUser, decode_token, internal_only
+from packages.common.auth import CurrentUser, decode_token, internal_only, require_roles
 from packages.common.config import Provider, Settings, get_settings
-from packages.common.errors import NotFound, Unauthorized, UpstreamError
+from packages.common.errors import AppError, Conflict, Forbidden, NotFound, Unauthorized, UpstreamError
 from packages.common.http import InternalClient
 from packages.common.logging import correlation_id, session_id_var
-from packages.schemas import EventEnvelope, Session, User, UserRole, group_name
-from services.transcription import build_redactor
+from packages.schemas import EventEnvelope, Session, TranscriptSegment, User, UserRole, group_name
+from services.transcription import (
+    TranscriberUnavailable,
+    apply_filters,
+    build_redactor,
+    redact_segment,
+    transcribe_recording,
+)
 
 from .connections import ConnectionKind, ConnectionManager
 from .device import DeviceSession, GatewayDeps
@@ -41,6 +47,21 @@ CLOSE_UNAVAILABLE = 1011
 
 DEVICE_ROLES = (UserRole.CREW, UserRole.SUPERVISOR)
 DEVICE_ACCEPTING_STATES = {"BRIEFING", "DRAFTING", "GAP_CHECK"}
+RECORDING_ACCEPTING_STATES = {"BRIEFING", "DRAFTING"}
+MAX_RECORDING_BYTES = 100 * 1024 * 1024
+RECORDING_TYPES = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".ogg": "audio/ogg",
+                   ".webm": "audio/webm"}
+SEGMENT_BATCH = 200  # orchestrator's per-request limit
+
+
+class NotAvailable(AppError):
+    status_code = 501
+    code = "not_implemented"
+
+
+class PayloadTooLarge(AppError):
+    status_code = 413
+    code = "payload_too_large"
 
 
 @asynccontextmanager
@@ -210,6 +231,58 @@ async def negotiate(session_id: str, request: Request, user: CurrentUser) -> dic
         return {"url": await _webpubsub_url(request.app, session_id, user)}
     base = s.public_gateway_ws_url.rstrip("/")
     return {"url": f"{base}/ws/live/{session_id}?access_token={quote(_raw_token(request), safe='')}"}
+
+
+@app.post("/api/sessions/{session_id}/recording", tags=["realtime"])
+async def upload_recording(session_id: str, file: UploadFile, request: Request,
+                           user: Annotated[User, Depends(require_roles(*DEVICE_ROLES))]) -> dict[str, int]:
+    """Transcribe a recorded briefing (Azure fast transcription + diarization), then end the briefing
+    so the clarification round starts. The audio is processed in memory only, never stored."""
+    session_id_var.set(session_id)
+    s: Settings = request.app.state.settings
+    session = await _load_session(request.app.state.form_api, session_id)
+    if session is None:
+        raise NotFound(f"Session {session_id} not found")
+    if not (user.id in session.crew_member_ids or user.id == session.created_by or user.has_role(UserRole.SUPERVISOR)):
+        raise Forbidden("You are not on this briefing's crew")
+    if s.provider("stt") != Provider.AZURE:
+        raise NotAvailable("Recorded audio can only be transcribed with Azure AI Speech (STT_PROVIDER=azure). "
+                           "In local mode, stream text transcripts instead.", code="stt_unavailable_local")
+    if session.state.value not in RECORDING_ACCEPTING_STATES:
+        raise Conflict(f"Upload a recording after starting the briefing (session is {session.state.value})",
+                       code="invalid_state")
+    name = file.filename or "recording"
+    ext = ("." + name.rsplit(".", 1)[-1].lower()) if "." in name else ""
+    content_type = (file.content_type or "").split(";")[0].strip().lower()
+    if ext not in RECORDING_TYPES and content_type not in RECORDING_TYPES.values():
+        raise AppError("Upload a wav, mp3, m4a, ogg or webm audio file", code="unsupported_media_type",
+                       extra={"accepted": sorted(RECORDING_TYPES)})
+    audio = await file.read(MAX_RECORDING_BYTES + 1)
+    if len(audio) > MAX_RECORDING_BYTES:
+        raise PayloadTooLarge(f"Recordings are limited to {MAX_RECORDING_BYTES // (1024 * 1024)} MB")
+    if not audio:
+        raise AppError("The uploaded file is empty", code="empty_recording")
+    try:
+        segments, duration_ms = await transcribe_recording(
+            s, session_id, audio, name, content_type if content_type.startswith("audio/") else
+            RECORDING_TYPES.get(ext, "application/octet-stream"))
+    except TranscriberUnavailable as exc:
+        raise NotAvailable(str(exc), code="stt_unavailable_local") from exc
+    finally:
+        del audio  # in memory only (RETAIN_RAW_AUDIO=false)
+    prepared: list[TranscriptSegment] = []
+    for seg in segments:
+        seg = await redact_segment(seg, request.app.state.redactor)
+        prepared.append(apply_filters(seg, s.stt_min_confidence))
+    orchestrator: InternalClient = request.app.state.orchestrator_control
+    for i in range(0, len(prepared), SEGMENT_BATCH):
+        batch = prepared[i:i + SEGMENT_BATCH]
+        await orchestrator.post(f"/internal/sessions/{session_id}/segments",
+                                json={"segments": [seg.model_dump(mode="json") for seg in batch]})
+    await orchestrator.post(f"/internal/sessions/{session_id}/end")
+    log.info("recording_transcribed", extra={"session_id": session_id, "segments": len(prepared),
+                                             "duration_ms": duration_ms, "user_id": user.id})
+    return {"segments": len(prepared), "duration_ms": duration_ms}
 
 
 @app.post("/internal/events", tags=["internal"], dependencies=[Depends(internal_only)])

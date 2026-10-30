@@ -31,6 +31,8 @@
         "session.submitted",
         "session.abandoned",
         "session.consent_acknowledged",
+        "session.clarifications_updated",
+        "transcript.speaker_labelled",
         "session.deleted"
       ],
       "title": "AuditAction",

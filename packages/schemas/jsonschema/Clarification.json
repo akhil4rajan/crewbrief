@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crewbrief.dev/schemas/Clarification.json",
+  "$defs": {
+    "ClarificationStatus": {
+      "enum": [
+        "open",
+        "answered",
+        "skipped"
+      ],
+      "title": "ClarificationStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A critical question asked aloud once the crew ends the briefing (standup mode).",
+  "properties": {
+    "gap_id": {
+      "title": "Gap Id",
+      "type": "string"
+    },
+    "question": {
+      "title": "Question",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ClarificationStatus",
+      "default": "open"
+    },
+    "asked_at": {
+      "format": "date-time",
+      "title": "Asked At",
+      "type": "string"
+    },
+    "answered_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Answered At"
+    }
+  },
+  "required": [
+    "gap_id",
+    "question"
+  ],
+  "title": "Clarification",
+  "type": "object"
+}

@@ -14,6 +14,7 @@ from packages.schemas import (
     ApplyPatchesRequest,
     ApplyPatchesResult,
     AuditEntry,
+    Clarification,
     ConversationAnalystResponse,
     Draft,
     FormFillerResponse,
@@ -105,6 +106,7 @@ class FormApi(Protocol):
     async def store_segments(self, session_id: str, segments: list[TranscriptSegment]) -> int: ...
     async def apply_patches(self, session_id: str, request: ApplyPatchesRequest) -> ApplyPatchesResult: ...
     async def put_gaps(self, session_id: str, gaps: list[Gap]) -> list[Gap]: ...
+    async def put_clarifications(self, session_id: str, clarifications: list[Clarification]) -> Session: ...
     async def transition(self, session_id: str, to: SessionState, reason: str) -> Session: ...
     async def set_recording(self, session_id: str, recording: RecordingState) -> Session: ...
     async def audit(self, session_id: str, entry: AuditEntry) -> None: ...
@@ -140,6 +142,11 @@ class FormApiClient:
         data = await self._http.put(f"/internal/sessions/{session_id}/gaps",
                                     json={"gaps": [g.model_dump(mode="json") for g in gaps]})
         return [Gap.model_validate(g) for g in data or []]
+
+    async def put_clarifications(self, session_id: str, clarifications: list[Clarification]) -> Session:
+        data = await self._http.put(f"/internal/sessions/{session_id}/clarifications",
+                                    json={"clarifications": [c.model_dump(mode="json") for c in clarifications]})
+        return Session.model_validate(data)
 
     async def transition(self, session_id: str, to: SessionState, reason: str) -> Session:
         body = TransitionRequest(to=to, reason=reason).model_dump(mode="json")

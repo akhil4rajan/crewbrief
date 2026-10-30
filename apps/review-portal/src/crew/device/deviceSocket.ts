@@ -7,7 +7,10 @@ export type ConnectionState = "connecting" | "online" | "reconnecting" | "closed
 export interface TranscriptMessage {
   type: "transcript";
   text: string;
-  speaker_user_id: string;
+  /** Who said it, when known (the demo script, or the signed-in user typing). */
+  speaker_user_id?: string;
+  /** A diarization label such as "Speaker 2", when the speaker isn't a known user. */
+  speaker_label?: string;
   confidence: number;
   start_ms: number;
   end_ms: number;

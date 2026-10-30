@@ -290,8 +290,9 @@ async def run(args: argparse.Namespace, script: dict[str, Any]) -> int:
             await ws.send(json.dumps({"type": "end"}))
             console.out("end", "briefing ended; waiting for final extraction + verification")
             try:
+                await asyncio.wait_for(_clarify(api, session_id, token, console), timeout=args.timeout)
                 await asyncio.wait_for(_wait_review(api, session_id, token, console), timeout=args.timeout)
-                console.out("review", f"draft ready for supervisor review in {time.monotonic() - ended_at:.1f}s")
+                console.out("review", f"draft ready for review in {time.monotonic() - ended_at:.1f}s")
             except TimeoutError:
                 console.out("ERROR", f"session did not reach REVIEW within {args.timeout:.0f}s")
             for task in tasks:
@@ -303,6 +304,24 @@ async def run(args: argparse.Namespace, script: dict[str, Any]) -> int:
         resp.raise_for_status()
         _print_summary(resp.json())
         return 0 if resp.json()["session"]["state"] == "REVIEW" else 1
+
+
+async def _clarify(api: httpx.AsyncClient, session_id: str, token: str, console: Console) -> None:
+    """Standup mode: print the end-of-briefing questions, then tap "Done" (finish-clarifications)."""
+    while True:
+        resp = await api.get(f"/api/sessions/{session_id}", headers=_bearer(token))
+        resp.raise_for_status()
+        session = resp.json()["session"]
+        if session["state"] == "REVIEW":
+            return
+        open_qs = [c for c in session.get("clarifications") or [] if c["status"] == "open"]
+        if session["state"] == "GAP_CHECK" and open_qs:
+            for i, c in enumerate(open_qs, 1):
+                console.out("ASK", f"Q{i}: {c['question']}")
+            r = await api.post(f"/api/sessions/{session_id}/finish-clarifications", headers=_bearer(token))
+            console.out("done", f"finish-clarifications -> {r.json().get('state') if r.is_success else r.text[:120]}")
+            return
+        await asyncio.sleep(1.0)
 
 
 async def _wait_review(api: httpx.AsyncClient, session_id: str, token: str, console: Console) -> None:

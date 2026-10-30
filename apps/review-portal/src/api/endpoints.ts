@@ -41,7 +41,6 @@ export const api = {
   createSession: (body: CreateSessionRequest) => request<SessionDetail>("/api/sessions", { method: "POST", body }),
   session: (id: string) => request<SessionDetail>(s(id)),
   transcript: (id: string) => request<TranscriptSegment[]>(`${s(id)}/transcript`),
-  gaps: (id: string) => request<Gap[]>(`${s(id)}/gaps`),
   patchDraft: (id: string, body: ApplyPatchesRequest) =>
     request<ApplyPatchesResult>(`${s(id)}/draft`, { method: "PATCH", body }),
   dismissGap: (id: string, gapId: string, reason: string) =>

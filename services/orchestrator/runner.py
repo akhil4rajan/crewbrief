@@ -7,9 +7,14 @@ state. Timeline::
     every EXTRACTION_INTERVAL_SECONDS, if new unfiltered segments and recording not paused:
         analyst → expert → filler → rules → form API patches       (BRIEFING→DRAFTING on first patch)
     every VERIFIER_EVERY_N_EXTRACTIONS extractions (milestone):
-        DRAFTING→GAP_CHECK → verifier → PUT gaps → voice prompt (one, cooled down) → DRAFTING
+        verifier → PUT gaps (kept visible for the reviewer; standup mode never interrupts the crew)
     on end:
-        final extraction → GAP_CHECK → verifier → PUT gaps → REVIEW (no voice prompt)
+        final extraction → GAP_CHECK → verifier → PUT gaps →
+          no critical gaps: REVIEW
+          else: clarification round — up to MAX_CLARIFICATIONS open blocking gaps are stored on the
+          session and spoken (voice.prompt, in order); each answer batch is extracted and re-verified,
+          answered questions are marked, and the session moves to REVIEW when all are answered
+    on finish (crew tapped "Done"): extract what is pending → verifier → REVIEW (rest marked skipped)
 
 Ticks never overlap (one task + one lock per session). A failing tick is logged, audited
 and retried with exponential backoff; a batch that keeps failing is eventually skipped so
@@ -38,6 +43,8 @@ from packages.schemas import (
     ApplyPatchesRequest,
     AuditAction,
     AuditEntry,
+    Clarification,
+    ClarificationStatus,
     CrewEntry,
     EventEnvelope,
     EventType,
@@ -55,6 +62,7 @@ from packages.schemas import (
     TranscriptSegment,
     VerifierRequest,
     VerifierResponse,
+    VoicePrompt,
     VoicePrompterRequest,
     VoicePrompterResponse,
     can_transition,
@@ -76,6 +84,7 @@ MAX_BATCH_FAILURES = 4
 MAX_BACKOFF_S = 60.0
 VERIFY_TRANSCRIPT_LIMIT = 1000
 VOICE_SPEAKER_ID = "crewbrief"
+MAX_CLARIFICATIONS = 3
 
 # Which gap the crew is asked about first. Lower is more urgent.
 _SEVERITY_RANK = {GapSeverity.BLOCKING: 0, GapSeverity.WARNING: 1, GapSeverity.INFO: 2}
@@ -127,7 +136,8 @@ class SessionRunner:
         self._recent_obs: deque[Observation] = deque(maxlen=RECENT_OBSERVATIONS)
         self._task_type: str | None = None
         self._linker = SpeakerLinker()
-        self._asked: dict[str, datetime] = {}  # gap id → last time the crew was asked
+        self._clarifying = False  # end-of-briefing clarification round is running (GAP_CHECK)
+        self._finishing = False  # crew tapped "Done" on the clarification round
 
         self._ingest_lock = asyncio.Lock()
         self._tick_lock = asyncio.Lock()
@@ -163,13 +173,17 @@ class SessionRunner:
             self._remember(seg.id)
             self._seq = max(self._seq, seg.seq)
             self._last_end_ms = max(self._last_end_ms, seg.end_ms)
+            if seg.source != SegmentSource.VOICE_PROMPT:
+                self._linker.seen(seg.speaker_id)
             if seg.user_id:
                 self._linker.remember(seg.speaker_id, seg.user_id)
             if self._extractable(seg) and (last_patch_at is None or _aware(seg.received_at) > _aware(last_patch_at)):
                 self._pending.append(seg)
-        # A crash mid-milestone leaves GAP_CHECK behind; carry on drafting.
         if self.state == SessionState.GAP_CHECK:
-            await self._transition(SessionState.DRAFTING, "orchestrator recovered after restart")
+            if any(c.status == ClarificationStatus.OPEN for c in ctx.session.clarifications):
+                self._clarifying = True  # carry on listening for answers
+            else:  # a crash mid-finalize leaves GAP_CHECK behind; carry on drafting
+                await self._transition(SessionState.DRAFTING, "orchestrator recovered after restart")
         log.info("runner_loaded", extra={"session_id": self.session_id, "state": self.state,
                                          "seq": self._seq, "pending": len(self._pending)})
 
@@ -193,13 +207,32 @@ class SessionRunner:
         return self._task is not None and not self._task.done()
 
     async def end(self, wait_s: float = 0.0) -> bool:
-        """Final extraction + verifier, then REVIEW. Idempotent; the work runs on the runner task.
+        """Final extraction + verifier, then REVIEW or the clarification round. Idempotent; the work
+        runs on the runner task.
 
         Waits up to ``wait_s`` for it to finish and returns whether it did; on timeout it simply
-        carries on in the background (clients see the REVIEW transition as an event).
+        carries on in the background (clients see the transition as an event). Never waits for answers.
         """
+        if self._clarifying:
+            return True
         if not (self._ending or self._finalized):
             self._ending = True
+            self._settled.clear()
+            self.start()
+            self._wake.set()
+        if wait_s > 0 and not self._settled.is_set():
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(self._settled.wait(), timeout=wait_s)
+        return self._settled.is_set()
+
+    async def finish(self, wait_s: float = 0.0) -> bool:
+        """Close the clarification round (crew tapped "Done"): GAP_CHECK → REVIEW."""
+        if self._ending:
+            await self.end(wait_s)
+        if not self._clarifying:
+            return self.state != SessionState.GAP_CHECK
+        if not self._finishing:
+            self._finishing = True
             self._settled.clear()
             self.start()
             self._wake.set()
@@ -217,6 +250,7 @@ class SessionRunner:
                 await self._transition(SessionState.DRAFTING, "briefing resumed")
             self._ending = False
             self._finalized = False
+            self._clarifying = self._finishing = False
             self._extractions_at_last_verify = self.extractions
         self.start()
 
@@ -272,7 +306,7 @@ class SessionRunner:
         base = self._settings.extraction_interval_seconds
         if self._failures:
             return min(MAX_BACKOFF_S, base * 2 ** min(self._failures, 6))
-        return 0.0 if self._ending else base
+        return 0.0 if (self._ending or self._finishing) else base
 
     async def _loop(self) -> None:
         session_id_var.set(self.session_id)
@@ -285,6 +319,11 @@ class SessionRunner:
                 try:
                     if self._ending:
                         await self._finalize()
+                        if not self._clarifying:
+                            return
+                        continue
+                    if self._finishing:
+                        await self._finish_round()
                         return
                     if self.state in TERMINAL_STATES or self.state == SessionState.REVIEW:
                         return
@@ -309,6 +348,10 @@ class SessionRunner:
             if self.state not in LIVE_STATES:
                 return
             await self._extract(ctx)
+            if self._clarifying:
+                if self.state == SessionState.GAP_CHECK:  # an answer batch: re-verify and mark answers
+                    await self._check_answers(await self._verify(live=True))
+                return
             due = self.extractions - self._extractions_at_last_verify >= self._settings.verifier_every_n_extractions
             if due and self.state == SessionState.DRAFTING:
                 await self._verify(live=True)
@@ -324,16 +367,41 @@ class SessionRunner:
                 return
             while self._pending:  # each pass consumes its batch or raises (retried with backoff)
                 await self._extract(ctx, kind="final")
-            await self._verify(live=False)
-            await self._transition(SessionState.REVIEW, "briefing ended")
-            if self.recording != RecordingState.IDLE:
-                with contextlib.suppress(UpstreamError):
-                    await self.set_recording(RecordingState.IDLE)
+            gaps = await self._verify(live=False)
+            critical = sorted((g for g in gaps if g.status == GapStatus.OPEN and g.severity == GapSeverity.BLOCKING),
+                              key=gap_priority)[:MAX_CLARIFICATIONS]
+            if critical:
+                await self._start_round(critical, gaps)
+            else:
+                await self._to_review("briefing ended")
             self._ending = False
-            self._finalized = True
             self._settled.set()
             log.info("briefing_finalized", extra={"session_id": self.session_id, "ticks": self.ticks,
-                                                  "extractions": self.extractions})
+                                                  "extractions": self.extractions,
+                                                  "clarifications": len(critical)})
+
+    async def _to_review(self, reason: str) -> None:
+        await self._transition(SessionState.REVIEW, reason)
+        if self.recording != RecordingState.IDLE:
+            with contextlib.suppress(UpstreamError):
+                await self.set_recording(RecordingState.IDLE)
+        self._clarifying = self._finishing = False
+        self._finalized = True
+
+    async def _finish_round(self) -> None:
+        async with self._tick_lock:
+            ctx = await self._refresh(transcript_limit=1)
+            if self.state == SessionState.GAP_CHECK:
+                if self._pending:  # answers spoken just before "Done" still count
+                    while self._pending:
+                        await self._extract(ctx, kind="final")
+                    await self._check_answers(await self._verify(live=True), close=False)
+                await self._to_review("clarifications finished by crew")
+            else:
+                self._clarifying = self._finishing = False
+                self._finalized = self.state == SessionState.REVIEW
+            self._settled.set()
+            log.info("clarifications_finished", extra={"session_id": self.session_id, "state": self.state})
 
     # ------------------------------------------------------------------------------------
     # Steps
@@ -405,15 +473,16 @@ class SessionRunner:
         self._overlap = (self._overlap + batch)[-OVERLAP_SEGMENTS:]
         self._batch_failures = 0
 
-    async def _verify(self, *, live: bool) -> None:
-        """Milestone verifier. ``live`` = briefing still running (voice prompts allowed, back to DRAFTING)."""
+    async def _verify(self, *, live: bool) -> list[Gap]:
+        """Verifier pass. ``live`` = milestone or answer batch (no state change); else the end-of-briefing
+        pass, which moves the session to GAP_CHECK first. Never prompts the crew."""
         kind = "verify" if live else "final_verify"
         record = TickRecord(kind=kind, started_at=utcnow().isoformat())
         started = time.perf_counter()
         self._extractions_at_last_verify = self.extractions
         try:
-            if self.state != SessionState.GAP_CHECK:
-                await self._transition(SessionState.GAP_CHECK, "milestone verification" if live else "briefing ended")
+            if not live and self.state != SessionState.GAP_CHECK:
+                await self._transition(SessionState.GAP_CHECK, "briefing ended")
             ctx = await self._form_api.context(self.session_id, transcript_limit=VERIFY_TRANSCRIPT_LIMIT)
             try:
                 verdict = await invoke_role(self._roles, RoleName.VERIFIER, VerifierRequest(
@@ -426,73 +495,73 @@ class SessionRunner:
             gaps = await self._form_api.put_gaps(self.session_id, verdict.gaps)
             record.open_gaps = sum(g.status == GapStatus.OPEN for g in gaps)
             self.verifications += 1
-            if live:
-                record.voice_prompt = await self._maybe_prompt(gaps)
         except Exception as exc:
             record.error = f"{type(exc).__name__}: {exc}"[:500]
             raise
         finally:
-            if live and self.state == SessionState.GAP_CHECK:
-                with contextlib.suppress(Exception):
-                    await self._transition(SessionState.DRAFTING, "verification done")
             record.duration_ms = int((time.perf_counter() - started) * 1000)
             self.last[kind] = record
         log.info("verification_done", extra={"session_id": self.session_id, "open_gaps": record.open_gaps,
-                                             "voice_prompt": record.voice_prompt, "duration_ms": record.duration_ms})
+                                             "duration_ms": record.duration_ms})
+        return gaps
 
-    def _already_asked(self, gap: Gap) -> bool:
-        return gap.asked_at is not None or gap.id in self._asked
+    # ------------------------------------------------------------------------------------
+    # Clarification round (standup mode)
+    # ------------------------------------------------------------------------------------
 
-    def _in_cooldown(self) -> bool:
-        if not self._asked:
-            return False
-        last = max(self._asked.values())
-        return (utcnow() - last).total_seconds() < self._settings.voice_prompt_cooldown_seconds
-
-    async def _maybe_prompt(self, gaps: list[Gap]) -> str | None:
-        """Ask the crew about the most urgent open gap not yet asked.
-
-        Each gap is asked once per briefing (unanswered ones stay on the supervisor's list), and
-        questions are spaced by the cooldown so the crew is never talked over.
-        """
-        if self._in_cooldown():
-            return None
-        candidates = [g for g in gaps if g.status == GapStatus.OPEN
-                      and g.severity in (GapSeverity.BLOCKING, GapSeverity.WARNING) and not self._already_asked(g)]
-        if not candidates:
-            return None
-        gap = min(candidates, key=gap_priority)
+    async def _start_round(self, critical: list[Gap], gaps: list[Gap]) -> None:
+        """Store the critical questions on the session, then speak them in order."""
+        prompts: dict[str, VoicePrompt] = {}
+        meta = None
         try:
             response = await invoke_role(self._roles, RoleName.VOICE_PROMPTER, VoicePrompterRequest(
-                session_id=self.session_id, gaps=[gap],
-                already_asked_gap_ids=sorted(k for k in self._asked if k != gap.id), max_prompts=1,
-            ), VoicePrompterResponse)
-        except RoleInvocationError as exc:
+                session_id=self.session_id, gaps=[g.model_copy(update={"asked_at": None}) for g in critical],
+                max_prompts=len(critical)), VoicePrompterResponse)
+            await self._audit_roles([response.meta], "voice_prompt")
+            prompts, meta = {p.gap_id: p for p in response.prompts}, response.meta
+        except RoleInvocationError as exc:  # fall back to the verifier's own wording, text only
             await self._audit_role_failure(exc)
-            return None  # a missed question is retried at the next milestone
-        await self._audit_roles([response.meta], "voice_prompt")
-        if not response.prompts:
-            return None
-        prompt = response.prompts[0]
         now = utcnow()
-        self._asked[prompt.gap_id] = now
-        self.voice_prompts += 1
-        await self._publisher.publish(EventEnvelope(type=EventType.VOICE_PROMPT, session_id=self.session_id,
-                                                    payload=prompt.model_dump(mode="json")))
-        # Keep the question in the transcript for context; filtered so it is never extracted as crew speech.
-        await self.ingest([TranscriptSegment(
-            session_id=self.session_id, speaker_id=VOICE_SPEAKER_ID, speaker_name="CrewBrief", text=prompt.text,
-            start_ms=self._last_end_ms, end_ms=self._last_end_ms, source=SegmentSource.VOICE_PROMPT,
-            filtered=True, filter_reason="voice_prompt", language=self._settings.speech_language)])
-        await self._form_api.audit(self.session_id, AuditEntry(
-            session_id=self.session_id, actor_id=ACTOR, actor_type=ActorType.SERVICE, action=AuditAction.VOICE_PROMPT,
-            path=gap.path, after=prompt.text, model=response.meta.model, prompt_version=response.meta.prompt_version,
-            details={"gap_id": prompt.gap_id, "gap_kind": gap.kind.value, "severity": gap.severity.value,
-                     "has_audio": prompt.audio_b64 is not None}))
-        if prompt.gap_id == gap.id:
-            await self._form_api.put_gaps(self.session_id, [
-                g.model_copy(update={"asked_at": now}) if g.id == gap.id else g for g in gaps])
-        return prompt.text
+        ordered = [prompts.get(g.id) or VoicePrompt(gap_id=g.id, text=g.question or g.message) for g in critical]
+        await self._form_api.put_clarifications(self.session_id, [
+            Clarification(gap_id=p.gap_id, question=p.text, asked_at=now) for p in ordered])
+        self._clarifying = True
+        self._finalized = False
+        for gap, prompt in zip(critical, ordered, strict=True):
+            self.voice_prompts += 1
+            await self._publisher.publish(EventEnvelope(type=EventType.VOICE_PROMPT, session_id=self.session_id,
+                                                        payload=prompt.model_dump(mode="json")))
+            # Keep the question in the transcript for context; filtered so it is never extracted as crew speech.
+            await self.ingest([TranscriptSegment(
+                session_id=self.session_id, speaker_id=VOICE_SPEAKER_ID, speaker_name="CrewBrief", text=prompt.text,
+                start_ms=self._last_end_ms, end_ms=self._last_end_ms, source=SegmentSource.VOICE_PROMPT,
+                filtered=True, filter_reason="voice_prompt", language=self._settings.speech_language)])
+            await self._form_api.audit(self.session_id, AuditEntry(
+                session_id=self.session_id, actor_id=ACTOR, actor_type=ActorType.SERVICE,
+                action=AuditAction.VOICE_PROMPT, path=gap.path, after=prompt.text,
+                model=meta.model if meta else None, prompt_version=meta.prompt_version if meta else None,
+                details={"gap_id": gap.id, "gap_kind": gap.kind.value, "severity": gap.severity.value,
+                         "has_audio": prompt.audio_b64 is not None, "clarification": True}))
+        asked = {g.id for g in critical}
+        await self._form_api.put_gaps(self.session_id, [
+            g.model_copy(update={"asked_at": now}) if g.id in asked else g for g in gaps])
+        if self.state != SessionState.GAP_CHECK:
+            await self._transition(SessionState.GAP_CHECK, "clarification round")
+        self.last["clarify"] = TickRecord(kind="clarify", started_at=now.isoformat(),
+                                          voice_prompt=" | ".join(p.text for p in ordered))
+
+    async def _check_answers(self, gaps: list[Gap], *, close: bool = True) -> None:
+        """Mark questions whose gap has resolved as answered; REVIEW once none are left open."""
+        ctx = await self._form_api.context(self.session_id, transcript_limit=1)
+        still_open = {g.id for g in gaps if g.status == GapStatus.OPEN}
+        now = utcnow()
+        updated = [c.model_copy(update={"status": ClarificationStatus.ANSWERED, "answered_at": now})
+                   if c.status == ClarificationStatus.OPEN and c.gap_id not in still_open else c
+                   for c in ctx.session.clarifications]
+        if updated != ctx.session.clarifications:
+            await self._form_api.put_clarifications(self.session_id, updated)
+        if close and not any(c.status == ClarificationStatus.OPEN for c in updated):
+            await self._to_review("all clarifications answered")
 
     async def _transition(self, to: SessionState, reason: str) -> None:
         if self.state == to:
@@ -532,6 +601,7 @@ class SessionRunner:
         return {
             "session_id": self.session_id, "state": self.state, "recording": self.recording,
             "running": self.running, "ending": self._ending, "finalized": self._finalized,
+            "clarifying": self._clarifying,
             "seq": self._seq, "pending_segments": len(self._pending), "ticks": self.ticks,
             "extractions": self.extractions, "verifications": self.verifications,
             "voice_prompts": self.voice_prompts, "consecutive_failures": self._failures,
